@@ -1,0 +1,106 @@
+﻿<ui:UiWindow x:Class="Kairo.DashBoard"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+        xmlns:local="clr-namespace:Kairo" 
+        xmlns:Dashboard="clr-namespace:Kairo.Dashboard"
+        mc:Ignorable="d"
+        WindowStartupLocation="CenterScreen"
+        Title="LoCyanFrp - DashBoard [用户界面]"
+        Height="450" Width="800" 
+        MinHeight="450"
+        MinWidth="800"
+        Closing="UiWindow_Closing"
+        ContentRendered="UiWindow_ContentRendered"
+
+        Icon="/Resource/favicon.ico"
+        IsVisibleChanged="UiWindow_IsVisibleChanged"
+        Loaded="UiWindow_Loaded"
+        AllowDrop="True"
+        ExtendsContentIntoTitleBar="True"
+        StateChanged="UiWindow_StateChanged"
+        Style="{StaticResource UiWindow}"
+        WindowStyle="None">
+
+    <Grid>
+        <Grid.Resources>
+            <Color x:Key="ShadowColor"></Color>
+            <SolidColorBrush x:Key="MainBackgroundColor"></SolidColorBrush>
+        </Grid.Resources>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <ui:TitleBar
+            x:Name="_TitleBar"
+            Title="LoCyanFrp - DashBoard [用户界面]"
+            Grid.Row="0"
+            Margin="5,0,0,0"
+            Padding="0"
+            Icon="/Resource/favicon.ico">
+            
+        </ui:TitleBar>
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="72"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <ui:NavigationStore 
+                x:Name="Navigation"
+                Grid.Column="0"
+                Margin="6,0,6,9"
+                Frame="{Binding ElementName=RootFrame}"
+                SelectedPageIndex="0">
+                <ui:NavigationStore.Items>
+                    <ui:NavigationItem
+                        Content="开始"
+                        Icon="Home24"
+                        PageTag="Home"
+                        PageType="{x:Type Dashboard:Home}" />
+                    <ui:NavigationSeparator />
+                    <ui:NavigationItem
+                        Content="隧道列表"
+                        Icon="List24"
+                        PageTag="ProxyList"
+                        PageType="{x:Type Dashboard:ProxyList}"
+                        />
+                    <ui:NavigationItem
+                        Content="运行状态"
+                        Icon="WindowConsole20"
+                        PageTag="ProxyStatus"
+                        PageType="{x:Type Dashboard:Status}"/>
+                </ui:NavigationStore.Items>
+                <ui:NavigationStore.Footer>
+                    <ui:NavigationItem
+                        x:Name="SettingsNavigationItem"
+                        Content="设置"
+                        Icon="Settings24"
+                        PageType="{x:Type Dashboard:Settings}" />
+                </ui:NavigationStore.Footer>
+            </ui:NavigationStore>
+            <Border
+                Grid.Column="1"
+                Margin="0"
+                CornerRadius="8,0,0,0">
+                <Frame x:Name="RootFrame" Margin="4,8" />
+            </Border>
+
+            <Grid Grid.Column="1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <ui:Snackbar
+                    Margin="0,0,0,20"
+                    x:Name="Snackbar"
+                    Grid.Column="1"
+                    Panel.ZIndex="999"
+                    Timeout="5000" />
+            </Grid>
+        </Grid>
+
+    </Grid>
+</ui:UiWindow>

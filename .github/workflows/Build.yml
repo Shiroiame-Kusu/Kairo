@@ -24,48 +24,48 @@ jobs:
       - name: Write Build info
         shell: cmd
         run: |
-          cmd /c echo GITHUB ACTION #${{github.run_number}} >${{ github.workspace }}\LoCyanFrpDesktop\buildinfo.info
-          cmd /c echo %date% %time% >>${{ github.workspace }}\LoCyanFrpDesktop\buildinfo.info
-          cmd /c echo ${{github.ref}} ${{github.sha}}>>${{ github.workspace }}\LoCyanFrpDesktop\buildinfo.info
+          cmd /c echo GITHUB ACTION #${{github.run_number}} >${{ github.workspace }}\Kairo\buildinfo.info
+          cmd /c echo %date% %time% >>${{ github.workspace }}\Kairo\buildinfo.info
+          cmd /c echo ${{github.ref}} ${{github.sha}}>>${{ github.workspace }}\Kairo\buildinfo.info
 
       - name: DotNet restore
         run: dotnet restore
 
       - name: Build the project(Release)
-        run: dotnet build -p:Configuration=Release "LoCyanFrpDesktop/LoCyanFrpDesktop.csproj"
+        run: dotnet build -p:Configuration=Release "Kairo/Kairo.csproj"
 
       - name: Build the project(Debug)
-        run: dotnet build "LoCyanFrpDesktop/LoCyanFrpDesktop.csproj"
+        run: dotnet build "Kairo/Kairo.csproj"
 
       - name: Upload LocyanFrp(Release,dotnet6-windows)
         uses: actions/upload-artifact@v4
         with:
-          name: LoCyanFrpDesktop_dotnet6
-          path: ${{ github.workspace }}\LoCyanFrpDesktop\bin\Release\net6.0-windows
+          name: Kairo_dotnet6
+          path: ${{ github.workspace }}\Kairo\bin\Release\net6.0-windows
           if-no-files-found: ignore
 
       - name: Build the project(Publish)
         run: |
           dotnet clean
-          dotnet publish "LoCyanFrpDesktop/LoCyanFrpDesktop.csproj" -f net6.0-windows --no-self-contained -p:PublishSingleFile=true -p:RuntimeIdentifier=win-x64 -p:IncludeContentInSingleFile=true
+          dotnet publish "Kairo/Kairo.csproj" -f net6.0-windows --no-self-contained -p:PublishSingleFile=true -p:RuntimeIdentifier=win-x64 -p:IncludeContentInSingleFile=true
 
       - name: Upload LocyanFrp(Publish)
         uses: actions/upload-artifact@v4
         with:
-          name: LoCyanFrpDesktop_dotnet6_publish_SingleFile
-          path: ${{ github.workspace }}\LoCyanFrpDesktop\bin\Debug\net6.0-windows\win-x64\publish
+          name: Kairo_dotnet6_publish
+          path: ${{ github.workspace }}\Kairo\bin\Debug\net6.0-windows\win-x64\publish
           if-no-files-found: ignore
           
       - name: Build the project(Publish,Single File)
         run: |
           dotnet clean
-          dotnet publish "LoCyanFrpDesktop/LoCyanFrpDesktop.csproj" -f net6.0-windows -r win-x64 -p:PublishSingleFile=true -p:RuntimeIdentifier=win-x64 -p:IncludeContentInSingleFile=true -p:Configuration=Release --sc -p:IncludeAllContentForSelfExtract=true -p:EnableCompressionInSingleFile=true
+          dotnet publish "Kairo/Kairo.csproj" -f net6.0-windows -r win-x64 -p:PublishSingleFile=true -p:RuntimeIdentifier=win-x64 -p:IncludeContentInSingleFile=true -p:Configuration=Release --sc -p:IncludeAllContentForSelfExtract=true -p:EnableCompressionInSingleFile=true
 
       - name: Upload LocyanFrp(Publish,Single File)
         uses: actions/upload-artifact@v4
         with:
-          name: LoCyanFrpDesktop_dotnet6_publish_SingleFile_WithEnvironment
-          path: ${{ github.workspace }}\LoCyanFrpDesktop\bin\Release\net6.0-windows\win-x64\publish
+          name: Kairo_dotnet6_publish_SingleFile
+          path: ${{ github.workspace }}\Kairo\bin\Release\net6.0-windows\win-x64\publish
           if-no-files-found: ignore
 
   
