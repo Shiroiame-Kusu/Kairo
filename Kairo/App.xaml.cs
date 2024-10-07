@@ -75,7 +75,7 @@ namespace Kairo
             if (args.Length > 0)
             {
 
-                string pattern = @"^locyanfrp://([^/]+)/(\d+)$";
+                string pattern = @"^Kairo://([^/]+)/(\d+)$";
                 Regex regex = new Regex(pattern);
 
                 for (int j = 0; j < args.Count(); j++)

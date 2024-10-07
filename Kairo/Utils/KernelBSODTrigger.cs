@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace LoCyanFrpDesktop.Utils
+namespace Kairo.Utils
 {
     internal class KernelBSODTrigger
     {

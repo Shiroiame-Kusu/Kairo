@@ -37,7 +37,7 @@ jobs:
       - name: Build the project(Debug)
         run: dotnet build "Kairo/Kairo.csproj"
 
-      - name: Upload LocyanFrp(Release,dotnet6-windows)
+      - name: Upload Kairo(Release,dotnet6-windows)
         uses: actions/upload-artifact@v4
         with:
           name: Kairo_dotnet6
@@ -49,7 +49,7 @@ jobs:
           dotnet clean
           dotnet publish "Kairo/Kairo.csproj" -f net6.0-windows --no-self-contained -p:PublishSingleFile=true -p:RuntimeIdentifier=win-x64 -p:IncludeContentInSingleFile=true
 
-      - name: Upload LocyanFrp(Publish)
+      - name: Upload Kairo(Publish)
         uses: actions/upload-artifact@v4
         with:
           name: Kairo_dotnet6_publish
@@ -61,7 +61,7 @@ jobs:
           dotnet clean
           dotnet publish "Kairo/Kairo.csproj" -f net6.0-windows -r win-x64 -p:PublishSingleFile=true -p:RuntimeIdentifier=win-x64 -p:IncludeContentInSingleFile=true -p:Configuration=Release --sc -p:IncludeAllContentForSelfExtract=true -p:EnableCompressionInSingleFile=true
 
-      - name: Upload LocyanFrp(Publish,Single File)
+      - name: Upload Kairo(Publish,Single File)
         uses: actions/upload-artifact@v4
         with:
           name: Kairo_dotnet6_publish_SingleFile

@@ -6,13 +6,13 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace LoCyanFrpDesktop.Utils
+namespace Kairo.Utils
 {
     internal class ProtocolHandler
     {   
         public static void Init()
         {
-            RegisterUrlProtocol("locyanfrp", Assembly.GetExecutingAssembly().Location);
+            RegisterUrlProtocol("Kairo", Assembly.GetExecutingAssembly().Location);
         }
         public static void RegisterUrlProtocol(string protocolName, string applicationPath)
         {

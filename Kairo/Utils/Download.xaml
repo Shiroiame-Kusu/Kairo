@@ -25,7 +25,7 @@
         <ui:TitleBar
             x:Name="_TitleBar"
             Height="30"
-            Title="LoCyanFrp - 下载必要的运行库"
+            Title="Kairo - 下载必要的运行库"
             Grid.Row="0"
             Margin="5,0,0,0"
             Padding="0"

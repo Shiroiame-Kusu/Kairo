@@ -25,6 +25,8 @@ using static System.Windows.Forms.VisualStyles.VisualStyleElement.StartPanel;
 using HandyControl.Controls;
 using Newtonsoft.Json.Linq;
 using System.Security.Cryptography;
+using System.Collections.Generic;
+using System.Text;
 
 namespace Kairo
 {
@@ -85,7 +87,7 @@ namespace Kairo
             bool b = true;
             var a = () =>
             {
-                b = Logger.MsgBox("无法连接至LocyanFrp API，请检查您的网络连接!", "LocyanFrp", 1, 47, 0);
+                b = Logger.MsgBox("无法连接至LocyanFrp API，请检查您的网络连接!", "Kairo", 1, 47, 0);
                 if (!b)
                 {
                     Logger.MsgBox("你在想啥, 你只能确认!", "What r u doing?", 1, 47, 0);
@@ -128,15 +130,16 @@ namespace Kairo
 
         private async void InitializeAutoLogin()
         {
-            if (await CheckTokenAvailableAndLogin())
+            islogin = await CheckTokenAvailableAndLogin();
+            if (islogin)
             {
                 Global.Config.Token = token_auto;
                 Global.Config.Username = username_auto;
-                Global.Config.FrpToken = UserInfo.Token;
+                Global.Config.LoginToken = $"{username_auto}|{token_auto}";
                 InitializeInfoForDashboard();
                 DashBoard = new DashBoard();
                 DashBoard.Show();
-                Close();
+                this.Close();
                 Access.DashBoard.CheckIfFrpcInstalled();
             }
         }
@@ -156,7 +159,7 @@ namespace Kairo
                 return false;
             }
                 using (var hC = new HttpClient()) {
-                    hC.DefaultRequestHeaders.Add("Authorization", token_auto);
+                    hC.DefaultRequestHeaders.Add("Authorization", $"Bearer {token_auto}");
                     HttpResponseMessage response1 = await hC.GetAsync($"{Global.API}/api/v2/user/token");
                     JObject temp = JObject.Parse(await response1.Content.ReadAsStringAsync());
                     if (!response1.IsSuccessStatusCode)
@@ -167,8 +170,10 @@ namespace Kairo
                         HttpResponseMessage response = await hC.GetAsync($"{Global.API}/api/v2/user/info?username={username_auto}");
                         response.EnsureSuccessStatusCode();
                         string jsonString = await response.Content.ReadAsStringAsync();
-                        UserInfo = JsonConvert.DeserializeObject<UserInfo>(jsonString);
-
+                
+                        //It just works.
+                        UserInfo = JsonConvert.DeserializeObject<UserInfo>(JObject.Parse(jsonString)["data"].ToString());
+                        UserInfo.Status = int.Parse(JObject.Parse(jsonString)["status"].ToString());
                         if (UserInfo.Status == 200)
                         {
                             return true;
@@ -177,8 +182,6 @@ namespace Kairo
                         {
                             return false;
                         }
-                    
-                
                 
             }
         }
@@ -237,11 +240,10 @@ namespace Kairo
                             {
                                 Logger.MsgBox($"登录成功\n获取到登录Token: {UserInfo.Token}", "提示", 0, 47, 0);
                                 InitializeInfoForDashboard();
-                                
-                                Global.Config.Token = responseObject.Token;
-                                Global.Config.Username = responseObject.UserData.Username;
-                                Global.Config.FrpToken = responseObject.UserData.FrpToken;
-                                Global.Config.LoginToken = $"{responseObject.UserData.Username}|{responseObject.Token}";
+                                Global.Config.Token = UserInfo.Token;
+                                Global.Config.Username = UserInfo.Username;
+                                Global.Config.FrpToken = UserInfo.FrpToken;
+                                Global.Config.LoginToken = $"{UserInfo.Username}|{UserInfo.Token}";
                                 string path = ".//session.token";
                                 string text = $"{UserInfo.Username}|{UserInfo.Token}";
                                 File.WriteAllText(path, text);
@@ -274,7 +276,13 @@ namespace Kairo
         private void InitializeInfoForDashboard()
         {
 
-            Avatar = $"https://cravatar.cn/avatar/{UserInfo.Email.ToLower().GetHashCode()}";
+            StringBuilder sb = new StringBuilder();
+            foreach (byte b in MD5.HashData(Encoding.UTF8.GetBytes(UserInfo.Email.ToLower())))
+            {
+                sb.Append(b.ToString("x2"));
+            }
+            Console.WriteLine(sb.ToString());
+            Avatar = $"https://cravatar.cn/avatar/{sb.ToString()}";
             Inbound = UserInfo.Inbound;
             Outbound = UserInfo.Outbound;
             Traffic = UserInfo.Traffic;
@@ -422,6 +430,18 @@ namespace Kairo
     }
     public class UserInfo
     {
+        [JsonProperty("qq")]
+        public int QQ { get; set; }
+
+        [JsonProperty("qq_social_id")]
+        public string QQSocialID { get; set; }
+
+        [JsonProperty("reg_time")]
+        public string RegTime { get; set; }
+
+        [JsonProperty("id")]
+        public int ID { get; set; }
+
         [JsonProperty("inbound")]
         public int Inbound { get; set; }
 
@@ -430,9 +450,6 @@ namespace Kairo
 
         [JsonProperty("email")]
         public string Email { get; set; }
-
-        [JsonProperty("token")]
-        public string Token { get; set; }
 
         [JsonProperty("traffic")]
         public long Traffic { get; set; }
@@ -443,13 +460,12 @@ namespace Kairo
         [JsonProperty("username")]
         public string Username { get; set; }
 
-        [JsonProperty("frp_token")]
-        public string FrpToken;
-
         [JsonProperty("status")]
         public int Status { get; set; }
-
         
+        public string Token { get; set; }
+        [JsonProperty("frp_token")]
+        public string FrpToken { get; set; }
     }
 
 

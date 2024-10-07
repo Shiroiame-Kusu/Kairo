@@ -6,12 +6,12 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using Wpf.Ui.Controls;
-using LoCyanFrpDesktop.Utils;
-using LoCyanFrpDesktop.Dashboard;
+using Kairo.Utils;
+using Kairo.Dashboard;
 using System.Windows.Threading;
 using System.Text.RegularExpressions;
 using System.IO;
-using LoCyanFrpDesktop.Extensions;
+using Kairo.Extensions;
 using System.Security.Cryptography;
 using Markdig;
 using System.Windows.Controls;
@@ -19,9 +19,10 @@ using CefSharp;
 using CefSharp.Wpf;
 using System.Text;
 using HtmlAgilityPack;
+using System.Linq;
 
 
-namespace LoCyanFrpDesktop.Dashboard
+namespace Kairo.Dashboard
 {
     /// <summary>
     /// Interaction logic for ProxyList.xaml
@@ -64,21 +65,21 @@ namespace LoCyanFrpDesktop.Dashboard
             {
                 using (HttpClient client = new())
                 {
-                    client.BaseAddress = new Uri("https://api.locyanfrp.cn/App/GetBroadCast");
+                    client.BaseAddress = new Uri("https://api-v2.locyanfrp.cn/api/v2/notice");
                     var result = await client.GetAsync(client.BaseAddress).Await().Content.ReadAsStringAsync();
                     var result2 = JObject.Parse(result);
-                    if (result2 != null && (bool)result2["status"]) {
-                        var html = Markdown.ToHtml(result2["broadcast"].ToString());
+                    if (result2 != null && int.Parse(result2["status"].ToString()) == 200) {
+                        var html = Markdown.ToHtml(result2["data"]["broadcast"].ToString());
                         var htmlDoc = new HtmlDocument();
                         if (Global.isDarkThemeEnabled)
                         {
                             htmlDoc.LoadHtml(html);
                             var cssContent = "* { color: white; } a { color: aqua}";
                             var styleNode = HtmlNode.CreateNode($"<style>{cssContent}</style>");
-                            var scriptNode = HtmlNode.CreateNode("<script src='https://cdn.jsdelivr.net/npm/smooth-scrollbar@8.6.3/dist/smooth-scrollbar.js'></script>");
+                            //var scriptNode = HtmlNode.CreateNode("<script src='https://cdn.jsdelivr.net/npm/smooth-scrollbar@8.6.3/dist/smooth-scrollbar.js'></script>");
                             var newHeadNode = htmlDoc.CreateElement("head");
                             newHeadNode.AppendChild(styleNode);
-                            newHeadNode.AppendChild(scriptNode);
+                            //newHeadNode.AppendChild(scriptNode);
                             htmlDoc.DocumentNode.PrependChild(newHeadNode);
                         }
                         Browser.LoadHtml(Global.isDarkThemeEnabled ? htmlDoc.DocumentNode.OuterHtml: html, "http://localhost",Encoding.UTF8);
@@ -159,7 +160,7 @@ namespace LoCyanFrpDesktop.Dashboard
 
                     if (File.Exists(path)){ 
                         MD5 md5 = MD5.Create();
-                        if (md5.ComputeHash(Avatar).Equals(md5.ComputeHash(File.ReadAllBytes("Avatar.png"))))
+                        if (md5.ComputeHash(Avatar).SequenceEqual(md5.ComputeHash(File.ReadAllBytes("Avatar.png"))))
                         {
                             ApplyAvatar();
                             return;
@@ -179,7 +180,6 @@ namespace LoCyanFrpDesktop.Dashboard
                             bw.Write(bytes);
                             bw.Close();
                             fileStream.Close();
-                            fileStream.Dispose();
                         }
                         ApplyAvatar();
                     }
@@ -190,7 +190,8 @@ namespace LoCyanFrpDesktop.Dashboard
             }
             catch (Exception ex)
             {
-                Logger.MsgBox("无法获取您的头像, 请稍后重试", "LocyanFrp", 0, 48, 1);
+                Logger.MsgBox("无法获取您的头像, 请稍后重试", "Kairo", 0, 48, 1);
+                CrashInterception.ShowException(ex);
             }
         }
 

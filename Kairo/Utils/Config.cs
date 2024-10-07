@@ -5,9 +5,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using LoCyanFrpDesktop.Utils.Components;
+using Kairo.Utils.Components;
 
-namespace LoCyanFrpDesktop.Utils
+namespace Kairo.Utils
 {
     
     [JsonObject(NamingStrategyType = typeof(CamelCaseNamingStrategy))]
@@ -22,6 +22,7 @@ namespace LoCyanFrpDesktop.Utils
         public bool DebugMode = true;
         public bool AutoStartUp = false;
         public int AppliedTheme = 0;
+        public bool UsingDownloadMirror = true;
         public List<Proxy> AutoLaunch = new();
     }
 }

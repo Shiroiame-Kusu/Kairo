@@ -52,17 +52,23 @@
                             <TextBlock DockPanel.Dock="Top" Text="奇奇妙妙功能区" FontSize="12"/>
                         </DockPanel>
                         <StackPanel Orientation="Horizontal">
-                            <ui:Card Margin="0,10,10,10">
+                            <ui:Card VerticalAlignment="Stretch" Margin="0,10,10,10">
                                 <StackPanel>
                                     <ui:ToggleSwitch Name="FollowSystemThemeSetting" Content="跟随系统主题设置" Margin="0,10" Click="FollowSystemThemeSetting_Click" IsChecked="True"/>
                                     <ui:ToggleSwitch Name="UseDarkTheme" Content="使用暗黑主题" Click="UseDarkTheme_Click" IsChecked="False"/>
                                     <ui:ToggleSwitch Name="AutoStartUp" Content="开机自动启动" Click="AutoStartUp_Click" Margin="0,10" />
                                 </StackPanel>
                             </ui:Card>
-                            <ui:Card HorizontalAlignment="Left" Width="150" Margin="0,10">
+                            <ui:Card VerticalAlignment="Stretch" HorizontalAlignment="Left" Margin="0,10">
                                 <StackPanel>
                                     <ui:Button Name="CopyToken" Width="110" Margin="0,10" Icon="Copy24" Content="复制Token" Click="CopyToken_Click"/>
                                     <ui:Button Name="SignOut" Width="110" Margin="0,10" Icon="ArrowExit20" Content="退出登录" Click="SignOut_Click"/>
+                                </StackPanel>
+                            </ui:Card>
+                            <ui:Card VerticalAlignment="Stretch" Margin="10">
+                                <StackPanel>
+                                    <ui:Button Margin="0,10" Name="DownloadFrpc" Content="下载FRPC" Icon="ArrowDownload24" Click="DownloadFrpc_Click"></ui:Button>
+                                    <ui:ToggleSwitch Margin="0,0" Name="UseMirror" Content="国内镜像" IsChecked="True" Click="UseMirror_Click"></ui:ToggleSwitch>
                                 </StackPanel>
                             </ui:Card>
                             <ui:Card VerticalAlignment="Stretch" Margin="0,10">

@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace LoCyanFrpDesktop.Utils
+namespace Kairo.Utils
 {
     class Lock
     {

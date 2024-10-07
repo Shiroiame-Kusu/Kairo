@@ -1,5 +1,5 @@
 name: "崩溃反馈"
-description: LocyanFrp发生了莫名其妙的崩溃
+description: Kairo发生了莫名其妙的崩溃
 title: "崩溃反馈 <在此处简单描述报错信息>"
 labels: ["❗ 崩溃"]
 
@@ -7,7 +7,7 @@ body:
   - type: input
     id: version
     attributes:
-      label: 当前使用的LocyanFrp版本
+      label: 当前使用的Kairo版本
       description: 设置
     validations:
       required: true

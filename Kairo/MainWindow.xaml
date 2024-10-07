@@ -7,7 +7,7 @@
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         mc:Ignorable="d"
         WindowStartupLocation="CenterScreen"
-        Title="LoCyanFrp-Desktop" Height="500" Width="800" 
+        Title="Kairo-Desktop" Height="500" Width="800" 
         MinHeight="450"
         MinWidth="800"
         Closing="UiWindow_Closing"
@@ -31,7 +31,7 @@
         </Grid.RowDefinitions>
         <ui:TitleBar
             x:Name="_TitleBar"
-            Title="Kairo - Another LocyanFrp Client"
+            Title="Kairo - Another Kairo Client"
             Grid.Row="0"
             Margin="5,0,0,0"
             Padding="0"
@@ -105,12 +105,12 @@
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
                                     <TextBlock Grid.Column="0" Name="Register" FontSize="12" Text="" VerticalAlignment="Center" HorizontalAlignment="Center">
-                                        <Hyperlink NavigateUri="https://preview.locyanfrp.cn/register" RequestNavigate="Register_Navigate">
+                                        <Hyperlink NavigateUri="https://preview.Kairo.cn/register" RequestNavigate="Register_Navigate">
                                             没有账号? 前往注册
                                         </Hyperlink>
                                     </TextBlock>
                                     <TextBlock Grid.Column="1" Name="ForgetPassword" FontSize="12" Text="" VerticalAlignment="Center" HorizontalAlignment="Center">
-                                        <Hyperlink NavigateUri="https://preview.locyanfrp.cn/reset_password" RequestNavigate="ForgetPassword_Navigate">
+                                        <Hyperlink NavigateUri="https://preview.Kairo.cn/reset_password" RequestNavigate="ForgetPassword_Navigate">
                                             忘记密码?
                                         </Hyperlink>
                                     </TextBlock>

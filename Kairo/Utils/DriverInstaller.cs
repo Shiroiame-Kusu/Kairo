@@ -1,4 +1,4 @@
-﻿using LoCyanFrpDesktop.Properties;
+﻿using Kairo.Properties;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -8,7 +8,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace LoCyanFrpDesktop.Utils
+namespace Kairo.Utils
 {
     internal class DriverInstaller
     {

@@ -1,14 +1,14 @@
 [Setup]
-AppName=LoCyanFrp
-AppVerName=LoCyanFrp - 1.2
-DefaultDirName={pf}\LoCyanFrp
-DefaultGroupName=LoCyanFrp
+AppName=Kairo
+AppVerName=Kairo - 1.2
+DefaultDirName={pf}\Kairo
+DefaultGroupName=Kairo
 UninstallDisplayIcon={app}\Kairo.exe
 Compression=lzma2
 SolidCompression=yes
 OutputDir=Output
 AppPublisher=����ӣܿ����Ƽ����޹�˾
-AppPublisherURL=https://www.locyanfrp.cn
+AppPublisherURL=https://www.Kairo.cn
 PrivilegesRequired=admin
 
 [Files]
@@ -21,18 +21,18 @@ Source: "D:\Frp\Kairo-Impl\Kairo\bin\Release\HandyControl.dll"; DestDir: "{app}"
 Source: "D:\Frp\Kairo-Impl\Kairo\resource\*"; DestDir: "{app}\resource"; Flags: ignoreversion recursesubdirs
 
 [Icons]
-Name: "{group}\LoCyanFrp"; Filename: "{app}\Kairo.exe"; IconFilename: "{app}\resource\favicon.ico"
+Name: "{group}\Kairo"; Filename: "{app}\Kairo.exe"; IconFilename: "{app}\resource\favicon.ico"
 ; Add other shortcuts you want to create here
 
 [Icons]
-Name: "{commondesktop}\LoCyanFrp"; Filename: "{app}\Kairo.exe"; IconFilename: "{app}\resource\favicon.ico";
+Name: "{commondesktop}\Kairo"; Filename: "{app}\Kairo.exe"; IconFilename: "{app}\resource\favicon.ico";
 
 
 [Run]
-Filename: "{app}\Kairo.exe"; Description: "ֱ������ LoCyanFrp"; Flags: postinstall nowait runascurrentuser
+Filename: "{app}\Kairo.exe"; Description: "ֱ������ Kairo"; Flags: postinstall nowait runascurrentuser
 
 [Registry]
-Root: HKCR; Subkey: "locyanfrp"; ValueType: string; ValueName: ""; ValueData: "LoCyanFrp Desktop Application Custom URL Scheme."
-Root: HKCR; Subkey: "locyanfrp"; ValueType: string; ValueName: "URL Protocol"; ValueData: ""
-Root: HKCR; Subkey: "locyanfrp\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: "{app}\resource\favicon.ico"
-Root: HKCR; Subkey: "locyanfrp\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\Kairo.exe"" ""%1"""
+Root: HKCR; Subkey: "Kairo"; ValueType: string; ValueName: ""; ValueData: "Kairo Desktop Application Custom URL Scheme."
+Root: HKCR; Subkey: "Kairo"; ValueType: string; ValueName: "URL Protocol"; ValueData: ""
+Root: HKCR; Subkey: "Kairo\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: "{app}\resource\favicon.ico"
+Root: HKCR; Subkey: "Kairo\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\Kairo.exe"" ""%1"""

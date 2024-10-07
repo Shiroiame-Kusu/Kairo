@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
-namespace LoCyanFrpDesktop.Utils
+namespace Kairo.Utils
 {
     class BSODTrigger
     {

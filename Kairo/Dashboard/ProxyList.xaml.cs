@@ -33,6 +33,7 @@ using Color = System.Windows.Media.Color;
 using Kairo.Utils.Components;
 using Kairo.Extensions;
 using Microsoft.Win32.SafeHandles;
+using Newtonsoft.Json.Serialization;
 
 
 namespace Kairo.Dashboard
@@ -104,18 +105,21 @@ namespace Kairo.Dashboard
             {
                 // 定义API链接
                 string url = $"{Global.API}/api/v2/proxy/all?username={username}";
-                client.DefaultRequestHeaders.Add("Authorization", token);
+                client.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
                 // 防止API报错
                 try
                 {
                     // 等待请求
                     HttpResponseMessage response = await client.GetAsync(url);
+                    string jsonString = await response.Content.ReadAsStringAsync();
                     // 确保请求完成
                     response.EnsureSuccessStatusCode();
                     // 结果转换为字符串
-                    string jsonString = await response.Content.ReadAsStringAsync();
+                    
+                    var temp = JObject.Parse(jsonString);
                     // 结果序列化
-                    responseObject = JsonConvert.DeserializeObject<GetProxiesResponseObject>(jsonString);
+                    responseObject = JsonConvert.DeserializeObject<GetProxiesResponseObject>(temp["data"].ToString());
+                    responseObject.Status = int.Parse(temp["status"].ToString());
                 }
                 catch (Exception ex)
                 {
@@ -125,9 +129,9 @@ namespace Kairo.Dashboard
                 }
             }
 
-            if (responseObject.Status != 0)
+            if (responseObject.Status != 200)
             {
-                Logger.MsgBox("获取隧道失败，请重启软件重新登陆账号", "LocyanFrp", 0, 48, 1);
+                Logger.MsgBox("获取隧道失败，请重启软件重新登陆账号", "Kairo", 0, 48, 1);
                 return null;
             }
 
@@ -158,7 +162,7 @@ namespace Kairo.Dashboard
             int proxy_id = 0;
             if (Global.Config.FrpcPath == null)
             {
-                Logger.MsgBox("您尚未安装Frpc,请先安装或者手动指定", "LocyanFrp", 0, 48, 1);
+                Logger.MsgBox("您尚未安装Frpc,请先安装或者手动指定", "Kairo", 0, 48, 1);
                 return 0;
             }
             foreach (var item in Proxieslist)
@@ -172,7 +176,7 @@ namespace Kairo.Dashboard
 
             if (proxy_id == 0)
             {
-                Logger.MsgBox("无法将隧道名解析为隧道ID，请检查自己的隧道配置", "LocyanFrp", 0, 48, 1);
+                Logger.MsgBox("无法将隧道名解析为隧道ID，请检查自己的隧道配置", "Kairo", 0, 48, 1);
                 return 0;
             }
             Access.DashBoard.Navigation.Navigate(2);
@@ -181,7 +185,7 @@ namespace Kairo.Dashboard
             {
                 if (PNAP.PNAPList.Any(prcs => prcs.ProcessName == proxy_id))
                 {
-                    Logger.MsgBox("这个隧道已经启动了哦", "LocyanFrp", 0, 48, 1);
+                    Logger.MsgBox("这个隧道已经启动了哦", "Kairo", 0, 48, 1);
                     return 0;
                 }
 
@@ -310,7 +314,7 @@ namespace Kairo.Dashboard
        string url = File.ReadAllText(filePath);
 
        // 使用正则表达式提取token和id
-       Match match = Regex.Match(url, @"locyanfrp://([^/]+)/([^/]+)");
+       Match match = Regex.Match(url, @"Kairo://([^/]+)/([^/]+)");
 
        if (match.Success && match.Groups.Count == 3)
        {
@@ -521,6 +525,11 @@ namespace Kairo.Dashboard
             }
             private void StartProxy_Click(object sender, RoutedEventArgs e)
             {
+                if (string.IsNullOrEmpty(Global.Config.FrpcPath))
+                {
+                    Logger.MsgBox("您尚未安装FRPC!", "Kairo", 0, 48, 1);
+                    return;
+                }
                 try
                 {
                     int Index = PNAPList.FindIndex(Process => Process.ListIndex == (IndexID != -1 ? IndexID : throw new Exception()));
@@ -534,7 +543,7 @@ namespace Kairo.Dashboard
                     }
                     else
                     {
-                        Logger.MsgBox("这个隧道已经启动了哦", "LocyanFrp", 0, 48, 1);
+                        Logger.MsgBox("这个隧道已经启动了哦", "Kairo", 0, 48, 1);
                     }
                 }
                 catch (Exception ex)
@@ -563,7 +572,7 @@ namespace Kairo.Dashboard
                     if (!(bool)PNAPList[Index].IsRunning)
                     {   
 
-                        Logger.MsgBox("这个隧道并没有启动哦", "LocyanFrp", 0, 48, 1);
+                        Logger.MsgBox("这个隧道并没有启动哦", "Kairo", 0, 48, 1);
                     }
                     else
                     {
@@ -574,7 +583,7 @@ namespace Kairo.Dashboard
                         {
                             CrashInterception.ShowException(ex);
                         }
-                        Logger.MsgBox("这个隧道成功关闭了哦", "LocyanFrp", 0, 48, 1);
+                        Logger.MsgBox("这个隧道成功关闭了哦", "Kairo", 0, 48, 1);
 
                         PNAPList[Index].IsRunning = false;
                         Card.IndicatorLight.Stroke = Brushes.Gray;
@@ -582,7 +591,7 @@ namespace Kairo.Dashboard
                 }catch( Exception ex)
                 {   
                     CrashInterception.ShowException(ex);
-                    Logger.MsgBox("这个隧道并没有启动哦", "LocyanFrp", 0, 48, 1);
+                    Logger.MsgBox("这个隧道并没有启动哦", "Kairo", 0, 48, 1);
                 }
 
             }
@@ -600,8 +609,7 @@ namespace Kairo.Dashboard
     public class GetProxiesResponseObject
     {
         public int Status { get; set; }
-        public string Message { get; set; }
-        public int Count { get; set; }
+        [JsonProperty("list")]
         public List<Proxy> Proxies { get; set; }
     }
 }

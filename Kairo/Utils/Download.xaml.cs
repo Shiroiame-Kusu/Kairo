@@ -27,6 +27,7 @@ using System.Windows.Forms.Design;
 using System.Linq.Expressions;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using Kairo.Properties;
 
 namespace Kairo.Utils
 {
@@ -43,6 +44,7 @@ namespace Kairo.Utils
         public static string DownloadPath = AppDomain.CurrentDomain.BaseDirectory;
         public string DownloadUnit = "KB/s";
         public static string FolderName;
+        public static bool UsingMirror;
         public Download()
         {
             InitializeComponent();
@@ -155,7 +157,7 @@ namespace Kairo.Utils
                 {
                     Console.Error.WriteLine(e.Error);
                     CrashInterception.ShowException(e.Error);
-                    Logger.MsgBox("无法下载FRP, 请检查您的网络连接","LocyanFrp",0,48,1);
+                    Logger.MsgBox("无法下载FRP, 请检查您的网络连接","Kairo",0,48,1);
                     this.Owner = null;
                     Close();
                     return;
@@ -204,9 +206,11 @@ namespace Kairo.Utils
                     //CrashInterception.ShowException(ex);
                 }
                 Global.Config.FrpcPath = path;
+                this.Owner = null;
                 Close();
             }
             catch (Exception ex) {
+                this.Owner = null;
                 this.Close();
                 CrashInterception.ShowException(ex);
                 
@@ -255,10 +259,10 @@ namespace Kairo.Utils
         }
         private async void StartDownload()
         {
-            var a = await RequestAPIandParse("https://api-gh.1l1.icu/repos/LoCyan-Team/LoCyanFrpPureApp/releases/latest",true);
+            var a = await RequestAPIandParse("https://api-gh.1l1.icu/repos/LoCyan-Team/LocyanFrpPureApp/releases/latest",true);
             if (!a)
             {
-                await RequestAPIandParse("https://api.github.com/repos/LoCyan-Team/LoCyanFrpPureApp/releases/latest", false);
+                await RequestAPIandParse("https://api.github.com/repos/LoCyan-Team/LocyanFrpPureApp/releases/latest", false);
             }
         }
         private static async Task<bool> RequestAPIandParse(string url,bool mirror)
@@ -280,11 +284,13 @@ namespace Kairo.Utils
                     Match match = Regex.Match(DownloadVersion, pattern);
                     var Version = match.Groups[1].Value;
                     string architecture = RuntimeInformation.OSArchitecture.ToString();
-                    var MirrorAddress = (mirror ? "https://proxy-gh.1l1.icu/" : "");
+                    var MirrorAddress = (mirror ? "https://proxy-gh.1l1.icu/" : "https://proxy-gh.1l1.icu/https://github.com/LoCyan-Team/LocyanFrpPureApp/releases/download/");
+                    var ActualAddress = (Global.Config.UsingDownloadMirror ? "https://mirrors.locyan.cn/github-release/LoCyan-Team/LoCyanFrpPureApp/LatestRelease/" : MirrorAddress + DownloadVersion);
                     var _architecture = (architecture == "X86" ? "386" : "amd64");
-                    TheFuckingLink = $"{MirrorAddress}https://github.com/LoCyan-Team/LoCyanFrpPureApp/releases/download/{DownloadVersion}/frp_LoCyanFrp-{Version}_windows_{_architecture}.zip";
+                    FolderName = $"frp_LoCyanFrp-{Version}_windows_{_architecture}";
+                    TheFuckingLink = $"{ActualAddress}{FolderName}.zip";
                    
-                    FolderName = $"frp_LoCyanFrp-{Version}_windows_amd64";
+                    
                     Console.WriteLine(TheFuckingLink);
                     
                     await DownloadFile(TheFuckingLink, DownloadPath);

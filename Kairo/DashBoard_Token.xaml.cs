@@ -1,4 +1,4 @@
-﻿using LoCyanFrpDesktop.Utils;
+﻿using Kairo.Utils;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -18,9 +18,9 @@ using System.Windows.Shapes;
 using Wpf.Ui.Appearance;
 using Wpf.Ui.Common;
 using Wpf.Ui.Controls;
-using static LoCyanFrpDesktop.Utils.PNAP;
+using static Kairo.Utils.PNAP;
 
-namespace LoCyanFrpDesktop
+namespace Kairo
 {
     /// <summary>
     /// Interaction logic for DashBoard_Token.xaml
@@ -34,7 +34,7 @@ namespace LoCyanFrpDesktop
         public DashBoard_Token(string Token, int Proxy)
         {
             InitializeComponent();
-            Uri iconUri = new Uri("pack://application:,,,/LoCyanFrpDesktop;component/Resource/favicon.ico", UriKind.RelativeOrAbsolute);
+            Uri iconUri = new Uri("pack://application:,,,/Kairo;component/Resource/favicon.ico", UriKind.RelativeOrAbsolute);
             this.Icon = new BitmapImage(iconUri);
             if (CheckIfFrpcInstalled())
             {

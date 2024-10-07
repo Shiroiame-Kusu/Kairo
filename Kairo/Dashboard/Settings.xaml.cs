@@ -110,7 +110,7 @@ namespace Kairo.Dashboard
         private void CopyToken_Click(object sender, RoutedEventArgs e)
         {
             Clipboard.SetText(Global.Config.FrpToken);
-            Logger.MsgBox("LocyanFrpDesktop\n已经复制啦~", "LocyanFrpDesktop", 0, 48, 1);
+            Logger.MsgBox("Kairo\n已经复制啦~", "Kairo", 0, 48, 1);
         }
 
         private void EasterEgg_Click(object sender, RoutedEventArgs e)
@@ -173,15 +173,27 @@ namespace Kairo.Dashboard
             {
                 
                 if (rk != null) {
-                    rk.SetValue("LocyanFrpDesktop", Assembly.GetExecutingAssembly().Location);
+                    rk.SetValue("Kairo", Assembly.GetExecutingAssembly().Location);
                 }
                 Global.Config.AutoStartUp = true;
             }
             else
             {
-                rk.DeleteValue("LocyanFrpDesktop");
+                rk.DeleteValue("Kairo");
                 Global.Config.AutoStartUp = false;
             }
+        }
+
+        private void DownloadFrpc_Click(object sender, RoutedEventArgs e)
+        {
+            Download download = new Download();
+            download.Owner = Access.DashBoard;
+            download.Show();
+        }
+
+        private void UseMirror_Click(object sender, RoutedEventArgs e)
+        {
+            Global.Config.UsingDownloadMirror = (bool)UseMirror.IsChecked;
         }
     }
 }

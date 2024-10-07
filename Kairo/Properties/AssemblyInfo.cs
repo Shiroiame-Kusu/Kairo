@@ -8,7 +8,7 @@ using System.Windows;
 // 控制。更改这些特性值可修改
 // 与程序集关联的信息。
 [assembly: AssemblyTitle("Kairo")]
-[assembly: AssemblyDescription("A tool which can launch LoCyanFrp's proxies.")]
+[assembly: AssemblyDescription("A tool which can launch Kairo's proxies.")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("LoCyanTeam")]
 [assembly: AssemblyProduct("Kairo")]
@@ -51,5 +51,5 @@ using System.Windows;
 //可以指定所有这些值，也可以使用“生成号”和“修订号”的默认值
 //通过使用 "*"，如下所示:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("2.2.0")]
-[assembly: AssemblyFileVersion("2.2.0.0")]
+[assembly: AssemblyVersion("2.3.0")]
+[assembly: AssemblyFileVersion("2.3.0.0")]

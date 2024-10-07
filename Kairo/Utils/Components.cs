@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace LoCyanFrpDesktop.Utils.Components
+namespace Kairo.Utils.Components
 {
     public class Proxy
     {

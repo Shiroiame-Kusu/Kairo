@@ -36,7 +36,7 @@
             </TabItem>
             <TabItem Header="关于" HorizontalAlignment="Left" Width="36">
                 <Grid Background="#FFE5E5E5">
-                    <Label Content="LoCyanFrp CS Application" HorizontalAlignment="Left" Margin="42,31,0,0" VerticalAlignment="Top" RenderTransformOrigin="-0.618,-0.217" Width="485" FontSize="38"/>
+                    <Label Content="Kairo CS Application" HorizontalAlignment="Left" Margin="42,31,0,0" VerticalAlignment="Top" RenderTransformOrigin="-0.618,-0.217" Width="485" FontSize="38"/>
                     <Label Content="版本 / Version: 1.1" HorizontalAlignment="Left" Margin="42,94,0,0" VerticalAlignment="Top" Width="380" FontSize="15"/>
                     <Label Content="开发者 / Developer: Daiyangcheng" HorizontalAlignment="Left" Margin="42,128,0,0" VerticalAlignment="Top" Width="380" FontSize="15"/>
                     <Label Content="Copyright © 2021 - 2023 杭州樱芸网络科技有限公司 All rights reserved." HorizontalAlignment="Left" Margin="42,162,0,0" VerticalAlignment="Top" Width="535" FontSize="15"/>

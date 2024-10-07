@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace LoCyanFrpDesktop.Utils
+namespace Kairo.Utils
 {
     public class ScheduledTask
     {   
