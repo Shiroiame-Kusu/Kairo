@@ -15,7 +15,7 @@
         Closing="UiWindow_Closing"
         ContentRendered="UiWindow_ContentRendered"
 
-        Icon="/Resource/favicon.ico"
+        Icon="/Resource/favicon2.ico"
         IsVisibleChanged="UiWindow_IsVisibleChanged"
         Loaded="UiWindow_Loaded"
         AllowDrop="True"
@@ -39,7 +39,7 @@
             Grid.Row="0"
             Margin="5,0,0,0"
             Padding="0"
-            Icon="/Resource/favicon.ico">
+            Icon="/Resource/favicon2.ico">
 
         </ui:TitleBar>
         <Grid Grid.Row="1">

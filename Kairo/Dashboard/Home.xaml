@@ -53,6 +53,7 @@
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="auto"/>
                     <ColumnDefinition Width="auto"/>
+                    <ColumnDefinition Width="auto"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
                 <ui:Card Height="40" Grid.Column="0" Padding="10" Margin="10,10,0,15" VerticalAlignment="Center">
@@ -67,8 +68,12 @@
                         <TextBlock Name="Traffic" Text="剩余流量: "/>
                     </StackPanel>
                 </ui:Card>
-
-
+                <ui:Button Name="ToSign" Click="ToSign_Click" Height="38" Grid.Column="2" Margin="10,10,0,15" Icon="BookAdd24" Content="签到" VerticalAlignment="Center"></ui:Button>
+                <ui:Card Name="SignStatus" Grid.Column="2" Padding="10" Margin="10,10,0,15" Height="40" Visibility="Hidden">
+                    <StackPanel>
+                        <TextBlock  Text="你今天已经签到过啦！"/>
+                    </StackPanel>
+                </ui:Card>
             </Grid>
         </Grid>
         

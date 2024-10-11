@@ -27,6 +27,7 @@ using Newtonsoft.Json.Linq;
 using System.Security.Cryptography;
 using System.Collections.Generic;
 using System.Text;
+using Kairo.Extensions;
 
 namespace Kairo
 {
@@ -66,9 +67,6 @@ namespace Kairo
             {
                 CrashInterception.ShowException(new Exception("这是一个彩蛋，万分之一的机会"));
             }
-
-            Uri iconUri = new Uri("pack://application:,,,/Kairo;component/Resource/favicon.ico", UriKind.RelativeOrAbsolute);
-            this.Icon = new BitmapImage(iconUri);
             if (Global.LoginedByConsole && Global.Config.Username != null && Global.Password != null)
             {
                 Login(Global.Config.Username, ConvertToUnsecureString(Global.Password));
@@ -99,8 +97,7 @@ namespace Kairo
             {
                 try
                 {
-                    HttpResponseMessage httpResponseMessage = await httpClient.GetAsync(Global.API);
-                    var c = httpResponseMessage.StatusCode;
+                    HttpResponseMessage httpResponseMessage = httpClient.GetAsync(Global.API).Await();
                     if (!httpResponseMessage.IsSuccessStatusCode)
                     {
                         a();
@@ -130,6 +127,8 @@ namespace Kairo
 
         private async void InitializeAutoLogin()
         {
+            _Login.Content = "正在尝试自动登录....";
+            _Login.IsEnabled = false;
             islogin = await CheckTokenAvailableAndLogin();
             if (islogin)
             {
@@ -141,6 +140,12 @@ namespace Kairo
                 DashBoard.Show();
                 this.Close();
                 Access.DashBoard.CheckIfFrpcInstalled();
+            }
+            else
+            {
+                _Login.Content = "登录";
+                _Login.IsEnabled = true;
+                Logger.MsgBox("无法连接到服务器, 请检查你的网络连接","Kairo",0,48,0);
             }
         }
 
@@ -168,7 +173,11 @@ namespace Kairo
                     }
                     
                         HttpResponseMessage response = await hC.GetAsync($"{Global.API}/api/v2/user/info?username={username_auto}");
-                        response.EnsureSuccessStatusCode();
+                        if (!response.IsSuccessStatusCode)
+                        {
+                            return false;
+                        }
+                    
                         string jsonString = await response.Content.ReadAsStringAsync();
                 
                         //It just works.

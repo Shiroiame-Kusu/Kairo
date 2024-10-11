@@ -45,8 +45,6 @@ namespace Kairo
         public DashBoard()
         {
             InitializeComponent();
-            Uri iconUri = new Uri("pack://application:,,,/Kairo;component/Resource/favicon.ico", UriKind.RelativeOrAbsolute);
-            this.Icon = new BitmapImage(iconUri);
             Access.DashBoard = this;
             
             

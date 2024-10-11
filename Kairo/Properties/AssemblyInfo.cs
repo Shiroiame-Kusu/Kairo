@@ -8,7 +8,7 @@ using System.Windows;
 // 控制。更改这些特性值可修改
 // 与程序集关联的信息。
 [assembly: AssemblyTitle("Kairo")]
-[assembly: AssemblyDescription("A tool which can launch Kairo's proxies.")]
+[assembly: AssemblyDescription("A tool which can launch LocyanFrp's proxies.")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("LoCyanTeam")]
 [assembly: AssemblyProduct("Kairo")]

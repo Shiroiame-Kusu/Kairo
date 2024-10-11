@@ -20,6 +20,9 @@ using CefSharp.Wpf;
 using System.Text;
 using HtmlAgilityPack;
 using System.Linq;
+using System.Windows;
+using RestSharp;
+using System.Threading.Tasks;
 
 
 namespace Kairo.Dashboard
@@ -33,14 +36,35 @@ namespace Kairo.Dashboard
         public Home()
         {
             InitializeCustomComponents();
-            //Wait For Rewrite.
-            //InitializeAutoLaunch();
             RefreshAvatar();
-            FetchAnnouncement();
+            Task.Run(() => {
+                
+                FetchAnnouncement();
+                CheckIsSignedTodayOrNot();
+            });
         }
-        protected override void OnInitialized(EventArgs e)
+
+        private async void CheckIsSignedTodayOrNot()
         {
-            base.OnInitialized(e);
+            using (var hc = new HttpClient())
+            {
+                hc.DefaultRequestHeaders.Add("Authorization",$"Bearer {Global.Config.Token}");
+                var result = await hc.GetAsync($"{Global.API}/api/v2/sign?username={Global.Config.Username}").Await().Content.ReadAsStringAsync();
+                if (result == null) return;
+                var temp = JObject.Parse(result);
+                if (int.Parse(temp["status"].ToString()) == 200)
+                {
+                    if ((bool)temp["data"]["status"])
+                    {
+                        Dispatcher.BeginInvoke(() =>
+                        {
+                            ToSign.Visibility = Visibility.Hidden;
+                            SignStatus.Visibility = Visibility.Visible;
+                        });
+                    }
+                }
+
+            }
         }
 
         private void InitializeCustomComponents()
@@ -65,7 +89,7 @@ namespace Kairo.Dashboard
             {
                 using (HttpClient client = new())
                 {
-                    client.BaseAddress = new Uri("https://api-v2.locyanfrp.cn/api/v2/notice");
+                    client.BaseAddress = new Uri($"{Global.API}/api/v2/notice");
                     var result = await client.GetAsync(client.BaseAddress).Await().Content.ReadAsStringAsync();
                     var result2 = JObject.Parse(result);
                     if (result2 != null && int.Parse(result2["status"].ToString()) == 200) {
@@ -151,7 +175,6 @@ namespace Kairo.Dashboard
                             Stretch = Stretch.UniformToFill,
 
                         };
-
                         Dispatcher.Invoke(() =>
                         {
                             this.Avatar.Background = AvatarImage;
@@ -195,7 +218,33 @@ namespace Kairo.Dashboard
             }
         }
 
-
+        private void ToSign_Click(object sender, RoutedEventArgs e)
+        {
+            Task.Run(() => {
+                using (var hc = new HttpClient())
+                {
+                    hc.DefaultRequestHeaders.Add("Authorization", $"Bearer {Global.Config.Token}");
+                    HttpContent httpContent = null;
+                    HttpResponseMessage responseMessage = hc.PostAsync($"{Global.API}/api/v2/sign?username={Global.Config.Username}",httpContent).Result;
+                    if (!responseMessage.IsSuccessStatusCode)
+                    {
+                        Logger.MsgBox("无法连接到服务器, 请检查您的网络链接", "Kairo", 0, 48, 1);
+                        return;
+                    }
+                    var temp = JObject.Parse(responseMessage.Content.ReadAsStringAsync().Result);
+                    if (!string.IsNullOrEmpty(temp.ToString()) && int.Parse(temp["status"].ToString()) == 200) {
+                        int i = int.Parse(temp["data"]["get_traffic"].ToString());
+                        Logger.MsgBox($"签到成功，您获得 {i}GB 流量", "Kairo", 0, 47, 1);
+                        Dispatcher.BeginInvoke(() =>
+                        {
+                            Traffic.Text = $"剩余流量: {(MainWindow.Traffic / 1024) + i}";
+                        });
+                        ToSign.Visibility = Visibility.Collapsed;
+                        SignStatus.Visibility = Visibility.Visible;
+                    }
+                }
+            });
+        }
     }
 }
 

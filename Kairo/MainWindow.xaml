@@ -12,7 +12,7 @@
         MinWidth="800"
         Closing="UiWindow_Closing"
         ContentRendered="UiWindow_ContentRendered"
-        Icon="/Resource/favicon.ico"
+        Icon="/Resource/favicon2.ico"
         IsVisibleChanged="UiWindow_IsVisibleChanged"
         Loaded="UiWindow_Loaded"
         AllowDrop="True"
@@ -35,7 +35,7 @@
             Grid.Row="0"
             Margin="5,0,0,0"
             Padding="0"
-            Icon="/Resource/favicon.ico">
+            Icon="/Resource/favicon2.ico">
             <ui:TitleBar.Tray>
                 <ui:NotifyIcon
                     x:Name="NotifyIcon"
@@ -105,12 +105,12 @@
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
                                     <TextBlock Grid.Column="0" Name="Register" FontSize="12" Text="" VerticalAlignment="Center" HorizontalAlignment="Center">
-                                        <Hyperlink NavigateUri="https://preview.Kairo.cn/register" RequestNavigate="Register_Navigate">
+                                        <Hyperlink NavigateUri="https://preview.locyanfrp.cn/register" RequestNavigate="Register_Navigate">
                                             没有账号? 前往注册
                                         </Hyperlink>
                                     </TextBlock>
                                     <TextBlock Grid.Column="1" Name="ForgetPassword" FontSize="12" Text="" VerticalAlignment="Center" HorizontalAlignment="Center">
-                                        <Hyperlink NavigateUri="https://preview.Kairo.cn/reset_password" RequestNavigate="ForgetPassword_Navigate">
+                                        <Hyperlink NavigateUri="https://preview.locyanfrp.cn/reset_password" RequestNavigate="ForgetPassword_Navigate">
                                             忘记密码?
                                         </Hyperlink>
                                     </TextBlock>

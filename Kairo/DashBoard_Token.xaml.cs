@@ -34,8 +34,6 @@ namespace Kairo
         public DashBoard_Token(string Token, int Proxy)
         {
             InitializeComponent();
-            Uri iconUri = new Uri("pack://application:,,,/Kairo;component/Resource/favicon.ico", UriKind.RelativeOrAbsolute);
-            this.Icon = new BitmapImage(iconUri);
             if (CheckIfFrpcInstalled())
             {
                 RunCmdCommand($" -u {Token} -p ", Proxy);

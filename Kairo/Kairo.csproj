@@ -33,6 +33,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Resource Include="Resource\favicon.ico" />
+    <Resource Include="resource\favicon2.ico" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="CefSharp.Wpf.NETCore" Version="126.2.180" />
@@ -41,8 +42,8 @@
     <PackageReference Include="HtmlAgilityPack" Version="1.11.61" />
     <PackageReference Include="Markdig" Version="0.37.0" />
     <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
-    <PackageReference Include="Microsoft.Exchange.WebServices" Version="2.2.0" />
     <PackageReference Include="Ookii.Dialogs.Wpf" Version="5.0.1" />
+    <PackageReference Include="RestSharp" Version="112.1.0" />
     <PackageReference Include="System.Data.DataSetExtensions" Version="4.5.0" />
     <PackageReference Include="System.Net.Http" Version="4.3.4" />
     <PackageReference Include="WPF-UI" Version="2.1.0" />
@@ -51,11 +52,12 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Remove="UserCenter.xaml.cs" />
+    <None Remove="resource\favicon2.ico" />
     <Page Remove="UserCenter.xaml" />
   </ItemGroup>
   <ItemGroup>
     <None Update="resource\BSODTrigger.sys">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </None>
   </ItemGroup>
   <Target Name="PreBuild" BeforeTargets="PreBuildEvent">

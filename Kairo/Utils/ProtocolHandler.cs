@@ -12,7 +12,7 @@ namespace Kairo.Utils
     {   
         public static void Init()
         {
-            RegisterUrlProtocol("Kairo", Assembly.GetExecutingAssembly().Location);
+            RegisterUrlProtocol("LocyanFrp", Assembly.GetExecutingAssembly().Location);
         }
         public static void RegisterUrlProtocol(string protocolName, string applicationPath)
         {
