@@ -14,5 +14,6 @@ namespace Kairo.Utils
         public static DashBoard? DashBoard { get; set; }
         public static Settings? Settings { get; set; }
         public static Download? Download { get; set; }
+        public static ProxyList? ProxyList { get; set; }
     }
 }

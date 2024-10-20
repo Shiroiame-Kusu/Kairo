@@ -43,7 +43,7 @@ namespace Kairo.Dashboard
     /// </summary>
     public partial class ProxyList : UiPage
     {
-        public ObservableCollection<string> Proxies { get; set; }
+        public static ObservableCollection<string> Proxies { get; set; }
 
         public static List<Proxy> Proxieslist { get; set; }
 
@@ -57,6 +57,7 @@ namespace Kairo.Dashboard
         public ProxyList()
         {
             InitializeComponent();
+            Access.ProxyList = this;
             InitializeProxiesAsync();
             //Wait For Rewrite.
             //InitializeAutoLaunch();
@@ -75,7 +76,7 @@ namespace Kairo.Dashboard
             }
         }
 
-        private async void InitializeProxiesAsync()
+        private static async void InitializeProxiesAsync()
         {
             await GetProxiesListAsync();
             // 若返回 null，则表示无隧道或请求失败
@@ -93,7 +94,7 @@ namespace Kairo.Dashboard
         }
 
         // 封装隧道获取，采用异步请求防止主线程卡死
-        private async Task<ObservableCollection<string>> GetProxiesListAsync()
+        private static async Task<ObservableCollection<string>> GetProxiesListAsync()
         {
             // 获取用户名和Token
             string username = Global.Config.Username;
@@ -140,9 +141,9 @@ namespace Kairo.Dashboard
             for (int i = 0; i < responseObject.Proxies.Count; i++)
             {
                 Console.WriteLine(i);
-                Dispatcher.Invoke(() =>
+                Application.Current.Dispatcher.Invoke(() =>
                 {
-                    ListPanel.Children.Add(new ProxyCard(responseObject.Proxies[i], i));
+                    Access.ProxyList.ListPanel.Children.Add(new ProxyCard(responseObject.Proxies[i], i));
 
                 });
 
@@ -153,7 +154,15 @@ namespace Kairo.Dashboard
             return proxies;
         }
 
-
+        private static async void RefreshProxyListAsync()
+        {       
+            Proxieslist.Clear();
+            PNAPList.Clear();
+            Application.Current.Dispatcher.BeginInvoke(() => {
+                Access.ProxyList.ListPanel.Children.Clear();
+            });
+            InitializeProxiesAsync();
+        }
 
         private static int ProxyStarter(string SelectedProxy,int SelectedIndex)
         {
@@ -301,35 +310,6 @@ namespace Kairo.Dashboard
 
         }
 
-
-
-
-        /*private void InitializeAutoLaunch()
-{
-   string documentsPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-   string filePath = Path.Combine(documentsPath, "auto_launch.ini");
-
-   if (File.Exists(filePath))
-   {
-       string url = File.ReadAllText(filePath);
-
-       // 使用正则表达式提取token和id
-       Match match = Regex.Match(url, @"Kairo://([^/]+)/([^/]+)");
-
-       if (match.Success && match.Groups.Count == 3)
-       {
-           string token = match.Groups[1].Value;
-           string id = match.Groups[2].Value;
-           RunCmdCommand($" -u {token} -p {id}");
-           File.Delete(filePath);
-       }
-       else
-       {
-           System.Windows.MessageBox.Show($"自动启动出错 \n url: {url} \n filepath: {filePath}", "警告");
-       }
-   }
-
-}*/
         
         private void ListCardClickHandler(object sender, MouseButtonEventArgs e)
         {
@@ -515,9 +495,7 @@ namespace Kairo.Dashboard
                 this.Items.Add(StopProxy);
                 this.BorderBrush = Brushes.Transparent;
                 this.BorderThickness = new Thickness(1);
-                Refresh.IsEnabled = false;
                 CreateNewProxy.IsEnabled = false;
-                DeleteProxy.IsEnabled = false;
                 ProxyName = proxyName;
                 //contextMenu.Margin = new Thickness(5);
                 //this.CornerRadius = new CornerRadius(5);
@@ -557,9 +535,9 @@ namespace Kairo.Dashboard
                 
             }
             
-            private void Refresh_Click(object sender, RoutedEventArgs e)
+            private static void Refresh_Click(object sender, RoutedEventArgs e)
             {
-                throw new NotImplementedException();
+                RefreshProxyListAsync();
             }
 
             private void StopProxy_Click(object sender, RoutedEventArgs e)
@@ -596,13 +574,33 @@ namespace Kairo.Dashboard
 
             }
 
-            private void DeleteProxy_Click(object sender, RoutedEventArgs e)
+            private async void DeleteProxy_Click(object sender, RoutedEventArgs e)
             {
-                throw new NotImplementedException();
+                using (HttpClient httpClient = new HttpClient()) {
+
+                    httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {Global.Config.Token}");
+                    var b = httpClient.DeleteAsync($"{Global.API}/api/v2/proxy?username={Global.Config.Username}&proxy_id={this.ID}").Await();
+                    var a = b.Content.ReadAsStringAsync().Await();
+
+                    if (a == null )
+                    {
+                        Logger.MsgBox("请检查您的网络连接", "Kairo", 0, 48, 1);
+                        return;
+                    }
+                    if (!b.IsSuccessStatusCode)
+                    {
+                        Logger.MsgBox($"{JObject.Parse(a)["status"].ToString()} {JObject.Parse(a)["message"].ToString()}", "Kairo", 0, 48, 1);
+                        return;
+                    }
+                    Refresh_Click(sender, e);
+                }
             }
+            
             private void CreateNewProxy_Click(object sender, RoutedEventArgs e)
             {
-                throw new NotImplementedException();
+                using (HttpClient httpClient = new HttpClient()) { 
+                    //httpClient.DefaultRequestHeaders("A")
+                }
             }
         }
     }
