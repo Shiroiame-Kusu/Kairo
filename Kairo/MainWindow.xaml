@@ -39,7 +39,7 @@
             <ui:TitleBar.Tray>
                 <ui:NotifyIcon
                     x:Name="NotifyIcon"
-                    Icon="/Resource/favicon.ico"
+                    Icon="/Resource/favicon.ico.disabled"
                     MenuOnRightClick="True"
                     FocusOnLeftClick="False"
                     LeftClick="NotifyIcon_LeftClick">
@@ -82,7 +82,7 @@
                                     <RowDefinition Height="240"/>
                                     <RowDefinition Height="*" MinHeight="16"/>
                                 </Grid.RowDefinitions>
-                                <Image Source="/Resource/favicon.ico" Grid.Row="1"></Image>
+                                <Image Source="/Resource/favicon.ico.disabled" Grid.Row="1"></Image>
                                 <Grid Grid.Row="3">
                                     <Grid.RowDefinitions>
                                         <RowDefinition Height="auto"/>

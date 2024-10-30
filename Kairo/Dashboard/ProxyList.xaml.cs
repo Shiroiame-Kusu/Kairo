@@ -34,6 +34,13 @@ using Kairo.Utils.Components;
 using Kairo.Extensions;
 using Microsoft.Win32.SafeHandles;
 using Newtonsoft.Json.Serialization;
+using Kairo.Components;
+using System.Security.Policy;
+using System.Windows.Forms;
+using CefSharp.Wpf;
+using Application = System.Windows.Application;
+using HorizontalAlignment = System.Windows.HorizontalAlignment;
+using MouseEventArgs = System.Windows.Input.MouseEventArgs;
 
 
 namespace Kairo.Dashboard
@@ -43,9 +50,9 @@ namespace Kairo.Dashboard
     /// </summary>
     public partial class ProxyList : UiPage
     {
-        public static ObservableCollection<string> Proxies { get; set; }
+        public static ObservableCollection<string> Proxies = new ObservableCollection<string>();
 
-        public static List<Proxy> Proxieslist { get; set; }
+        public static List<Proxy> Proxieslist = new List<Proxy>();
 
         //public PNAPListComp ListComponents = new PNAPListComp();
         public static List<PNAPListComp> PNAPList = new List<PNAPListComp>();
@@ -114,13 +121,14 @@ namespace Kairo.Dashboard
                     HttpResponseMessage response = await client.GetAsync(url);
                     string jsonString = await response.Content.ReadAsStringAsync();
                     // 确保请求完成
-                    response.EnsureSuccessStatusCode();
-                    // 结果转换为字符串
-                    
                     var temp = JObject.Parse(jsonString);
                     // 结果序列化
                     responseObject = JsonConvert.DeserializeObject<GetProxiesResponseObject>(temp["data"].ToString());
                     responseObject.Status = int.Parse(temp["status"].ToString());
+                    
+                    // 结果转换为字符串
+                    
+                   
                 }
                 catch (Exception ex)
                 {
@@ -131,7 +139,11 @@ namespace Kairo.Dashboard
             }
 
             if (responseObject.Status != 200)
-            {
+            {   
+                if(responseObject.Status == 404)
+                {
+                    return null;
+                }
                 Logger.MsgBox("获取隧道失败，请重启软件重新登陆账号", "Kairo", 0, 48, 1);
                 return null;
             }
@@ -156,8 +168,14 @@ namespace Kairo.Dashboard
 
         private static async void RefreshProxyListAsync()
         {       
-            Proxieslist.Clear();
-            PNAPList.Clear();
+            try{
+                Proxieslist.Clear();
+                PNAPList.Clear();
+            }
+            catch
+            {
+
+            }
             Application.Current.Dispatcher.BeginInvoke(() => {
                 Access.ProxyList.ListPanel.Children.Clear();
             });
@@ -495,7 +513,6 @@ namespace Kairo.Dashboard
                 this.Items.Add(StopProxy);
                 this.BorderBrush = Brushes.Transparent;
                 this.BorderThickness = new Thickness(1);
-                CreateNewProxy.IsEnabled = false;
                 ProxyName = proxyName;
                 //contextMenu.Margin = new Thickness(5);
                 //this.CornerRadius = new CornerRadius(5);
@@ -598,10 +615,69 @@ namespace Kairo.Dashboard
             
             private void CreateNewProxy_Click(object sender, RoutedEventArgs e)
             {
+                /*ProxyCreator proxyCreator = new ProxyCreator();
+                proxyCreator.Show();
                 using (HttpClient httpClient = new HttpClient()) { 
                     //httpClient.DefaultRequestHeaders("A")
-                }
+
+                }*/
+                /*var browserWindow = new Window
+                {
+                    Width = 800,
+                    Height = 500
+                };
+
+                // 创建 ChromiumWebBrowser 实例
+                var browser = new ChromiumWebBrowser("https://dashboard.locyanfrp.cn/proxies/add")
+                {
+                    VerticalAlignment = VerticalAlignment.Stretch,
+                    HorizontalAlignment = HorizontalAlignment.Stretch
+                };
+
+                // 将浏览器控件添加到新窗口
+                browserWindow.Content = browser;
+
+                // 显示窗口
+                browserWindow.Show();
+                Process.Start(new ProcessStartInfo("https://dashboard.locyanfrp.cn/proxies/add")
+                {
+                    UseShellExecute = true
+                });*/
+                Process.Start(new ProcessStartInfo("https://dashboard.locyanfrp.cn/proxies/add")
+                {
+                    UseShellExecute = true
+                }); 
             }
+        }
+
+        private void Refresh_Click(object sender, RoutedEventArgs e)
+        {
+            RefreshProxyListAsync();
+        }
+        private void CreateNewProxy_Click(object sender,RoutedEventArgs e)
+        {   
+            Process.Start(new ProcessStartInfo("https://dashboard.locyanfrp.cn/proxies/add")
+            {
+                UseShellExecute = true
+            });
+            /*var browserWindow = new UiWindow()
+            {
+                Width = 800,
+                Height = 500
+            };
+
+            // 创建 ChromiumWebBrowser 实例
+            var browser = new ChromiumWebBrowser("https://dashboard.locyanfrp.cn/proxies/add")
+            {
+                VerticalAlignment = VerticalAlignment.Stretch,
+                HorizontalAlignment = HorizontalAlignment.Stretch
+            };
+
+            // 将浏览器控件添加到新窗口
+            browserWindow.Content = browser;
+
+            // 显示窗口
+            browserWindow.Show();*/
         }
     }
     public class GetProxiesResponseObject

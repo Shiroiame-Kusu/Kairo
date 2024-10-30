@@ -225,9 +225,8 @@ namespace Kairo
                         try
                         {
                             // 发起 GET 请求并获取响应
-                            List<KeyValuePair<string, string>> param = new List<KeyValuePair<string, string>>();
                             httpClient.DefaultRequestHeaders.Add("User-Agent",$"Kairo-{Global.Version}");
-                            HttpResponseMessage response = await httpClient.PostAsync(url, new FormUrlEncodedContent(param));
+                            HttpResponseMessage response = await httpClient.PostAsync(url, new FormUrlEncodedContent(new List<KeyValuePair<string, string>>()));
 
                             // 确保请求成功
                             //response.EnsureSuccessStatusCode();

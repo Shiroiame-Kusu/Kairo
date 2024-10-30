@@ -1,6 +1,7 @@
 ﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
+using System.Collections.Generic;
 using System.Net.Http;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -214,7 +215,6 @@ namespace Kairo.Dashboard
             catch (Exception ex)
             {
                 Logger.MsgBox("无法获取您的头像, 请稍后重试", "Kairo", 0, 48, 1);
-                CrashInterception.ShowException(ex);
             }
         }
 
@@ -224,23 +224,43 @@ namespace Kairo.Dashboard
                 using (var hc = new HttpClient())
                 {
                     hc.DefaultRequestHeaders.Add("Authorization", $"Bearer {Global.Config.Token}");
-                    HttpContent httpContent = null;
-                    HttpResponseMessage responseMessage = hc.PostAsync($"{Global.API}/api/v2/sign?username={Global.Config.Username}",httpContent).Result;
-                    if (!responseMessage.IsSuccessStatusCode)
-                    {
-                        Logger.MsgBox("无法连接到服务器, 请检查您的网络链接", "Kairo", 0, 48, 1);
-                        return;
-                    }
+                    HttpResponseMessage responseMessage = hc.PostAsync($"{Global.API}/api/v2/sign?username={Global.Config.Username}",new FormUrlEncodedContent(new List<KeyValuePair<string, string>>())).Result;
+                    
+                    
                     var temp = JObject.Parse(responseMessage.Content.ReadAsStringAsync().Result);
                     if (!string.IsNullOrEmpty(temp.ToString()) && int.Parse(temp["status"].ToString()) == 200) {
                         int i = int.Parse(temp["data"]["get_traffic"].ToString());
                         Logger.MsgBox($"签到成功，您获得 {i}GB 流量", "Kairo", 0, 47, 1);
                         Dispatcher.BeginInvoke(() =>
                         {
-                            Traffic.Text = $"剩余流量: {(MainWindow.Traffic / 1024) + i}";
+                            Traffic.Text = $"剩余流量: {(MainWindow.Traffic / 1024) + i}GB";
                         });
-                        ToSign.Visibility = Visibility.Collapsed;
-                        SignStatus.Visibility = Visibility.Visible;
+                        Dispatcher.BeginInvoke(() =>
+                        {
+                            ToSign.Visibility = Visibility.Collapsed;
+                            SignStatus.Visibility = Visibility.Visible;
+                        });
+                    }
+                    if(int.Parse(temp["status"].ToString()) == 403)
+                    {
+                        if (temp["message"].ToString() == "你今天已经签到过了")
+                        {   
+
+                            Logger.MsgBox("你今天已经签到过了", "Kairo", 0, 48, 1);
+                            Dispatcher.BeginInvoke(() =>
+                            {
+                                ToSign.Visibility = Visibility.Collapsed;
+                                SignStatus.Visibility = Visibility.Visible;
+                            });
+                            return;
+                        }
+                        Logger.MsgBox("无法连接到服务器, 请检查您的网络链接", "Kairo", 0, 48, 1);
+                        return;
+                    }
+                    if (!responseMessage.IsSuccessStatusCode)
+                    {
+                        Logger.MsgBox("无法连接到服务器, 请检查您的网络链接", "Kairo", 0, 48, 1);
+                        return;
                     }
                 }
             });
