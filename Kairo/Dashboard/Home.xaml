@@ -22,7 +22,7 @@
             <DockPanel VerticalAlignment="Stretch">
                 <Border CornerRadius="20" Height="40" Width="40" BorderThickness="1" BorderBrush="LightBlue" Margin="10,0,10,0" Name="Avatar">
                     <Border.Background>
-                        <ImageBrush Stretch="UniformToFill" ImageSource="/Resource/favicon.ico.disabled"/>
+                        <ImageBrush Stretch="UniformToFill" ImageSource="/Resource/favicon2.ico"/>
                     </Border.Background>
                 </Border>
                 <TextBlock VerticalAlignment="Center" Name="title_username" Text="欢迎回来，" FontSize="25" Margin="0,0,10,0" />

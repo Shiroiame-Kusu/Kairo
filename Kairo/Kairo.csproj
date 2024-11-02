@@ -20,19 +20,21 @@
   </PropertyGroup>
   <PropertyGroup />
   <PropertyGroup>
-    <ApplicationIcon>Resource\favicon.ico</ApplicationIcon>
-  </PropertyGroup>
-  <PropertyGroup>
     <StartupObject />
     <RootNamespace>Kairo</RootNamespace>
     <Nullable>enable</Nullable>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>resource\favicon2.ico</ApplicationIcon>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
     <DebugType>embedded</DebugType>
   </PropertyGroup>
   <ItemGroup>
-    <Resource Include="Resource\favicon.ico" />
+    <None Remove="resource\favicon.ico.disabled" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="resource\banner.png" />
+    <Resource Include="resource\favicon.ico.disabled" />
     <Resource Include="resource\favicon2.ico" />
   </ItemGroup>
   <ItemGroup>
@@ -49,11 +51,6 @@
     <PackageReference Include="WPF-UI" Version="2.1.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="System.Drawing.Common" Version="8.0.1" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Remove="UserCenter.xaml.cs" />
-    <None Remove="resource\favicon2.ico" />
-    <Page Remove="UserCenter.xaml" />
   </ItemGroup>
   <ItemGroup>
     <None Update="resource\BSODTrigger.sys">

@@ -28,6 +28,8 @@ using System.Security.Cryptography;
 using System.Collections.Generic;
 using System.Text;
 using Kairo.Extensions;
+using CefSharp.DevTools.FedCm;
+using System.Windows.Media.Animation;
 
 namespace Kairo
 {
@@ -48,7 +50,8 @@ namespace Kairo
         public static int Outbound;
         public static long Traffic;
         private static string password;
-        
+        private static Storyboard fadeIn;
+        private static Storyboard fadeOut;
         public MainWindow()
         {
             Init(App.TokenMode);
@@ -60,9 +63,20 @@ namespace Kairo
                 
             
         }
-        private void Init(bool TokenMode)
+        private void InitializeAllComponent()
         {
             InitializeComponent();
+            _TitleBar.Opacity = 0;
+            LoginForm.Opacity = 0;
+            LoginStatus.Opacity = 0;
+            fadeIn = (Storyboard)FindResource("FadeInStoryboard");
+            fadeOut = (Storyboard)FindResource("FadeOutStoryboard");
+            fadeIn.Begin(LoginStatus);
+            LoginForm.Visibility = Visibility.Collapsed;
+        }
+        private void Init(bool TokenMode)
+        {
+            InitializeAllComponent();
             if (Random.Shared.Next(0, 10000) == 5000)
             {
                 CrashInterception.ShowException(new Exception("这是一个彩蛋，万分之一的机会"));
@@ -143,10 +157,15 @@ namespace Kairo
             }
             else
             {
-                _Login.Content = "登录";
-                _Login.IsEnabled = true;
                 Logger.MsgBox("无法连接到服务器, 请检查你的网络连接","Kairo",0,48,0);
             }
+            fadeOut.Begin(LoginStatus);
+            fadeIn.Begin(_TitleBar);
+            fadeIn.Begin(LoginForm);
+            LoginForm.Visibility = Visibility.Visible;
+            LoginStatus.Visibility = Visibility.Hidden;
+            _Login.Content = "登录";
+            _Login.IsEnabled = true;
         }
 
         private async Task<bool> CheckTokenAvailableAndLogin()
@@ -226,7 +245,8 @@ namespace Kairo
                         {
                             // 发起 GET 请求并获取响应
                             httpClient.DefaultRequestHeaders.Add("User-Agent",$"Kairo-{Global.Version}");
-                            HttpResponseMessage response = await httpClient.PostAsync(url, new FormUrlEncodedContent(new List<KeyValuePair<string, string>>()));
+                            //httpClient.DefaultRequestHeaders.Add("User-Agent",$"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0");
+                            HttpResponseMessage response = await httpClient.PostAsync(url, new FormUrlEncodedContent(new List<KeyValuePair<string, string>>() { new("","")}));
 
                             // 确保请求成功
                             //response.EnsureSuccessStatusCode();
@@ -241,7 +261,7 @@ namespace Kairo
                             UserInfo.Status = int.Parse(temp["status"].ToString());
                             if (UserInfo.Status != 200)
                             {
-                                Logger.MsgBox("账号或密码错误！", "警告", 0, 48, 0);
+                                Logger.MsgBox("账号或密码错误!", "警告", 0, 48, 0);
                                 return false;
                             }
                             else

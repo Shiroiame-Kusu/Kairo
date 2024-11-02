@@ -25,7 +25,7 @@ namespace Kairo
         public static bool isDarkThemeEnabled;
         public static SecureString Password = new();
         public static List<string> Tips = new() {
-            "Tips:他们说下载的时候把电脑抱起来摇匀, 下c载速度会更快哦",
+            "Tips:他们说下载的时候把电脑抱起来摇匀, 下载速度会更快哦",
             "Tips:LocyanFrp永远不会跑路, 就像你家楼下清仓甩卖的店一样",
             "Tips:有的时候其实都不算是bug, 其实是我们特意写的特性 (确信",
             "Tips:你说的对,但是LocyanFrp是由Daiyangcheng女士主导的一款...",

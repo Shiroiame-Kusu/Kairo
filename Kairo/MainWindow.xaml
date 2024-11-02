@@ -7,7 +7,9 @@
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         mc:Ignorable="d"
         WindowStartupLocation="CenterScreen"
-        Title="Kairo-Desktop" Height="500" Width="800" 
+        Title="Kairo-Desktop" 
+        Height="500" 
+        Width="800"  
         MinHeight="450"
         MinWidth="800"
         Closing="UiWindow_Closing"
@@ -20,7 +22,58 @@
         StateChanged="UiWindow_StateChanged"
         Style="{StaticResource UiWindow}"
         WindowStyle="None"
-        KeyDown="UiWindow_KeyDown">
+        KeyDown="UiWindow_KeyDown"
+        >
+    <Window.Resources>
+        <Style TargetType="GroupBox">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="GroupBox">
+                        <Grid>
+                            <!-- 绘制外部 outline -->
+                            <Border BorderThickness="2" CornerRadius="5" Margin="0,18,0,0">
+                                <Border.BorderBrush>
+                                    <SolidColorBrush Color="{DynamicResource TextFillColorSecondary}"/>
+                                </Border.BorderBrush>
+                                <Border Padding="5" Background="{DynamicResource ControlFillColorDefaultBrush}" CornerRadius="5">
+                                    <!-- 放置 GroupBox 内容 -->
+                                    <ContentPresenter />
+                                </Border>
+                            </Border>
+
+                            <!-- 绘制标题和线条 -->
+                            <Border Background="Transparent" HorizontalAlignment="Center" Margin="0,0,0,40">
+                                <TextBlock Text="{TemplateBinding Header}" 
+                                           Margin="5,0,5,0" >
+                                    <TextBlock.Foreground>
+                                        <SolidColorBrush Color="{DynamicResource TextFillColorPrimary}"/>
+                                    </TextBlock.Foreground>
+                                </TextBlock>
+                            </Border>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Storyboard x:Key="FadeInStoryboard">
+            <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                             From="0" To="1" Duration="0:0:0.6">
+                <DoubleAnimation.EasingFunction>
+                    <QuadraticEase EasingMode="EaseIn" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+        </Storyboard>
+
+        <!-- 非线性淡出动画 -->
+        <Storyboard x:Key="FadeOutStoryboard">
+            <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                             From="1" To="0" Duration="0:0:0.6">
+                <DoubleAnimation.EasingFunction>
+                    <QuadraticEase EasingMode="EaseOut" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+        </Storyboard>
+    </Window.Resources>
     <Grid>
         <Grid.Resources>
             <Color x:Key="ShadowColor"></Color>
@@ -31,7 +84,7 @@
         </Grid.RowDefinitions>
         <ui:TitleBar
             x:Name="_TitleBar"
-            Title="Kairo - Another Kairo Client"
+            Title="Kairo - Another LocyanFrp Client"
             Grid.Row="0"
             Margin="5,0,0,0"
             Padding="0"
@@ -39,7 +92,7 @@
             <ui:TitleBar.Tray>
                 <ui:NotifyIcon
                     x:Name="NotifyIcon"
-                    Icon="/Resource/favicon.ico.disabled"
+                    Icon="/Resource/favicon2.ico"
                     MenuOnRightClick="True"
                     FocusOnLeftClick="False"
                     LeftClick="NotifyIcon_LeftClick">
@@ -67,39 +120,65 @@
             </Grid.ColumnDefinitions>
             <Grid Grid.Column="1" >
                 
-                <Grid Height="400" VerticalAlignment="center">
+                <Grid Height="420" VerticalAlignment="center">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="20"/>
+                        <RowDefinition Height="120"/>
+                        <RowDefinition Height="20"/>
+                        <RowDefinition Height="*"/>
+                        
+                    </Grid.RowDefinitions>
+
+                    <Grid Grid.Row="1">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="120"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <Image Source="/Resource/banner.png" Grid.Row="1" Name="Banner"></Image>
+                    </Grid>
+                    <Grid Grid.Row="3" >
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Name="LoginStatus">
+                            <ui:ProgressRing IsIndeterminate="True">
+                                <ui:ProgressRing.LayoutTransform>
+                                    <ScaleTransform ScaleX="0.6" ScaleY="0.6"/>
+                                </ui:ProgressRing.LayoutTransform>
+                            </ui:ProgressRing>
+                            <TextBlock VerticalAlignment="Center" Margin="15,0" FontSize="16" Text="正在自动登录">
+                            </TextBlock>
+                        </StackPanel>
+                    </Grid>
                     <Border
+                        Grid.Row="3"
                         Margin="0"
                         Padding="10,5"
                         Background="{DynamicResource ControlFillColorDefaultBrush}"
-                        CornerRadius="8">
-                        <Grid Opacity="1">
+                        CornerRadius="8"
+                        Name="LoginForm"
+                        >
+                        <Grid >
                             <Grid>
                                 <Grid.RowDefinitions>
+                                    <RowDefinition Height="220"/>
                                     <RowDefinition Height="*"/>
-                                    <RowDefinition Height="80"/>
-                                    <RowDefinition Height="*"/>
-                                    <RowDefinition Height="240"/>
-                                    <RowDefinition Height="*" MinHeight="16"/>
                                 </Grid.RowDefinitions>
-                                <Image Source="/Resource/favicon.ico.disabled" Grid.Row="1"></Image>
-                                <Grid Grid.Row="3">
+                                <Grid Grid.Row="0">
                                     <Grid.RowDefinitions>
                                         <RowDefinition Height="auto"/>
                                         <RowDefinition Height="auto"/>
                                         <RowDefinition Height="*"/>
                                     </Grid.RowDefinitions>
-                                    <GroupBox Grid.Row="0" Margin="20,0,20,10" Header="用户名" FontSize="12">
-                                        <ui:TextBox Foreground="Black" Grid.Row="0"  MinHeight="30" VerticalAlignment="Center" ToolTip="用户名" Name="Username"/>
+                                    <GroupBox Grid.Row="0" Height="70" Margin="20,10,20,0" Header="用户名" FontSize="12">
+                                        <ui:TextBox Foreground="Black" Grid.Row="0" MinHeight="30" VerticalAlignment="Center" ToolTip="用户名" Name="Username"/>
                                     </GroupBox>
 
-                                    <GroupBox Grid.Row="1" Margin="20,10" Header="密码" FontSize="12">
-                                        <PasswordBox Foreground="Black" Grid.Row="1" Margin="5" MinHeight="30" VerticalAlignment="Center" ToolTip="密码" Name="Password"/>
+                                    <GroupBox Grid.Row="1" Height="70" Margin="20,10" Header="密码" FontSize="12">
+                                        <PasswordBox Foreground="Black" Grid.Row="1" MinHeight="30" VerticalAlignment="Center" HorizontalAlignment="Stretch" ToolTip="密码" Name="Password"/>
                                     </GroupBox>
-
-                                    <ui:Button Grid.Row="2" Content="登录" Height="40" Width="200" VerticalAlignment="Center" HorizontalAlignment="Center" Name="_Login" Click="Login_Click"/>
+                                    
+                                    <ui:Button Grid.Row="2" Margin="20,10" Content="登录" Height="30" VerticalAlignment="Center" HorizontalAlignment="Stretch" Name="_Login" Click="Login_Click"/>
                                 </Grid>
-                                <Grid Grid.Row="4">
+                                <Grid Grid.Row="1">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="*"/>

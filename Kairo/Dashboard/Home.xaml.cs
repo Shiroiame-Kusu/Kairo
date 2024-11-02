@@ -224,13 +224,13 @@ namespace Kairo.Dashboard
                 using (var hc = new HttpClient())
                 {
                     hc.DefaultRequestHeaders.Add("Authorization", $"Bearer {Global.Config.Token}");
-                    HttpResponseMessage responseMessage = hc.PostAsync($"{Global.API}/api/v2/sign?username={Global.Config.Username}",new FormUrlEncodedContent(new List<KeyValuePair<string, string>>())).Result;
+                    HttpResponseMessage responseMessage = hc.PostAsync($"{Global.API}/api/v2/sign?username={Global.Config.Username}",new FormUrlEncodedContent(new List<KeyValuePair<string, string>>() { new("","")})).Result;
                     
                     
                     var temp = JObject.Parse(responseMessage.Content.ReadAsStringAsync().Result);
                     if (!string.IsNullOrEmpty(temp.ToString()) && int.Parse(temp["status"].ToString()) == 200) {
                         int i = int.Parse(temp["data"]["get_traffic"].ToString());
-                        Logger.MsgBox($"签到成功，您获得 {i}GB 流量", "Kairo", 0, 47, 1);
+                        Logger.MsgBox($"签到成功\n您获得 {i}GB 流量", "Kairo", 0, 48, 1);
                         Dispatcher.BeginInvoke(() =>
                         {
                             Traffic.Text = $"剩余流量: {(MainWindow.Traffic / 1024) + i}GB";
