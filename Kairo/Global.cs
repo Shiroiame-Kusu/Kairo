@@ -17,7 +17,7 @@ namespace Kairo
         public static bool LoginedByConsole = false;
         public const string Version = "2.3.0";
         public const string Branch = "Alpha";
-        public const int Revision = 3;
+        public const int Revision = 5;
         public static readonly BuildInfo BuildInfo = new();
         public const string Developer = "Shiroiame-Kusu & Daiyangcheng";
         public const string Copyright = "Copyright © 2021 - 2024 杭州樱芸网络科技有限公司 All Rights Reserved";

@@ -34,7 +34,6 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="resource\banner.png" />
-    <Resource Include="resource\favicon.ico.disabled" />
     <Resource Include="resource\favicon2.ico" />
   </ItemGroup>
   <ItemGroup>

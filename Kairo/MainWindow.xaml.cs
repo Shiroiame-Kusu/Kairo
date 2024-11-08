@@ -3,33 +3,25 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Net.Http;
 using Newtonsoft.Json;
-using System.Windows.Forms;
 using System.IO;
 using System.Diagnostics;
-using System.Text.RegularExpressions;
-using Path = System.IO.Path;
 using System.Security;
 using Wpf.Ui.Common;
 using Wpf.Ui.Controls;
 using Wpf.Ui.Appearance;
 using System.ComponentModel;
 using Microsoft.Win32;
-using System.Windows.Media.Effects;
 using Kairo.Utils;
-using HandyControl.Tools.Extension;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.StartPanel;
-using HandyControl.Controls;
 using Newtonsoft.Json.Linq;
 using System.Security.Cryptography;
 using System.Collections.Generic;
 using System.Text;
 using Kairo.Extensions;
-using CefSharp.DevTools.FedCm;
 using System.Windows.Media.Animation;
+using System.Numerics;
 
 namespace Kairo
 {
@@ -48,7 +40,7 @@ namespace Kairo
         public static string Avatar;
         public static int Inbound;
         public static int Outbound;
-        public static long Traffic;
+        public static BigInteger Traffic;
         private static string password;
         private static Storyboard fadeIn;
         private static Storyboard fadeOut;
@@ -480,7 +472,7 @@ namespace Kairo
         public string Email { get; set; }
 
         [JsonProperty("traffic")]
-        public long Traffic { get; set; }
+        public BigInteger Traffic { get; set; }
 
         [JsonProperty("avatar")]
         public string Avatar { get; set; }

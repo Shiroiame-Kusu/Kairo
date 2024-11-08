@@ -82,7 +82,7 @@ namespace Kairo.Dashboard
             title_username.Text += Global.Config.Username;
             Resources["BorderColor"] = Global.isDarkThemeEnabled ? Colors.White : Colors.LightGray;
             Traffic.Text += $"{(MainWindow.Traffic / 1024)}GB";
-            BandWidth.Text += $"{MainWindow.Inbound}/{MainWindow.Outbound}Mbps";
+            BandWidth.Text += $"{MainWindow.Inbound * 8 / 1024}/{MainWindow.Outbound * 8 / 1024}Mbps";
         }
         private async void FetchAnnouncement()
         {

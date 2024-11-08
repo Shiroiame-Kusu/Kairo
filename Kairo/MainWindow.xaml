@@ -57,7 +57,7 @@
         </Style>
         <Storyboard x:Key="FadeInStoryboard">
             <DoubleAnimation Storyboard.TargetProperty="Opacity"
-                             From="0" To="1" Duration="0:0:0.6">
+                             From="0" To="1" Duration="0:0:0.8">
                 <DoubleAnimation.EasingFunction>
                     <QuadraticEase EasingMode="EaseIn" />
                 </DoubleAnimation.EasingFunction>
@@ -67,7 +67,7 @@
         <!-- 非线性淡出动画 -->
         <Storyboard x:Key="FadeOutStoryboard">
             <DoubleAnimation Storyboard.TargetProperty="Opacity"
-                             From="1" To="0" Duration="0:0:0.6">
+                             From="1" To="0" Duration="0:0:0.8">
                 <DoubleAnimation.EasingFunction>
                     <QuadraticEase EasingMode="EaseOut" />
                 </DoubleAnimation.EasingFunction>
