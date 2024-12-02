@@ -70,8 +70,10 @@ namespace Kairo.Dashboard
 
         private void InitializeCustomComponents()
         {
+            Directory.CreateDirectory(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "CEF"));
             Cef.Initialize(new CefSettings()
             {
+                BrowserSubprocessPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "CEF"),
                 //By default CefSharp will use an in-memory cache, you need to specify a Cache Folder to persist data
                 CachePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CefSharp\\Cache"),
                 LogSeverity = LogSeverity.Verbose,
