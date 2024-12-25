@@ -98,12 +98,13 @@ namespace Kairo.Dashboard
             Access.DashBoard.Close();
             
             Global.Config.FrpToken = null;
-            Global.Config.Token = null;
-            Global.Config.LoginToken = null;
+            Global.Config.RefreshToken = null;
+            Global.Config.AccessToken = null;
             Global.Password = null;
             new ConfigManager(FileMode.Create);
             MainWindow.islogin = false;
             Access.MainWindow.Width = double.NaN;
+            Access.MainWindow.VisibilityChange(false);
             Access.MainWindow.Show();
         }
 

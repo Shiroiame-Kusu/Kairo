@@ -119,14 +119,14 @@
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
             <Grid Grid.Column="1" >
-                
+
                 <Grid Height="420" VerticalAlignment="center">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="20"/>
                         <RowDefinition Height="120"/>
                         <RowDefinition Height="20"/>
                         <RowDefinition Height="*"/>
-                        
+
                     </Grid.RowDefinitions>
 
                     <Grid Grid.Row="1">
@@ -144,7 +144,7 @@
                                     <ScaleTransform ScaleX="0.6" ScaleY="0.6"/>
                                 </ui:ProgressRing.LayoutTransform>
                             </ui:ProgressRing>
-                            <TextBlock VerticalAlignment="Center" Margin="15,0" FontSize="16" Text="正在自动登录">
+                            <TextBlock VerticalAlignment="Center" Margin="15,0" FontSize="16" Text="正在登录">
                             </TextBlock>
                         </StackPanel>
                     </Grid>
@@ -164,19 +164,11 @@
                                 </Grid.RowDefinitions>
                                 <Grid Grid.Row="0">
                                     <Grid.RowDefinitions>
-                                        <RowDefinition Height="auto"/>
-                                        <RowDefinition Height="auto"/>
+                                        <RowDefinition Height="*"/>
                                         <RowDefinition Height="*"/>
                                     </Grid.RowDefinitions>
-                                    <GroupBox Grid.Row="0" Height="70" Margin="20,10,20,0" Header="用户名" FontSize="12">
-                                        <ui:TextBox Foreground="Black" Grid.Row="0" MinHeight="30" VerticalAlignment="Center" ToolTip="用户名" Name="Username"/>
-                                    </GroupBox>
-
-                                    <GroupBox Grid.Row="1" Height="70" Margin="20,10" Header="密码" FontSize="12">
-                                        <PasswordBox Foreground="Black" Grid.Row="1" MinHeight="30" VerticalAlignment="Center" HorizontalAlignment="Stretch" ToolTip="密码" Name="Password"/>
-                                    </GroupBox>
-                                    
-                                    <ui:Button Grid.Row="2" Margin="20,10" Content="登录" Height="30" VerticalAlignment="Center" HorizontalAlignment="Stretch" Name="_Login" Click="Login_Click"/>
+                                    <TextBlock Margin="20,10" VerticalAlignment="Bottom" HorizontalAlignment="Center" Text="使用OAuth进行登录" FontSize="18"/>
+                                    <ui:Button Grid.Row="2" Margin="20,10" Content="登录" Height="30" VerticalAlignment="Top" HorizontalAlignment="Stretch" Name="_Login" Click="Login_Click"/>
                                 </Grid>
                                 <Grid Grid.Row="1">
                                     <Grid.ColumnDefinitions>
@@ -205,12 +197,11 @@
                     </Border>
                 </Grid>
                 <TextBlock Name="Tips" Text="你瞅啥" HorizontalAlignment="Center" VerticalAlignment="Bottom" Foreground="Gray" FontSize="9">
-                        
+
                 </TextBlock>
             </Grid>
-        </Grid>
-        
-    
+        </Grid> 
+
     </Grid>
 
 </ui:UiWindow>

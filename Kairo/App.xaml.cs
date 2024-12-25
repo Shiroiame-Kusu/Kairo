@@ -19,6 +19,7 @@ using System.Diagnostics;
 using System.Security.Policy;
 using System.Text.RegularExpressions;
 using System.Text;
+using Kairo.Components.OAuth;
 
 namespace Kairo
 {
@@ -54,10 +55,18 @@ namespace Kairo
             // 处理启动参数
 
             string[] args = e.Args;
-            
+            OAuthCallbackHandler.Init();
             ProcessStartupParameters(args);
             base.OnStartup(e);
-            
+            Cef.Initialize(new CefSettings()
+            {
+                //BrowserSubprocessPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "CEF"),
+                //By default CefSharp will use an in-memory cache, you need to specify a Cache Folder to persist data
+                CachePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CefSharp\\Cache"),
+                LogSeverity = LogSeverity.Verbose,
+                LogFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logs\\CEF.log")
+            });
+
         }
         protected override void OnExit(ExitEventArgs e)
         {

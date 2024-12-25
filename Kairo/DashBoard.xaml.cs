@@ -79,7 +79,6 @@ namespace Kairo
                 }
                 return false;
             }
-            return false;
         }
         public void DownloadFrpc()
         {

@@ -47,10 +47,10 @@ namespace Kairo.Dashboard
 
         private async void CheckIsSignedTodayOrNot()
         {
-            using (var hc = new HttpClient())
+            using (HttpClient hc = new())
             {
-                hc.DefaultRequestHeaders.Add("Authorization",$"Bearer {Global.Config.Token}");
-                var result = await hc.GetAsync($"{Global.API}/api/v2/sign?username={Global.Config.Username}").Await().Content.ReadAsStringAsync();
+                hc.DefaultRequestHeaders.Add("Authorization",$"Bearer {Global.Config.AccessToken}");
+                var result = await hc.GetAsync($"{Global.API}/sign?user_id={Global.Config.ID}").Await().Content.ReadAsStringAsync();
                 if (result == null) return;
                 var temp = JObject.Parse(result);
                 if (int.Parse(temp["status"].ToString()) == 200)
@@ -64,6 +64,10 @@ namespace Kairo.Dashboard
                         });
                     }
                 }
+                else
+                {
+                    Console.WriteLine(temp["status"].ToString() + temp["message"].ToString());
+                }
 
             }
         }
@@ -71,15 +75,9 @@ namespace Kairo.Dashboard
         private void InitializeCustomComponents()
         {
             Directory.CreateDirectory(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "CEF"));
-            Cef.Initialize(new CefSettings()
-            {
-                BrowserSubprocessPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "CEF"),
-                //By default CefSharp will use an in-memory cache, you need to specify a Cache Folder to persist data
-                CachePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CefSharp\\Cache"),
-                LogSeverity = LogSeverity.Verbose,
-                LogFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logs\\CEF.log")
-            });
+            
             InitializeComponent();
+            
             DataContext = this;
             title_username.Text += Global.Config.Username;
             Resources["BorderColor"] = Global.isDarkThemeEnabled ? Colors.White : Colors.LightGray;
@@ -92,8 +90,7 @@ namespace Kairo.Dashboard
             {
                 using (HttpClient client = new())
                 {
-                    client.BaseAddress = new Uri($"{Global.API}/api/v2/notice");
-                    var result = await client.GetAsync(client.BaseAddress).Await().Content.ReadAsStringAsync();
+                    var result = await client.GetAsync($"{Global.API}/notice").Await().Content.ReadAsStringAsync();
                     var result2 = JObject.Parse(result);
                     if (result2 != null && int.Parse(result2["status"].ToString()) == 200) {
                         var html = Markdown.ToHtml(result2["data"]["broadcast"].ToString());
@@ -161,9 +158,7 @@ namespace Kairo.Dashboard
             {
                 using (var client = new HttpClient())
                 {
-                    
-                    client.BaseAddress = new Uri(MainWindow.Avatar);
-                    var Avatar = await client.GetAsync(client.BaseAddress).Await().Content.ReadAsStreamAsync();
+                    var Avatar = await client.GetAsync(MainWindow.Avatar).Await().Content.ReadAsStreamAsync();
                     var path = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Avatar.png");
                     var ApplyAvatar = () =>
                     {
@@ -225,8 +220,8 @@ namespace Kairo.Dashboard
             Task.Run(() => {
                 using (var hc = new HttpClient())
                 {
-                    hc.DefaultRequestHeaders.Add("Authorization", $"Bearer {Global.Config.Token}");
-                    HttpResponseMessage responseMessage = hc.PostAsync($"{Global.API}/api/v2/sign?username={Global.Config.Username}",new FormUrlEncodedContent(new List<KeyValuePair<string, string>>() { new("","")})).Result;
+                    hc.DefaultRequestHeaders.Add("Authorization", $"Bearer {Global.Config.AccessToken}");
+                    HttpResponseMessage responseMessage = hc.PostAsync($"{Global.API}/sign?user_id={Global.Config.ID}",null).Result;
                     
                     
                     var temp = JObject.Parse(responseMessage.Content.ReadAsStringAsync().Result);
@@ -270,5 +265,3 @@ namespace Kairo.Dashboard
     }
 }
 
-
-//BreakAutoCompileBecauseTheRewriteIsNOTFinished

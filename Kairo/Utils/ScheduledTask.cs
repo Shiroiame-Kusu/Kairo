@@ -19,7 +19,7 @@ namespace Kairo.Utils
                 {
                     using (ConfigManager ConfigManager = new(FileMode.Create))
                     {
-                        Console.WriteLine("Saving...");
+                        //Console.WriteLine("Saving...");
                     }
                     Thread.Sleep(1000);
                 }

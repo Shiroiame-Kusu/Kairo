@@ -15,12 +15,12 @@ namespace Kairo
         public static readonly string PATH = AppDomain.CurrentDomain.BaseDirectory;
         public static readonly DateTime StartTime = DateTime.Now;
         public static bool LoginedByConsole = false;
-        public const string Version = "2.3.0";
+        public const string Version = "2.4.0";
         public const string Branch = "Alpha";
-        public const int Revision = 5;
+        public const int Revision = 1;
         public static readonly BuildInfo BuildInfo = new();
         public const string Developer = "Shiroiame-Kusu & Daiyangcheng";
-        public const string Copyright = "Copyright © 2021 - 2024 杭州樱芸网络科技有限公司 All Rights Reserved";
+        public const string Copyright = "Copyright © 2021 - 2025 杭州樱芸网络科技有限公司 All Rights Reserved";
         public static Config Config = new();
         public static bool isDarkThemeEnabled;
         public static SecureString Password = new();
@@ -37,6 +37,13 @@ namespace Kairo
             "Tips:再急, 再急就给你Crash了"
 
         };
-        public const string API = "https://api-v2.locyanfrp.cn";
+        public const string API = "https://api-v2.locyanfrp.cn/api/v2";
+        public class APIList
+        {   
+            public const string GetUserInfo = $"{API}/user/info";
+            public const string GetAccessToken = $"{API}/auth/oauth/access-token";
+            public const string GetFrpToken = $"{API}/user/frp/token";
+        }
+        public const int APPID = 9;
     }
 }

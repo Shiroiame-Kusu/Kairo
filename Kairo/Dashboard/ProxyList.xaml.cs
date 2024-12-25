@@ -103,17 +103,14 @@ namespace Kairo.Dashboard
         // 封装隧道获取，采用异步请求防止主线程卡死
         private static async Task<ObservableCollection<string>> GetProxiesListAsync()
         {
-            // 获取用户名和Token
-            string username = Global.Config.Username;
-            string token = Global.Config.Token;
             // 实例化序列
             GetProxiesResponseObject responseObject;
             // 创建新的 HttpClient 实例
             using (var client = new HttpClient())
             {
                 // 定义API链接
-                string url = $"{Global.API}/api/v2/proxy/all?username={username}";
-                client.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
+                string url = $"{Global.API}/proxy/all?user_id={Global.Config.ID}";
+                client.DefaultRequestHeaders.Add("Authorization", $"Bearer {Global.Config.AccessToken}");
                 // 防止API报错
                 try
                 {
@@ -139,7 +136,7 @@ namespace Kairo.Dashboard
             }
 
             if (responseObject.Status != 200)
-            {   
+            {
                 if(responseObject.Status == 404)
                 {
                     return null;
@@ -595,8 +592,8 @@ namespace Kairo.Dashboard
             {
                 using (HttpClient httpClient = new HttpClient()) {
 
-                    httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {Global.Config.Token}");
-                    var b = httpClient.DeleteAsync($"{Global.API}/api/v2/proxy?username={Global.Config.Username}&proxy_id={this.ID}").Await();
+                    httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {Global.Config.AccessToken}");
+                    var b = httpClient.DeleteAsync($"{Global.API}/proxy?user_id={Global.Config.ID}&proxy_id={this.ID}").Await();
                     var a = b.Content.ReadAsStringAsync().Await();
 
                     if (a == null )

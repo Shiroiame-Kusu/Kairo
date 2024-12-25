@@ -22,6 +22,7 @@ using System.Text;
 using Kairo.Extensions;
 using System.Windows.Media.Animation;
 using System.Numerics;
+using Wpf.Ui.Dpi;
 
 namespace Kairo
 {
@@ -32,8 +33,6 @@ namespace Kairo
     {
         public static bool DarkThemeEnabled;
         private UserInfo UserInfo;
-        string username_auto;
-        string token_auto;
         public static bool islogin = false;
         public static DashBoard DashBoard;
         //public static Snackbar Snackbar = new Snackbar();
@@ -47,13 +46,12 @@ namespace Kairo
         public MainWindow()
         {
             Init(App.TokenMode);
+
             if (App.TokenMode)
             {
                 this.Hide();
             }
-            
-                
-            
+
         }
         private void InitializeAllComponent()
         {
@@ -73,53 +71,15 @@ namespace Kairo
             {
                 CrashInterception.ShowException(new Exception("这是一个彩蛋，万分之一的机会"));
             }
-            if (Global.LoginedByConsole && Global.Config.Username != null && Global.Password != null)
-            {
-                Login(Global.Config.Username, ConvertToUnsecureString(Global.Password));
-            }
             Tips.Text = Global.Tips[Random.Shared.Next(0, Global.Tips.Count - 1)];
-            if (!TokenMode) CheckNetworkAvailability();
+            //if (!TokenMode) CheckNetworkAvailability();
             _Login.IsEnabled = true;
             DataContext = this;
             Access.MainWindow = this;
+            if (!TokenMode) InitializeAutoLogin();
             if (!TokenMode) Update.Init();
             if (!TokenMode) ScheduledTask.Init();
             if (!TokenMode) ProtocolHandler.Init();
-        }
-        private async void CheckNetworkAvailability()
-        {
-            bool b = true;
-            var a = () =>
-            {
-                b = Logger.MsgBox("无法连接至LocyanFrp API，请检查您的网络连接!", "Kairo", 1, 47, 0);
-                if (!b)
-                {
-                    Logger.MsgBox("你在想啥, 你只能确认!", "What r u doing?", 1, 47, 0);
-                }
-                //MessageBox.Show("请检查您的网络连接!");
-                Environment.Exit(0);
-            };
-            using (HttpClient httpClient = new HttpClient())
-            {
-                try
-                {
-                    HttpResponseMessage httpResponseMessage = httpClient.GetAsync(Global.API).Await();
-                    if (!httpResponseMessage.IsSuccessStatusCode)
-                    {
-                        a();
-
-                    }
-                    else
-                    {
-                        InitializeAutoLogin();
-                    }
-                }
-                catch (Exception ignored)
-                {
-                    a();
-                }
-
-            }
         }
 
         public void OpenSnackbar(string title, string message, SymbolRegular icon)
@@ -133,89 +93,117 @@ namespace Kairo
 
         private async void InitializeAutoLogin()
         {
-            _Login.Content = "正在尝试自动登录....";
-            _Login.IsEnabled = false;
-            islogin = await CheckTokenAvailableAndLogin();
-            if (islogin)
-            {
-                Global.Config.Token = token_auto;
-                Global.Config.Username = username_auto;
-                Global.Config.LoginToken = $"{username_auto}|{token_auto}";
-                InitializeInfoForDashboard();
-                DashBoard = new DashBoard();
-                DashBoard.Show();
-                this.Close();
-                Access.DashBoard.CheckIfFrpcInstalled();
-            }
-            else
-            {
-                Logger.MsgBox("无法连接到服务器, 请检查你的网络连接","Kairo",0,48,0);
-            }
-            fadeOut.Begin(LoginStatus);
-            fadeIn.Begin(_TitleBar);
-            fadeIn.Begin(LoginForm);
-            LoginForm.Visibility = Visibility.Visible;
-            LoginStatus.Visibility = Visibility.Hidden;
-            _Login.Content = "登录";
-            _Login.IsEnabled = true;
+            await CheckTokenAvailableAndLogin();
+            
         }
 
         private async Task<bool> CheckTokenAvailableAndLogin()
         {
-            string[] token_split;
-            try
+            if (!string.IsNullOrEmpty(Global.Config.RefreshToken))
             {
-                char[] delimiters = { '|' };
-                token_split = Global.Config.LoginToken.Split(delimiters);
-                username_auto = token_split[0];
-                token_auto = token_split[1];
+                return await Login(Global.Config.RefreshToken);
             }
-            catch
+            else
             {
+                VisibilityChange(false);
                 return false;
-            }
-                using (var hC = new HttpClient()) {
-                    hC.DefaultRequestHeaders.Add("Authorization", $"Bearer {token_auto}");
-                    HttpResponseMessage response1 = await hC.GetAsync($"{Global.API}/api/v2/user/token");
-                    JObject temp = JObject.Parse(await response1.Content.ReadAsStringAsync());
-                    if (!response1.IsSuccessStatusCode)
-                    {
-                        return false;
-                    }
-                    
-                        HttpResponseMessage response = await hC.GetAsync($"{Global.API}/api/v2/user/info?username={username_auto}");
-                        if (!response.IsSuccessStatusCode)
-                        {
-                            return false;
-                        }
-                    
-                        string jsonString = await response.Content.ReadAsStringAsync();
-                
-                        //It just works.
-                        UserInfo = JsonConvert.DeserializeObject<UserInfo>(JObject.Parse(jsonString)["data"].ToString());
-                        UserInfo.Status = int.Parse(JObject.Parse(jsonString)["status"].ToString());
-                        if (UserInfo.Status == 200)
-                        {
-                            return true;
-                        }
-                        else
-                        {
-                            return false;
-                        }
-                
             }
         }
 
+        public async void VisibilityChange(bool logining)
+        {
+            Dispatcher.BeginInvoke(() =>
+            {
+                if (logining)
+                {
+                    fadeOut.Begin(LoginForm);
+                    fadeOut.Begin(_TitleBar);
+                    fadeIn.Begin(LoginStatus);
+                    LoginForm.Visibility = Visibility.Hidden;
+                    LoginStatus.Visibility = Visibility.Visible;
+                }
+                else
+                {
+                    fadeOut.Begin(LoginStatus);
+                    fadeIn.Begin(_TitleBar);
+                    fadeIn.Begin(LoginForm);
+                    LoginForm.Visibility = Visibility.Visible;
+                    LoginStatus.Visibility = Visibility.Hidden;
+
+                }
+            });
+            
+
+        }
+        
+
         private async void Login_Click(object sender, RoutedEventArgs e)
         {
-            _Login.IsEnabled = false;
-            string username = Username.Text;
-            SecureString secure_password = Password.SecurePassword;
-            string password = ConvertToUnsecureString(secure_password);
-            if(!(await Login(username, password)))
+            var url = $"https://dashboard.locyanfrp.cn/auth/oauth/authorize?app_id={Global.APPID}&scopes=User,Proxy,Sign&redirect_url=http://localhost:16092/oauth/callback";
+            Process.Start(new ProcessStartInfo(url)
             {
-                _Login.IsEnabled = true;
+                UseShellExecute = true
+            });
+            VisibilityChange(true);
+            e.Handled = true;
+
+
+        }
+        public async Task<bool> Login(string RefreshToken)
+        {
+            Global.Config.RefreshToken = RefreshToken;
+            VisibilityChange(true);
+            if (!string.IsNullOrEmpty(RefreshToken))
+            {
+                using (HttpClient httpClient = new())
+                {
+                    httpClient.DefaultRequestHeaders.Add("User-Agent", $"Kairo-{Global.Version}");
+                    Console.WriteLine($"{Global.APIList.GetAccessToken}?app_id={Global.APPID}&refresh_token={Global.Config.RefreshToken}");
+                    HttpResponseMessage response = await httpClient.PostAsync($"{Global.APIList.GetAccessToken}?app_id={Global.APPID}&refresh_token={Global.Config.RefreshToken}", null);
+                    JObject json = JObject.Parse(await response.Content.ReadAsStringAsync());
+                    if (int.Parse(json["status"].ToString()) == 200)
+                    {
+                        Global.Config.ID = int.Parse(json["data"]["user_id"].ToString());
+                        Global.Config.AccessToken = json["data"]["access_token"].ToString();
+                        httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {Global.Config.AccessToken}");
+                        response = httpClient.GetAsync($"{Global.APIList.GetUserInfo}?user_id={json["data"]["user_id"].ToString()}").Await();
+                        json = JObject.Parse(response.Content.ReadAsStringAsync().Await());
+                        UserInfo = JsonConvert.DeserializeObject<UserInfo>(json["data"].ToString());
+                        Logger.MsgBox($"登录成功\n获取到登录Token: {UserInfo.Token}", "提示", 0, 48, 0);
+                        InitializeInfoForDashboard();
+                        response = await httpClient.GetAsync($"{Global.APIList.GetFrpToken}?user_id={Global.Config.ID}");
+                        json = JObject.Parse(response.Content.ReadAsStringAsync().Await());
+                        UserInfo.FrpToken = json["data"]["frp_token"].ToString();
+                        Global.Config.Username = UserInfo.Username;
+                        Global.Config.FrpToken = UserInfo.FrpToken;
+                        islogin = true;
+                        Dispatcher.BeginInvoke(() =>
+                        {
+
+                            DashBoard = new DashBoard();
+                            DashBoard.Show();
+                            Close();
+                            Access.DashBoard.CheckIfFrpcInstalled();
+                        });
+                        return true;
+                    }
+                    else
+                    {
+                        Logger.MsgBox($"请求API的过程中出错 \n 状态: {int.Parse(json["status"].ToString())} {json["message"].ToString()}", "错误", 0, 48, 0);
+
+                    }
+
+                }
+
             }
+            else
+            {
+                
+            }
+            VisibilityChange(false);
+            return false;
+
+
 
         }
         public async Task<bool> Login(string username, string password)
@@ -260,13 +248,9 @@ namespace Kairo
                             {
                                 Logger.MsgBox($"登录成功\n获取到登录Token: {UserInfo.Token}", "提示", 0, 47, 0);
                                 InitializeInfoForDashboard();
-                                Global.Config.Token = UserInfo.Token;
+                                Global.Config.AccessToken = UserInfo.Token;
                                 Global.Config.Username = UserInfo.Username;
                                 Global.Config.FrpToken = UserInfo.FrpToken;
-                                Global.Config.LoginToken = $"{UserInfo.Username}|{UserInfo.Token}";
-                                string path = ".//session.token";
-                                string text = $"{UserInfo.Username}|{UserInfo.Token}";
-                                File.WriteAllText(path, text);
                                 islogin = true;
                                 DashBoard = new DashBoard();
                                 DashBoard.Show();
@@ -306,25 +290,6 @@ namespace Kairo
             Inbound = UserInfo.Inbound;
             Outbound = UserInfo.Outbound;
             Traffic = UserInfo.Traffic;
-        }
-        // 将 SecureString 转化为 string
-        private string ConvertToUnsecureString(SecureString securePassword)
-        {
-            if (securePassword == null)
-            {
-                return string.Empty;
-            }
-
-            IntPtr unmanagedString = IntPtr.Zero;
-            try
-            {
-                unmanagedString = System.Runtime.InteropServices.Marshal.SecureStringToGlobalAllocUnicode(securePassword);
-                return System.Runtime.InteropServices.Marshal.PtrToStringUni(unmanagedString);
-            }
-            finally
-            {
-                System.Runtime.InteropServices.Marshal.ZeroFreeGlobalAllocUnicode(unmanagedString);
-            }
         }
 
         private void Register_Navigate(object sender, RequestNavigateEventArgs e)
