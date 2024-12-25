@@ -19,7 +19,7 @@ jobs:
       - name: Install .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 6.0.x
+          dotnet-version: 9.0.x
 
       - name: Write Build info
         shell: cmd
@@ -40,32 +40,32 @@ jobs:
       - name: Upload Kairo(Release,dotnet6-windows)
         uses: actions/upload-artifact@v4
         with:
-          name: Kairo_dotnet6
-          path: ${{ github.workspace }}\Kairo\bin\Release\net6.0-windows
+          name: Kairo_dotnet9
+          path: ${{ github.workspace }}\Kairo\bin\Release\net9.0-windows
           if-no-files-found: ignore
 
       - name: Build the project(Publish)
         run: |
           dotnet clean
-          dotnet publish "Kairo/Kairo.csproj" -f net6.0-windows --no-self-contained -p:PublishSingleFile=true -p:RuntimeIdentifier=win-x64 -p:IncludeContentInSingleFile=true
+          dotnet publish "Kairo/Kairo.csproj" -f net9.0-windows --no-self-contained -p:PublishSingleFile=true -p:RuntimeIdentifier=win-x64 -p:IncludeContentInSingleFile=true
 
       - name: Upload Kairo(Publish)
         uses: actions/upload-artifact@v4
         with:
-          name: Kairo_dotnet6_publish
-          path: ${{ github.workspace }}\Kairo\bin\Debug\net6.0-windows\win-x64\publish
+          name: Kairo_dotnet9_publish
+          path: ${{ github.workspace }}\Kairo\bin\Debug\net9.0-windows\win-x64\publish
           if-no-files-found: ignore
           
       - name: Build the project(Publish,Single File)
         run: |
           dotnet clean
-          dotnet publish "Kairo/Kairo.csproj" -f net6.0-windows -r win-x64 -p:PublishSingleFile=true -p:RuntimeIdentifier=win-x64 -p:IncludeContentInSingleFile=true -p:Configuration=Release --sc -p:IncludeAllContentForSelfExtract=true -p:EnableCompressionInSingleFile=true
+          dotnet publish "Kairo/Kairo.csproj" -f net9.0-windows -r win-x64 -p:PublishSingleFile=true -p:RuntimeIdentifier=win-x64 -p:IncludeContentInSingleFile=true -p:Configuration=Release --sc -p:IncludeAllContentForSelfExtract=true -p:EnableCompressionInSingleFile=true
 
       - name: Upload Kairo(Publish,Single File)
         uses: actions/upload-artifact@v4
         with:
           name: Kairo_dotnet6_publish_SingleFile
-          path: ${{ github.workspace }}\Kairo\bin\Release\net6.0-windows\win-x64\publish
+          path: ${{ github.workspace }}\Kairo\bin\Release\net9.0-windows\win-x64\publish
           if-no-files-found: ignore
 
   
