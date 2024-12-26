@@ -1,26 +1,19 @@
 ﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
-using System.Collections.Generic;
 using System.Net.Http;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
 using Wpf.Ui.Controls;
 using Kairo.Utils;
-using Kairo.Dashboard;
 using System.Windows.Threading;
-using System.Text.RegularExpressions;
 using System.IO;
 using Kairo.Extensions;
 using System.Security.Cryptography;
 using Markdig;
-using System.Windows.Controls;
-using System.Text;
 using HtmlAgilityPack;
 using System.Linq;
 using System.Windows;
-using RestSharp;
 using System.Threading.Tasks;
 
 
@@ -114,7 +107,6 @@ namespace Kairo.Dashboard
                 }
             }
             catch (Exception _) {
-                CrashInterception.ShowException(_);
             }
         }
         private async void InitializeWebView(string a)
@@ -164,23 +156,23 @@ namespace Kairo.Dashboard
                         }
 
                         File.Delete(path);
-                        using (FileStream fileStream = new(path, FileMode.Create))
-                        {
-                            byte[] bytes = new byte[Avatar.Length];
-                            Avatar.Read(bytes, 0, bytes.Length);
-                            // 设置当前流的位置为流的开始
-                            Avatar.Seek(0, SeekOrigin.Begin);
-
-                            // 把 byte[] 写入文件
-
-                            BinaryWriter bw = new BinaryWriter(fileStream);
-                            bw.Write(bytes);
-                            bw.Close();
-                            fileStream.Close();
-                        }
-                        ApplyAvatar();
+                        
                     }
+                    using (FileStream fileStream = new(path, FileMode.Create))
+                    {
+                        byte[] bytes = new byte[Avatar.Length];
+                        Avatar.Read(bytes, 0, bytes.Length);
+                        // 设置当前流的位置为流的开始
+                        Avatar.Seek(0, SeekOrigin.Begin);
 
+                        // 把 byte[] 写入文件
+
+                        BinaryWriter bw = new BinaryWriter(fileStream);
+                        bw.Write(bytes);
+                        bw.Close();
+                        fileStream.Close();
+                    }
+                    ApplyAvatar();
 
                 }
 

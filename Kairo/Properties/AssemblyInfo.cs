@@ -1,6 +1,4 @@
 ﻿using System.Reflection;
-using System.Resources;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Windows;
 
@@ -12,7 +10,7 @@ using System.Windows;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("LoCyanTeam")]
 [assembly: AssemblyProduct("Kairo")]
-[assembly: AssemblyCopyright("Copyright © 2021 - 2023 杭州樱芸网络科技有限公司 All rights reserved.")]
+[assembly: AssemblyCopyright("Copyright © 2021 - 2025 杭州樱芸网络科技有限公司 All rights reserved.")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -51,5 +49,5 @@ using System.Windows;
 //可以指定所有这些值，也可以使用“生成号”和“修订号”的默认值
 //通过使用 "*"，如下所示:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("2.3.0")]
-[assembly: AssemblyFileVersion("2.3.0.0")]
+[assembly: AssemblyVersion("2.4.0")]
+[assembly: AssemblyFileVersion("2.4.0.0")]
