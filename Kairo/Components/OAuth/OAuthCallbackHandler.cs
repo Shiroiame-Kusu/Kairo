@@ -12,7 +12,8 @@ namespace Kairo.Components.OAuth
         public static void Init()
         {
             Task.Run(() => {
-                WebApplicationBuilder builder = WebApplication.CreateBuilder(["--urls=http://localhost:16092"]);
+                string[] a = { "--urls=http://localhost:16092" };
+                WebApplicationBuilder builder = WebApplication.CreateBuilder(a);
                 builder.Services.AddControllers();
                 WebApplication app = builder.Build();
                 app.UseRouting();

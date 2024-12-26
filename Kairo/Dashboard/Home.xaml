@@ -5,8 +5,7 @@
             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
             xmlns:local="clr-namespace:Kairo.Dashboard"
-            xmlns:cefSharpCore="clr-namespace:CefSharp;assembly=CefSharp.Core"
-            xmlns:cefSharpWpf="clr-namespace:CefSharp.Wpf;assembly=CefSharp.Wpf"
+            xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
             mc:Ignorable="d" 
             d:DesignHeight="450" d:DesignWidth="800"
             Title="Home">
@@ -44,9 +43,7 @@
                 CornerRadius="8"
                 Background="{DynamicResource ControlFillColorDefaultBrush}"
                 >
-                    <cefSharpWpf:ChromiumWebBrowser x:Name="Browser">
-                        
-                    </cefSharpWpf:ChromiumWebBrowser>
+                    <wv2:WebView2 x:Name="webView" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" DefaultBackgroundColor="transparent"/>
                 </Border>
             </Grid>
             <Grid Grid.Row="1">

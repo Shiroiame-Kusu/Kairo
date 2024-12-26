@@ -16,8 +16,6 @@ using Kairo.Extensions;
 using System.Security.Cryptography;
 using Markdig;
 using System.Windows.Controls;
-using CefSharp;
-using CefSharp.Wpf;
 using System.Text;
 using HtmlAgilityPack;
 using System.Linq;
@@ -74,16 +72,14 @@ namespace Kairo.Dashboard
 
         private void InitializeCustomComponents()
         {
-            Directory.CreateDirectory(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "CEF"));
-            
             InitializeComponent();
-            
             DataContext = this;
             title_username.Text += Global.Config.Username;
             Resources["BorderColor"] = Global.isDarkThemeEnabled ? Colors.White : Colors.LightGray;
             Traffic.Text += $"{(MainWindow.Traffic / 1024)}GB";
             BandWidth.Text += $"{MainWindow.Inbound * 8 / 1024}/{MainWindow.Outbound * 8 / 1024}Mbps";
         }
+        
         private async void FetchAnnouncement()
         {
             try
@@ -98,59 +94,39 @@ namespace Kairo.Dashboard
                         if (Global.isDarkThemeEnabled)
                         {
                             htmlDoc.LoadHtml(html);
-                            var cssContent = "* { color: white; } a { color: aqua}";
+                            var cssContent = "* { color: white; } a { color: aqua} html {background: none !important;}";
                             var styleNode = HtmlNode.CreateNode($"<style>{cssContent}</style>");
                             //var scriptNode = HtmlNode.CreateNode("<script src='https://cdn.jsdelivr.net/npm/smooth-scrollbar@8.6.3/dist/smooth-scrollbar.js'></script>");
                             var newHeadNode = htmlDoc.CreateElement("head");
                             newHeadNode.AppendChild(styleNode);
                             //newHeadNode.AppendChild(scriptNode);
                             htmlDoc.DocumentNode.PrependChild(newHeadNode);
+                            InitializeWebView(htmlDoc.DocumentNode.OuterHtml);
                         }
-                        Browser.LoadHtml(Global.isDarkThemeEnabled ? htmlDoc.DocumentNode.OuterHtml: html, "http://localhost",Encoding.UTF8);
-                        Browser.LoadingStateChanged += OnLoadingStateChanged;
+                        else
+                        {
+                            InitializeWebView(html);
+                        }
                         
+
                     }
 
                 }
             }
             catch (Exception _) {
-            
+                CrashInterception.ShowException(_);
             }
         }
-        private void OnLoadingStateChanged(object sender, LoadingStateChangedEventArgs e)
+        private async void InitializeWebView(string a)
         {
-            if (!e.IsLoading)
+            //if (!Directory.Exists(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "WebView2"))) Directory.CreateDirectory(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "WebView2"));
+            //await WebViewInstaller.CheckAndInstallAsync(false, false, Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "WebView2"));
+            Dispatcher.BeginInvoke(async () =>
             {
-                string css = @"
-                html {
-                    scroll-behavior: smooth;
-                }
-                ::-webkit-scrollbar {
-                    width: 8px;
-                    opacity: 0;
-                    transition: opacity 0.5s;
-                }
-                ::-webkit-scrollbar-track {
-                    background: #555;
-                    border-radius: 10px; /* Rounded corners for the track */
-                }
-                ::-webkit-scrollbar-thumb {
-                    background: #f1f1f1;
-                    
-                     border-radius: 10px; /* Rounded corners for the track */
-                }
-                ::-webkit-scrollbar-thumb:hover {
-                    background: #888;
-                    
-                }
-                .show-scrollbar ::-webkit-scrollbar {
-                opacity: 1;";
-                string script = $"var style = document.createElement('style'); style.innerHTML = `{css}`; document.head.appendChild(style);";
-                string script2 = "let timeout; document.addEventListener('scroll', function() { document.documentElement.classList.add('show-scrollbar'); clearTimeout(timeout); timeout = setTimeout(() => { document.documentElement.classList.remove('show-scrollbar'); }, 1000); });";
-                Browser.ExecuteScriptAsync(script);
-                Browser.ExecuteScriptAsync(script2);
-
-            }
+                await webView.EnsureCoreWebView2Async();
+                webView.CoreWebView2.NavigateToString(a);
+            });
+            
         }
         private async void RefreshAvatar()
         {

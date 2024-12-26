@@ -151,6 +151,7 @@ namespace Kairo
         }
         public async Task<bool> Login(string RefreshToken)
         {
+            if (islogin) return false;
             Global.Config.RefreshToken = RefreshToken;
             VisibilityChange(true);
             if (!string.IsNullOrEmpty(RefreshToken))
