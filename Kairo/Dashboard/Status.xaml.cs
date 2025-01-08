@@ -28,72 +28,18 @@ namespace Kairo.Dashboard
     /// </summary>
     public partial class Status : UiPage
     {
-        public static bool isTaskRunning = false;
         public static List<string> ListViewList = new List<string>();
-        public static List<string> OldListViewList = new List<string>();
         public Status()
         {
             InitializeComponent();
             Access.Status = this;
-            
             lock (LogPreProcess.Process.Cache)
             {
                 LogPreProcess.Process.Cache.ForEach(
                     (line) => Dispatcher.Invoke(() => Append(LogPreProcess.Color(line)))
                 );
             }
-            //整活写法，别当真
-            /*if (!isTaskRunning)
-            {   
-                isTaskRunning = true;
-                Task.Run(() => {
-                    while(true)
-                    {   
-                        //wait for implementation
-                        Refresh();
-                        Thread.Sleep(500);
-                    }
-                });
-            }*/
-            //Append(LogPreProcess.Color(LogType.Info, ProxyList.lineFiltered));
-        }/*
-        public void Refresh()
-        {   
-            try
-            {
-                ListViewList.Clear();
-                for (int i = 0;i < ProxyList.PNAPList.Count(); i++)
-                {
-                    if ((bool)ProxyList.PNAPList[i].IsRunning)
-                    {
-                        ListViewList.Add(ProxyList.Proxieslist[(int)ProxyList.PNAPList[i].ListIndex].ProxyName);
-                    }
-                    
-                }
-                try
-                {
-                    Dispatcher.Invoke(() =>
-                        {
-                            ProxiesStarted.ItemsSource = ListViewList;
-                            
-                        });
-                     
-                }
-                catch(Exception e) {
-                    Dispatcher.BeginInvoke(() =>
-                    {
-                        ProxiesStarted.ItemsSource = ListViewList;
-                    });
-                    CrashInterception.ShowException(e);
-                }
-                
-
-            }
-            catch(Exception ex) 
-            {
-                CrashInterception.ShowException(ex);
-            }
-        }*/
+        }
         public void Append(Paragraph paragraph)
         {
             

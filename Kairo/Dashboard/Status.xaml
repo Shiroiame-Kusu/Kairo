@@ -17,7 +17,8 @@
                 <RowDefinition Height="auto"/>
             </Grid.RowDefinitions>
             <RichTextBox Name="LogOutput" 
-                         Margin="20" 
+                         Margin="20"
+                         Padding="10,-10,10,0"
                          Grid.Row="0"
                          VerticalAlignment="Stretch" 
                          HorizontalAlignment="Stretch" 

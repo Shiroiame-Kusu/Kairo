@@ -28,6 +28,7 @@ using Newtonsoft.Json.Serialization;
 using Application = System.Windows.Application;
 using HorizontalAlignment = System.Windows.HorizontalAlignment;
 using MouseEventArgs = System.Windows.Input.MouseEventArgs;
+using System.Runtime.CompilerServices;
 
 
 namespace Kairo.Dashboard
@@ -287,13 +288,9 @@ namespace Kairo.Dashboard
             {
                 Cards[index].IndicatorLight.Stroke = Brushes.Gray;
             });
+            PNAPList[PNAPList.FindIndex(a => a.ListIndex == index)].IsRunning = false;
         }
-        private void NonStaticExitedEventHandler(int index) {
-            Dispatcher.Invoke(() =>
-            {
-                Cards[index].IndicatorLight.Stroke = Brushes.Gray;
-            });
-        }
+
         private static void SortOutputHandler(object sender, DataReceivedEventArgs e)
         {
             if (!string.IsNullOrEmpty(e.Data))
@@ -333,6 +330,7 @@ namespace Kairo.Dashboard
                 Stroke = new SolidColorBrush(Colors.Gray)
 
             };
+            private ProxyMenu temp;
             public ProxyCard(Proxy ProxyInfo, int CardIndex)
             {   
                 IndexID = CardIndex;
@@ -344,7 +342,7 @@ namespace Kairo.Dashboard
                 //this.OverridesDefaultStyle = true;
                 //this.Style = ProxyList.card.Style;
                 //Theme.Apply(ThemeType.Light);
-                this.Background = new SolidColorBrush(Global.isDarkThemeEnabled ? Color.FromRgb(53, 53, 53) : Color.FromRgb(210, 210, 210));
+                this.Background = new SolidColorBrush(Global.isDarkThemeEnabled ? Color.FromRgb(53,53,53) : Color.FromRgb(245, 245, 245));
                 //this.Background = new SolidColorBrush(!string.IsNullOrEmpty((string)ProxyList.BackgroundColor) ? (Color)ProxyList.BackgroundColor : Colors.Gray);
                 //this.Background = new SolidColorBrush((Color)ProxyList.BackgroundColor);
                 this.BorderThickness = new Thickness(2);
@@ -385,12 +383,13 @@ namespace Kairo.Dashboard
 
                 //dockPanel.Children.Add();
 
-                ProxyMenu temp = new ProxyMenu(ProxyInfo.ProxyName, CardIndex,this);
+                temp = new ProxyMenu(ProxyInfo.ProxyName, CardIndex,this);
                 temp.ID = ProxyInfo.Id;
                 this.ContextMenu = temp;
                 //dockPanel.Children.Add(temp);
                 //this.AddChild(temp);
-
+                
+                this.MouseLeftButtonDown += this.OnMouseLeftButtonDown;
                 this.MouseRightButtonDown += this.OnMouseRightButtonDown;
                 this.MouseEnter += this.OnMouseEnter;
                 this.MouseLeave += this.OnMouseLeave;
@@ -400,9 +399,17 @@ namespace Kairo.Dashboard
                 
                 
             }
-            private void ProxyCard_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+            private int ClickTimestamp = 0;
+            private void OnMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
             {
-                //StartProxy_Click(sender, e);
+                Console.WriteLine(e.Timestamp);
+                if (e.Timestamp - ClickTimestamp < 500 && ClickTimestamp != 0)
+                {
+                    
+                    temp.StartProxy_Click(sender, e);
+                    
+                }
+                ClickTimestamp = e.Timestamp;
             }
             private void OnMouseEnter(object sender, EventArgs e)
             {
@@ -422,9 +429,9 @@ namespace Kairo.Dashboard
                 try
                 {
                     border.BorderBrush.BeginAnimation(SolidColorBrush.ColorProperty, colorAnimation);
+
                 }
                 catch { }
-
 
             }
         }
@@ -447,7 +454,7 @@ namespace Kairo.Dashboard
                 // 定义样式的模板
                 ControlTemplate template = new ControlTemplate(typeof(ContextMenu));
                 FrameworkElementFactory borderFactory = new FrameworkElementFactory(typeof(Border));
-                borderFactory.SetValue(Border.BackgroundProperty, new SolidColorBrush(Global.isDarkThemeEnabled ? Color.FromRgb(53, 53, 53) : Color.FromRgb(210, 210, 210)));
+                borderFactory.SetValue(Border.BackgroundProperty, new SolidColorBrush(Global.isDarkThemeEnabled ? Color.FromRgb(53, 53, 53) : Color.FromRgb(240, 240, 240)));
                 borderFactory.SetValue(Border.BorderThicknessProperty, new Thickness(1));
                 borderFactory.SetValue(Border.CornerRadiusProperty, new CornerRadius(5));
                 this.Foreground = new SolidColorBrush(Global.isDarkThemeEnabled ? Colors.White : Colors.Black);
@@ -502,7 +509,7 @@ namespace Kairo.Dashboard
                 //this.CornerRadius = new CornerRadius(5);
 
             }
-            private void StartProxy_Click(object sender, RoutedEventArgs e)
+            public void StartProxy_Click(object sender, RoutedEventArgs e)
             {
                 if (string.IsNullOrEmpty(Global.Config.FrpcPath))
                 {
@@ -599,34 +606,6 @@ namespace Kairo.Dashboard
             
             private void CreateNewProxy_Click(object sender, RoutedEventArgs e)
             {
-                /*ProxyCreator proxyCreator = new ProxyCreator();
-                proxyCreator.Show();
-                using (HttpClient httpClient = new HttpClient()) { 
-                    //httpClient.DefaultRequestHeaders("A")
-
-                }*/
-                /*var browserWindow = new Window
-                {
-                    Width = 800,
-                    Height = 500
-                };
-
-                // 创建 ChromiumWebBrowser 实例
-                var browser = new ChromiumWebBrowser("https://dashboard.locyanfrp.cn/proxies/add")
-                {
-                    VerticalAlignment = VerticalAlignment.Stretch,
-                    HorizontalAlignment = HorizontalAlignment.Stretch
-                };
-
-                // 将浏览器控件添加到新窗口
-                browserWindow.Content = browser;
-
-                // 显示窗口
-                browserWindow.Show();
-                Process.Start(new ProcessStartInfo("https://dashboard.locyanfrp.cn/proxies/add")
-                {
-                    UseShellExecute = true
-                });*/
                 Process.Start(new ProcessStartInfo("https://dashboard.locyanfrp.cn/proxies/add")
                 {
                     UseShellExecute = true
@@ -644,24 +623,6 @@ namespace Kairo.Dashboard
             {
                 UseShellExecute = true
             });
-            /*var browserWindow = new UiWindow()
-            {
-                Width = 800,
-                Height = 500
-            };
-
-            // 创建 ChromiumWebBrowser 实例
-            var browser = new ChromiumWebBrowser("https://dashboard.locyanfrp.cn/proxies/add")
-            {
-                VerticalAlignment = VerticalAlignment.Stretch,
-                HorizontalAlignment = HorizontalAlignment.Stretch
-            };
-
-            // 将浏览器控件添加到新窗口
-            browserWindow.Content = browser;
-
-            // 显示窗口
-            browserWindow.Show();*/
         }
     }
     public class GetProxiesResponseObject
