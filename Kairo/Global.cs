@@ -17,7 +17,7 @@ namespace Kairo
         public static bool LoginedByConsole = false;
         public const string Version = "2.4.0";
         public const string Branch = "Alpha";
-        public const int Revision = 2;
+        public const int Revision = 3;
         public static readonly BuildInfo BuildInfo = new();
         public const string Developer = "Shiroiame-Kusu & Daiyangcheng";
         public const string Copyright = "Copyright © 2021 - 2025 杭州樱芸网络科技有限公司 All Rights Reserved";
@@ -38,6 +38,7 @@ namespace Kairo
 
         };
         public const string API = "https://api-v2.locyanfrp.cn/api/v2";
+        public const string UpdateCheckerAPI = "http://localhost:5043/api";
         public class APIList
         {   
             public const string GetUserInfo = $"{API}/user/info";

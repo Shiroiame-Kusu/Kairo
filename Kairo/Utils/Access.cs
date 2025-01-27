@@ -15,5 +15,6 @@ namespace Kairo.Utils
         public static Settings? Settings { get; set; }
         public static Download? Download { get; set; }
         public static ProxyList? ProxyList { get; set; }
+        public static Kairo.Components.Update? Update { get; set; }
     }
 }

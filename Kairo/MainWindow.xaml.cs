@@ -22,7 +22,6 @@ using System.Text;
 using Kairo.Extensions;
 using System.Windows.Media.Animation;
 using System.Numerics;
-using Wpf.Ui.Dpi;
 
 namespace Kairo
 {
@@ -35,12 +34,10 @@ namespace Kairo
         private UserInfo UserInfo;
         public static bool islogin = false;
         public static DashBoard DashBoard;
-        //public static Snackbar Snackbar = new Snackbar();
         public static string Avatar;
         public static int Inbound;
         public static int Outbound;
         public static BigInteger Traffic;
-        private static string password;
         private static Storyboard fadeIn;
         private static Storyboard fadeOut;
         public MainWindow()
@@ -317,11 +314,8 @@ namespace Kairo
         {
             const string RegistryKey = @"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize";
 
-            // 从注册表中获取“AppsUseLightTheme”值
-            int value = (int)Registry.GetValue(RegistryKey, "AppsUseLightTheme", 1);
-
             // 如果值为0，则深色主题已启用
-            Global.isDarkThemeEnabled = (value == 0);
+            Global.isDarkThemeEnabled = ((int)Registry.GetValue(RegistryKey, "AppsUseLightTheme", 1) == 0);
         }
         public void UiWindow_Loaded(object sender, RoutedEventArgs e)
         { /*
@@ -394,7 +388,7 @@ namespace Kairo
             Environment.Exit(0);
         }
 
-        private void NotifyIcon_LeftClick(Wpf.Ui.Controls.NotifyIcon sender, RoutedEventArgs e)
+        private void NotifyIcon_LeftClick(NotifyIcon sender, RoutedEventArgs e)
         {
             if (islogin)
             {
@@ -406,7 +400,7 @@ namespace Kairo
             }
         }
 
-        private void UiWindow_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        private void UiWindow_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Enter)
             {
@@ -417,7 +411,7 @@ namespace Kairo
     public class UserInfo
     {
         [JsonProperty("qq")]
-        public int QQ { get; set; }
+        public long QQ { get; set; }
 
         [JsonProperty("qq_social_id")]
         public string QQSocialID { get; set; }

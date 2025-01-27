@@ -1,5 +1,5 @@
 # Kairo
-![image.png](Kairo\resource\banner.png)
+![image.png](https://github.com/Shiroiame-Kusu/Kairo/raw/preview/Kairo/resource/banner.png)
 A New Generation of LocyanFrp Desktop Application.
 基于 CSharp（C#）打造的新一代 LoCyanFrp 客户端。
 
