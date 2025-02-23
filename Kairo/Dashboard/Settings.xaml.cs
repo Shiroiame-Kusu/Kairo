@@ -24,7 +24,7 @@ namespace Kairo.Dashboard
         {
             InitializeComponent();
             InitializeToggleSwitch();
-            _Version.Text = $"版本: Ver {Global.Version}-{Global.Branch}{((Global.Branch == "Alpha" || Global.Branch == "Beta") ? "." : "")}{Global.Revision}";
+            _Version.Text = $"版本: Ver {Global.Version}-{Global.Branch}{((Global.Branch == "Alpha" || Global.Branch == "Beta") ? "." : "")}{Global.Revision}  \"{Global.VersionName}\"";
             _BuildInfo.Text = Global.BuildInfo.ToString();
             _Developer.Text = $"开发者: {Global.Developer}";
             _Copyright.Text = Global.Copyright;

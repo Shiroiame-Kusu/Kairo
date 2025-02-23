@@ -16,11 +16,12 @@ namespace Kairo
         public static readonly DateTime StartTime = DateTime.Now;
         public static bool LoginedByConsole = false;
         public const string Version = "2.4.0";
-        public const string Branch = "Alpha";
-        public const int Revision = 3;
+        public const string VersionName = "Crychic";
+        public const string Branch = "Beta";
+        public const int Revision = 1;
         public static readonly BuildInfo BuildInfo = new();
         public const string Developer = "Shiroiame-Kusu & Daiyangcheng";
-        public const string Copyright = "Copyright © 2021 - 2025 杭州樱芸网络科技有限公司 All Rights Reserved";
+        public const string Copyright = "Copyright © Shiroiame-Kusu All Rights Reserved";
         public static Config Config = new();
         public static bool isDarkThemeEnabled;
         public static SecureString Password = new();
