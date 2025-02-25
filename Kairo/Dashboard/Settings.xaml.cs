@@ -90,6 +90,7 @@ namespace Kairo.Dashboard
             Global.Password = null;
             new ConfigManager(FileMode.Create);
             MainWindow.islogin = false;
+            Access.DashBoard = null;
             Access.MainWindow.Width = double.NaN;
             Access.MainWindow.VisibilityChange(false);
             Access.MainWindow.Show();

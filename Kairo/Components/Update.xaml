@@ -15,6 +15,7 @@
         AllowDrop="True"
         ExtendsContentIntoTitleBar="True"
         ResizeMode="NoResize"
+        Topmost="True"
         >
     <Grid Margin="30,20">
         <Grid.RowDefinitions>
@@ -23,12 +24,20 @@
             <RowDefinition Height="auto"/>
         </Grid.RowDefinitions>
         <Grid Grid.Row="0">
-            <TextBlock Name="IncomingVersion" FontSize="30" Text=""/>
+            <TextBlock Name="IncomingVersion" FontSize="24" Text=""/>
         </Grid>
         <Grid Grid.Row="1">
-            <ListView Name="UpdateInfos">
-                <ListViewItem Content=""/>
-            </ListView>
+            <Border
+            Grid.Column="1"
+            Margin="0,20"
+            Padding="10,5"
+            CornerRadius="8"
+            Background="{DynamicResource ControlFillColorDefaultBrush}"
+            >
+                <ListView IsEnabled="False" Name="UpdateInfos">
+                </ListView>
+            </Border>
+            
         </Grid>
         <Grid Grid.Row="2">
             <Grid.ColumnDefinitions>

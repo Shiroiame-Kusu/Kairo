@@ -284,7 +284,8 @@ namespace Kairo.Utils
                     Match match = Regex.Match(DownloadVersion, pattern);
                     var Version = match.Groups[1].Value;
                     string architecture = RuntimeInformation.OSArchitecture.ToString();
-                    var MirrorAddress = (mirror ? "https://proxy-gh.1l1.icu/" : "https://proxy-gh.1l1.icu/https://github.com/LoCyan-Team/LocyanFrpPureApp/releases/download/");
+                    string OriginalAddress = "https://github.com/LoCyan-Team/LocyanFrpPureApp/releases/download/";
+                    var MirrorAddress = (mirror ? $"{Global.GithubMirror}https://github.com/LoCyan-Team/LocyanFrpPureApp/releases/download/" : "https://github.com/LoCyan-Team/LocyanFrpPureApp/releases/download/");
                     var ActualAddress = (Global.Config.UsingDownloadMirror ? "https://mirrors.locyan.cn/github-release/LoCyan-Team/LoCyanFrpPureApp/LatestRelease/" : MirrorAddress + DownloadVersion);
                     var _architecture = (architecture == "X86" ? "386" : "amd64");
                     FolderName = $"frp_LoCyanFrp-{Version}_windows_{_architecture}";

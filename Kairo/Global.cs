@@ -18,7 +18,7 @@ namespace Kairo
         public const string Version = "2.4.0";
         public const string VersionName = "Crychic";
         public const string Branch = "Beta";
-        public const int Revision = 1;
+        public const int Revision = 2;
         public static readonly BuildInfo BuildInfo = new();
         public const string Developer = "Shiroiame-Kusu & Daiyangcheng";
         public const string Copyright = "Copyright © Shiroiame-Kusu All Rights Reserved";
@@ -39,7 +39,9 @@ namespace Kairo
 
         };
         public const string API = "https://api-v2.locyanfrp.cn/api/v2";
-        public const string UpdateCheckerAPI = "http://localhost:5043/api";
+        //public const string UpdateCheckerAPI = "http://localhost:5043/api";
+        public const string UpdateCheckerAPI = "http://kairo.nyat.icu/api";
+        public const string GithubMirror = "https://proxy-gh.1l1.icu/";
         public class APIList
         {   
             public const string GetUserInfo = $"{API}/user/info";
@@ -47,5 +49,6 @@ namespace Kairo
             public const string GetFrpToken = $"{API}/user/frp/token";
         }
         public const int APPID = 9;
+
     }
 }

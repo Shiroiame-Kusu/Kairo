@@ -30,9 +30,9 @@ namespace Kairo.Utils
         }
         private void ReadConfig()
         {
-            if (File.Exists(Path.Combine("settings", "Settings.json")))
+            if (File.Exists(Path.Combine("Kairo", "Settings.json")))
             {
-                Global.Config = JsonConvert.DeserializeObject<Config>(File.ReadAllText(Path.Combine("settings", "Settings.json"), Encoding.UTF8)) ?? new();
+                Global.Config = JsonConvert.DeserializeObject<Config>(File.ReadAllText(Path.Combine("Kairo", "Settings.json"), Encoding.UTF8)) ?? new();
             }
             WriteConfig();
         }
@@ -40,20 +40,20 @@ namespace Kairo.Utils
             string newSettings = JsonConvert.SerializeObject(Global.Config);
             if (newSettings != _oldSettings)
             {
-                if (!Directory.Exists("settings"))
+                if (!Directory.Exists("Kairo"))
                 {
-                    Directory.CreateDirectory("settings");
+                    Directory.CreateDirectory("Kairo");
                 }
                 _oldSettings = newSettings;
-                File.WriteAllText(Path.Combine("settings", "Settings.json"), JsonConvert.SerializeObject(Global.Config, Formatting.Indented));
+                File.WriteAllText(Path.Combine("Kairo", "Settings.json"), JsonConvert.SerializeObject(Global.Config, Formatting.Indented));
 
             }
         }
         public static void Init()
         {
-            if (!Directory.Exists("settings"))
+            if (!Directory.Exists("Kairo"))
             {
-                Directory.CreateDirectory("settings");
+                Directory.CreateDirectory("Kairo");
                 new ConfigManager(FileMode.CreateNew);
                 return;
             }
