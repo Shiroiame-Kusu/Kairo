@@ -1,5 +1,5 @@
 name: "BUG反馈"
-description: LocyanFrp的部分行为不符合预期
+description: Kairo的部分行为不符合预期
 title: "BUG反馈 <在此处简单描述>"
 labels: ["🐛Bug"]
 
@@ -7,7 +7,7 @@ body:
   - type: input
     id: version
     attributes:
-      label: 当前使用的LocyanFrp版本
+      label: 当前使用的Kairo版本
       description: 设置
     validations:
       required: true
@@ -16,7 +16,7 @@ body:
     id: expectation
     attributes:
       label: 你的预期
-      description: 预期LocyanFrp应该的反应
+      description: 预期Kairo应该的反应
       placeholder: |
         1. ...
     validations:

@@ -1,0 +1,53 @@
+﻿<ui:UiWindow 
+        x:Class="Kairo.Components.Update"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:Kairo.Components"
+        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+        mc:Ignorable="d"
+        WindowStartupLocation="CenterScreen"
+        Title="Kairo-Desktop"
+        Height="400" 
+        Width="300"
+        Icon="/Resource/favicon2.ico"
+        AllowDrop="True"
+        ExtendsContentIntoTitleBar="True"
+        ResizeMode="NoResize"
+        Topmost="True"
+        >
+    <Grid Margin="30,20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="auto"/>
+        </Grid.RowDefinitions>
+        <Grid Grid.Row="0">
+            <TextBlock Name="IncomingVersion" FontSize="24" Text=""/>
+        </Grid>
+        <Grid Grid.Row="1">
+            <Border
+            Grid.Column="1"
+            Margin="0,20"
+            Padding="10,5"
+            CornerRadius="8"
+            Background="{DynamicResource ControlFillColorDefaultBrush}"
+            >
+                <ListView IsEnabled="False" Name="UpdateInfos">
+                </ListView>
+            </Border>
+            
+        </Grid>
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="auto"/>
+            </Grid.ColumnDefinitions>
+            <Button x:Name="Confirm" Click="Confirm_Click" Content="更新" Grid.Column="0" MinHeight="30" MinWidth="80" Background="{DynamicResource {x:Static SystemColors.AccentColorLight1BrushKey}}"/>
+            <Button x:Name="Cancel"  Click="Cancel_Click" Content="取消" Grid.Column="2" MinHeight="30" MinWidth="80"></Button>
+        </Grid>
+    </Grid>
+
+</ui:UiWindow>

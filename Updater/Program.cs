@@ -24,7 +24,15 @@ if (Environment.OSVersion.Platform == PlatformID.Win32NT)
         });
     };
 }
-
+Console.WriteLine("正在等待进程退出......");
+try
+{
+    Process.GetProcessById(int.Parse(args[0])).WaitForExit();
+}catch(Exception e)
+{
+    Console.ForegroundColor = ConsoleColor.Red;
+    Console.WriteLine(e.ToString);
+}
 Replace();
 stopWatch.Stop();
 Console.WriteLine($"\r\n替换更新完毕，用时{stopWatch.ElapsedMilliseconds}ms");
@@ -36,15 +44,9 @@ void Replace()
     try
     {
         Console.OutputEncoding = Encoding.UTF8;
-        foreach (string file in Directory.GetFiles("update", "*.*", SearchOption.TopDirectoryOnly))
-        {
-            if (Path.GetExtension(file.ToLowerInvariant()) != ".zip")
-            {
-                File.Copy(file, Path.GetFileName(file), true);
-                File.Delete(file);
-                Console.WriteLine($"- {Path.GetFullPath(file)} 复制成功");
-            }
-        }
+        File.Delete(Path.Combine(Directory.GetParent(Directory.GetCurrentDirectory()).FullName,"Kairo.exe"));
+        File.Copy(Path.Combine(Directory.GetCurrentDirectory(), "update.temp"), Path.Combine(Directory.GetParent(Directory.GetCurrentDirectory()).FullName, "Kairo.exe"));
+        Console.WriteLine($"- {Path.GetFullPath(Path.Combine("update.temp"))} 复制成功");
         Console.ForegroundColor = ConsoleColor.White;
     }
     catch (Exception e)

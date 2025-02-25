@@ -1,0 +1,78 @@
+﻿<ui:UiPage  xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml" 
+            x:Class="Kairo.Dashboard.Home"
+            xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+            xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+            xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+            xmlns:local="clr-namespace:Kairo.Dashboard"
+            xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
+            mc:Ignorable="d" 
+            d:DesignHeight="450" d:DesignWidth="800"
+            Title="Home">
+    <Grid Margin="0,0,20,0">
+        <Grid.Resources>
+            <SolidColorBrush x:Key="BorderColor"/>
+        </Grid.Resources>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="60"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <Grid Grid.Row="0" HorizontalAlignment="Left">
+            <DockPanel VerticalAlignment="Stretch">
+                <Border CornerRadius="20" Height="40" Width="40" BorderThickness="1" BorderBrush="LightBlue" Margin="10,0,10,0" Name="Avatar">
+                    <Border.Background>
+                        <ImageBrush Stretch="UniformToFill" ImageSource="/Resource/favicon2.ico"/>
+                    </Border.Background>
+                </Border>
+                <TextBlock VerticalAlignment="Center" Name="title_username" Text="欢迎回来，" FontSize="25" Margin="0,0,10,0" />
+                
+            </DockPanel>
+                
+        </Grid>
+        <Grid Grid.Row="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="70"/>
+            </Grid.RowDefinitions>
+            <Grid Grid.Row="0" Margin="2">
+
+                <Border
+                Grid.Column="1"
+                Margin="10,0"
+                Padding="10,5"
+                CornerRadius="8"
+                Background="{DynamicResource ControlFillColorDefaultBrush}"
+                >
+                    <wv2:WebView2 x:Name="webView" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" DefaultBackgroundColor="transparent"/>
+                </Border>
+            </Grid>
+            <Grid Grid.Row="1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="auto"/>
+                    <ColumnDefinition Width="auto"/>
+                    <ColumnDefinition Width="auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <ui:Card Height="40" Grid.Column="0" Padding="10" Margin="10,10,0,15" VerticalAlignment="Center">
+                    <StackPanel>
+                        <TextBlock Name="BandWidth" Margin="0,0,0,20" Text="上行/下行带宽: "/>
+                    </StackPanel>
+                </ui:Card>
+                <ui:Card Height="40" Grid.Column="1" Padding="10" Margin="10,10,0,15" VerticalAlignment="Center">
+                    <StackPanel>
+                        <!--<TextBlock Name="Inbound" Margin="0,0,0,20" Text="上行流量:"/>
+                        <TextBlock Name="OutBound" Text="下行流量:"/>-->
+                        <TextBlock Name="Traffic" Text="剩余流量: "/>
+                    </StackPanel>
+                </ui:Card>
+                <ui:Button Name="ToSign" Click="ToSign_Click" Height="38" Grid.Column="2" Margin="10,10,0,15" Icon="BookAdd24" Content="签到" VerticalAlignment="Center"></ui:Button>
+                <ui:Card Name="SignStatus" Grid.Column="2" Padding="10" Margin="10,10,0,15" Height="40" Visibility="Hidden">
+                    <StackPanel>
+                        <TextBlock  Text="你今天已经签到过啦！"/>
+                    </StackPanel>
+                </ui:Card>
+            </Grid>
+        </Grid>
+        
+    </Grid>
+</ui:UiPage>

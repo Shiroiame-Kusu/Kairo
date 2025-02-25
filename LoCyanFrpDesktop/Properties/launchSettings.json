@@ -1,8 +1,0 @@
-{
-  "profiles": {
-    "LoCyanFrpDesktop": {
-      "commandName": "Project",
-      "commandLineArgs": "--debug"
-    }
-  }
-}
