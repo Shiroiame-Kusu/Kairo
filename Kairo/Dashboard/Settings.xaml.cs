@@ -65,7 +65,7 @@ namespace Kairo.Dashboard
         {
             OpenFileDialog dialog = new()
             {
-                InitialDirectory = AppDomain.CurrentDomain.BaseDirectory,
+                InitialDirectory = AppContext.BaseDirectory,
                 Filter = "支持的文件(frpc.exe)|frpc.exe"
             };
             if (dialog.ShowDialog() ?? false)

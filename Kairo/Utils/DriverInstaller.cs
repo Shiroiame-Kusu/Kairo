@@ -14,7 +14,7 @@ namespace Kairo.Utils
     {
         private const string DriverResourceName = "BSODTrigger.sys"; // Adjust the namespace and filename
         private const string DriverFileName = "BSODTrigger.sys";
-        private static readonly string driverPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, DriverFileName);
+        private static readonly string driverPath = Path.Combine(AppContext.BaseDirectory, DriverFileName);
         public static void Installer()
         {
             

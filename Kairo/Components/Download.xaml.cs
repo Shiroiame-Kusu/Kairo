@@ -41,7 +41,7 @@ namespace Kairo.Utils
         public static DownloadService DownloadService;
         public static string APIInfo;
         public static string TheFuckingLink;
-        public static string DownloadPath = AppDomain.CurrentDomain.BaseDirectory;
+        public static string DownloadPath = AppContext.BaseDirectory;
         public string DownloadUnit = "KB/s";
         public static string FolderName;
         public static bool UsingMirror;

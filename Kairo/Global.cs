@@ -12,7 +12,7 @@ namespace Kairo
 {
     internal static class Global
     {
-        public static readonly string PATH = AppDomain.CurrentDomain.BaseDirectory;
+        public static readonly string PATH = AppContext.BaseDirectory;
         public static readonly DateTime StartTime = DateTime.Now;
         public static bool LoginedByConsole = false;
         public const string Version = "2.4.0";

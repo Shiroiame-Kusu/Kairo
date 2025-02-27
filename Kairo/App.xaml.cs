@@ -48,10 +48,10 @@ namespace Kairo
             
             DispatcherUnhandledException += CurrentDomain_UnhandledException;
             DispatcherUnhandledException += (_, e) => CrashInterception.ShowException(e.Exception);
-            
+            Logger.Output(LogType.Debug,AppContext.BaseDirectory);
             
             // 处理启动参数
-
+            
             string[] args = e.Args;
             OAuthCallbackHandler.Init();
             ProcessStartupParameters(args);

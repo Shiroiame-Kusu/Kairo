@@ -28,9 +28,9 @@ namespace Kairo.Dashboard
         public Home()
         {
             InitializeCustomComponents();
-            RefreshAvatar();
+           
             Task.Run(() => {
-                
+                RefreshAvatar();
                 FetchAnnouncement();
                 CheckIsSignedTodayOrNot();
             });
@@ -111,8 +111,8 @@ namespace Kairo.Dashboard
         }
         private async void InitializeWebView(string a)
         {
-            //if (!Directory.Exists(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "WebView2"))) Directory.CreateDirectory(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "WebView2"));
-            //await WebViewInstaller.CheckAndInstallAsync(false, false, Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "WebView2"));
+            //if (!Directory.Exists(Path.Combine(AppContext.BaseDirectory, "WebView2"))) Directory.CreateDirectory(Path.Combine(AppContext.BaseDirectory, "WebView2"));
+            //await WebViewInstaller.CheckAndInstallAsync(false, false, Path.Combine(AppContext.BaseDirectory, "WebView2"));
             Dispatcher.BeginInvoke(async () =>
             {
                 await webView.EnsureCoreWebView2Async();
@@ -120,37 +120,47 @@ namespace Kairo.Dashboard
             });
             
         }
+        private void RefreshAvatar(ImageBrush a)
+        {
+            Application.Current.Dispatcher.BeginInvoke(() =>
+            {
+                Avatar = new System.Windows.Controls.Border()
+                {
+                    CornerRadius = new CornerRadius(20),
+                    Height = 40,
+                    Width = 40,
+                    BorderThickness = new Thickness(1),
+                    BorderBrush = Brushes.LightBlue,
+                    Margin = new Thickness(10,0,10,0),
+                    Background = a
+                    
+                };
+
+            });
+        }
         private async void RefreshAvatar()
         {
             try
             {
                 using (var client = new HttpClient())
                 {
-                    var Avatar = await client.GetAsync(MainWindow.Avatar).Await().Content.ReadAsStreamAsync();
-                    var path = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Avatar.png");
+                    var Avatar2 = await client.GetAsync(MainWindow.Avatar).Await().Content.ReadAsStreamAsync();
+                    var path = System.IO.Path.Combine(AppContext.BaseDirectory, "Avatar.png");
                     var ApplyAvatar = () =>
                     {
-                        BitmapImage bitmap = new BitmapImage();
-
-                        // 设置 BitmapImage 的 UriSource 属性为图片文件的路径
-                        bitmap.BeginInit();
-                        bitmap.UriSource = new Uri(path, UriKind.RelativeOrAbsolute);
-                        bitmap.EndInit();
-                        AvatarImage = new ImageBrush(bitmap)
-                        {
+                        BitmapImage bitmap = new(new Uri(path));
+                        ImageBrush imageBrush = new() { 
+                            ImageSource = bitmap,
                             Stretch = Stretch.UniformToFill,
-
                         };
-                        Dispatcher.Invoke(() =>
-                        {
-                            this.Avatar.Background = AvatarImage;
-                        });
+                        // 设置 BitmapImage 的 UriSource 属性为图片文件的路径
+                        RefreshAvatar(imageBrush);
                     };
 
                     if (File.Exists(path)){ 
                         MD5 md5 = MD5.Create();
-                        if (md5.ComputeHash(Avatar).SequenceEqual(md5.ComputeHash(File.ReadAllBytes("Avatar.png"))))
-                        {
+                        if (md5.ComputeHash(Avatar2).SequenceEqual(md5.ComputeHash(File.ReadAllBytes("Avatar.png"))))
+                        {   
                             ApplyAvatar();
                             return;
                         }
@@ -160,10 +170,10 @@ namespace Kairo.Dashboard
                     }
                     using (FileStream fileStream = new(path, FileMode.Create))
                     {
-                        byte[] bytes = new byte[Avatar.Length];
-                        Avatar.Read(bytes, 0, bytes.Length);
+                        byte[] bytes = new byte[Avatar2.Length];
+                        Avatar2.Read(bytes, 0, bytes.Length);
                         // 设置当前流的位置为流的开始
-                        Avatar.Seek(0, SeekOrigin.Begin);
+                        Avatar2.Seek(0, SeekOrigin.Begin);
 
                         // 把 byte[] 写入文件
 
