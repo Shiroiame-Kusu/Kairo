@@ -51,7 +51,7 @@ namespace Kairo.Utils
                     File.AppendAllText(
                         Path.Combine("logs", "crash", $"{DateTime.Now:yyyy-MM-dd}.log"),
                         DateTime.Now + "  |  "
-                        + $"{Global.Version} - {Global.Branch}" + "  |  " +
+                        + $"{Global.Version} - {Global.Branch}.{Global.Revision}" + "  |  " +
                         "NET" + Environment.Version.ToString() +
                         Environment.NewLine +
                         exceptionMsg +

@@ -15,6 +15,7 @@ using HtmlAgilityPack;
 using System.Linq;
 using System.Windows;
 using System.Threading.Tasks;
+using HandyControl.Tools.Extension;
 
 
 namespace Kairo.Dashboard
@@ -28,9 +29,9 @@ namespace Kairo.Dashboard
         public Home()
         {
             InitializeCustomComponents();
-           
+            RefreshAvatar();
             Task.Run(() => {
-                RefreshAvatar();
+                
                 FetchAnnouncement();
                 CheckIsSignedTodayOrNot();
             });
@@ -111,32 +112,14 @@ namespace Kairo.Dashboard
         }
         private async void InitializeWebView(string a)
         {
-            //if (!Directory.Exists(Path.Combine(AppContext.BaseDirectory, "WebView2"))) Directory.CreateDirectory(Path.Combine(AppContext.BaseDirectory, "WebView2"));
-            //await WebViewInstaller.CheckAndInstallAsync(false, false, Path.Combine(AppContext.BaseDirectory, "WebView2"));
+            //if (!Directory.Exists(Path.Combine(Global.PATH, "WebView2"))) Directory.CreateDirectory(Path.Combine(Global.PATH, "WebView2"));
+            //await WebViewInstaller.CheckAndInstallAsync(false, false, Path.Combine(Global.PATH, "WebView2"));
             Dispatcher.BeginInvoke(async () =>
             {
                 await webView.EnsureCoreWebView2Async();
                 webView.CoreWebView2.NavigateToString(a);
             });
             
-        }
-        private void RefreshAvatar(ImageBrush a)
-        {
-            Application.Current.Dispatcher.BeginInvoke(() =>
-            {
-                Avatar = new System.Windows.Controls.Border()
-                {
-                    CornerRadius = new CornerRadius(20),
-                    Height = 40,
-                    Width = 40,
-                    BorderThickness = new Thickness(1),
-                    BorderBrush = Brushes.LightBlue,
-                    Margin = new Thickness(10,0,10,0),
-                    Background = a
-                    
-                };
-
-            });
         }
         private async void RefreshAvatar()
         {
@@ -145,7 +128,7 @@ namespace Kairo.Dashboard
                 using (var client = new HttpClient())
                 {
                     var Avatar2 = await client.GetAsync(MainWindow.Avatar).Await().Content.ReadAsStreamAsync();
-                    var path = System.IO.Path.Combine(AppContext.BaseDirectory, "Avatar.png");
+                    var path = System.IO.Path.Combine(Global.PATH, "Avatar.png");
                     var ApplyAvatar = () =>
                     {
                         BitmapImage bitmap = new(new Uri(path));
@@ -154,7 +137,13 @@ namespace Kairo.Dashboard
                             Stretch = Stretch.UniformToFill,
                         };
                         // 设置 BitmapImage 的 UriSource 属性为图片文件的路径
-                        RefreshAvatar(imageBrush);
+                        Application.Current.Dispatcher.BeginInvoke(() =>
+                        {
+                            Avatar.Background = Avatar.Background.Clone();
+                            Avatar.Background = imageBrush;
+
+
+                        });
                     };
 
                     if (File.Exists(path)){ 
@@ -189,6 +178,7 @@ namespace Kairo.Dashboard
             }
             catch (Exception ex)
             {
+                Logger.Output(LogType.Error, ex);
                 Logger.MsgBox("无法获取您的头像, 请稍后重试", "Kairo", 0, 48, 1);
             }
         }

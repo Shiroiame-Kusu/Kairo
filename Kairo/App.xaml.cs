@@ -48,7 +48,7 @@ namespace Kairo
             
             DispatcherUnhandledException += CurrentDomain_UnhandledException;
             DispatcherUnhandledException += (_, e) => CrashInterception.ShowException(e.Exception);
-            Logger.Output(LogType.Debug,AppContext.BaseDirectory);
+            
             
             // 处理启动参数
             
@@ -56,7 +56,7 @@ namespace Kairo
             OAuthCallbackHandler.Init();
             ProcessStartupParameters(args);
             base.OnStartup(e);
-            
+            Logger.Output(LogType.Debug, Global.PATH);
 
         }
         protected override void OnExit(ExitEventArgs e)

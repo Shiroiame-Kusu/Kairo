@@ -104,15 +104,15 @@ namespace Kairo.Utils
         }
         public static void StartUpdater()
         {
-            if (!File.Exists(Path.Combine(AppContext.BaseDirectory, "Kairo", "Updater.exe")));
+            if (!File.Exists(Path.Combine(Global.PATH, "Kairo", "Updater.exe")));
             {
-                using FileStream fileStream = new(Path.Combine(AppContext.BaseDirectory, "Kairo", "Updater.exe"), FileMode.Create);
+                using FileStream fileStream = new(Path.Combine(Global.PATH, "Kairo", "Updater.exe"), FileMode.Create);
                 fileStream.Write(Resources.Updater, 0, Resources.Updater.Length);
 
             }
-            Process.Start(new ProcessStartInfo(Path.Combine(AppContext.BaseDirectory, "Kairo", "Updater.exe"))
+            Process.Start(new ProcessStartInfo(Path.Combine(Global.PATH, "Kairo", "Updater.exe"))
             {
-                WorkingDirectory = Path.Combine(AppContext.BaseDirectory,"Kairo"),
+                WorkingDirectory = Path.Combine(Global.PATH,"Kairo"),
                 Arguments = $"{Process.GetCurrentProcess().Id}",
                 UseShellExecute = true,
             });

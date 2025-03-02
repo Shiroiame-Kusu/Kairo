@@ -41,7 +41,7 @@ namespace Kairo.Utils
         public static DownloadService DownloadService;
         public static string APIInfo;
         public static string TheFuckingLink;
-        public static string DownloadPath = AppContext.BaseDirectory;
+        public static string DownloadPath = Global.PATH;
         public string DownloadUnit = "KB/s";
         public static string FolderName;
         public static bool UsingMirror;
@@ -226,7 +226,7 @@ namespace Kairo.Utils
         {
             try
             {
-                await DownloadService.DownloadFileTaskAsync(url, Path.Combine(path + "frpc.temp"));
+                await DownloadService.DownloadFileTaskAsync(url, Path.Combine(path,"frpc.temp"));
             }catch(Exception ex)
             {   
                 Debug.WriteLine(ex);

@@ -12,13 +12,13 @@ namespace Kairo
 {
     internal static class Global
     {
-        public static readonly string PATH = AppContext.BaseDirectory;
+        public static readonly string PATH = Path.GetDirectoryName(Environment.ProcessPath);
         public static readonly DateTime StartTime = DateTime.Now;
         public static bool LoginedByConsole = false;
         public const string Version = "2.4.0";
         public const string VersionName = "Crychic";
         public const string Branch = "Beta";
-        public const int Revision = 2;
+        public const int Revision = 3;
         public static readonly BuildInfo BuildInfo = new();
         public const string Developer = "Shiroiame-Kusu & Daiyangcheng";
         public const string Copyright = "Copyright © Shiroiame-Kusu All Rights Reserved";

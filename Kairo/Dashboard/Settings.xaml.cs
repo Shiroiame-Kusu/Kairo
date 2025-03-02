@@ -65,7 +65,7 @@ namespace Kairo.Dashboard
         {
             OpenFileDialog dialog = new()
             {
-                InitialDirectory = AppContext.BaseDirectory,
+                InitialDirectory = Global.PATH,
                 Filter = "支持的文件(frpc.exe)|frpc.exe"
             };
             if (dialog.ShowDialog() ?? false)
@@ -162,7 +162,7 @@ namespace Kairo.Dashboard
             {
                 
                 if (rk != null) {
-                    rk.SetValue("Kairo", Assembly.GetExecutingAssembly().Location);
+                    rk.SetValue("Kairo", Environment.ProcessPath);
                 }
                 Global.Config.AutoStartUp = true;
             }
