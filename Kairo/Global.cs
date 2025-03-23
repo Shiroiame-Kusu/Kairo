@@ -38,9 +38,9 @@ namespace Kairo
             "Tips:再急, 再急就给你Crash了"
 
         };
-        public const string API = "https://locyan-api.nyat.icu/v2";
+        public const string API = "https://api.locyanfrp.cn/v2";
         //public const string UpdateCheckerAPI = "http://localhost:5043/api";
-        public const string UpdateCheckerAPI = "http://kairo.nyat.icu/api";
+        public const string UpdateCheckerAPI = "https://kairo.nyat.icu/api";
         public const string GithubMirror = "https://proxy-gh.1l1.icu/";
         public class APIList
         {   

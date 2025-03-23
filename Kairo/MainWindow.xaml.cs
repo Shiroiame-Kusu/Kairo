@@ -164,6 +164,7 @@ namespace Kairo
                         Global.Config.ID = int.Parse(json["data"]["user_id"].ToString());
                         Global.Config.AccessToken = json["data"]["access_token"].ToString();
                         httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {Global.Config.AccessToken}");
+                        Console.WriteLine($"{Global.APIList.GetUserInfo}?user_id={json["data"]["user_id"].ToString()}");
                         response = httpClient.GetAsync($"{Global.APIList.GetUserInfo}?user_id={json["data"]["user_id"].ToString()}").Await();
                         json = JObject.Parse(response.Content.ReadAsStringAsync().Await());
                         UserInfo = JsonConvert.DeserializeObject<UserInfo>(json["data"].ToString());
@@ -203,77 +204,6 @@ namespace Kairo
 
 
 
-        }
-        public async Task<bool> Login(string username, string password)
-        {
-            // 使用密码，例如验证或其他操作
-            if (!string.IsNullOrEmpty(password))
-            {
-                //Logger.MsgBox("你确定你输了密码?", "错误", 0, 48, 0);
-                //return;
-
-
-
-                if (username != "" && password != "")
-                {
-                    using (var httpClient = new HttpClient())
-                    {
-                        string url = $"{Global.API}/api/v2/auth/login?username={username}&password={password}";
-                        try
-                        {
-                            // 发起 GET 请求并获取响应
-                            httpClient.DefaultRequestHeaders.Add("User-Agent",$"Kairo-{Global.Version}");
-                            //httpClient.DefaultRequestHeaders.Add("User-Agent",$"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0");
-                            HttpResponseMessage response = await httpClient.PostAsync(url, new FormUrlEncodedContent(new List<KeyValuePair<string, string>>() { new("","")}));
-
-                            // 确保请求成功
-                            //response.EnsureSuccessStatusCode();
-
-                            // 将 JSON 数据读取为字符串
-                            string jsonString = await response.Content.ReadAsStringAsync();
-                            var temp = JObject.Parse(jsonString);
-                            
-                            Logger.Output(LogType.Debug, jsonString);
-                            // 将 JSON 字符串反序列化为对象
-                            UserInfo = JsonConvert.DeserializeObject<UserInfo>(temp["data"].ToString());
-                            UserInfo.Status = int.Parse(temp["status"].ToString());
-                            if (UserInfo.Status != 200)
-                            {
-                                Logger.MsgBox("账号或密码错误!", "警告", 0, 48, 0);
-                                return false;
-                            }
-                            else
-                            {
-                                Logger.MsgBox($"登录成功\n获取到登录Token: {UserInfo.Token}", "提示", 0, 47, 0);
-                                InitializeInfoForDashboard();
-                                Global.Config.AccessToken = UserInfo.Token;
-                                Global.Config.Username = UserInfo.Username;
-                                Global.Config.FrpToken = UserInfo.FrpToken;
-                                islogin = true;
-                                DashBoard = new DashBoard();
-                                DashBoard.Show();
-                                Close();
-                                Access.DashBoard.CheckIfFrpcInstalled();
-                                return true;
-
-                            }
-                        }
-                        catch (HttpRequestException ex)
-                        {
-                            Logger.MsgBox($"请求API的过程中出错 \n 报错信息: {ex.Message}", "错误", 0, 48, 0);
-                        }
-                    }
-                }
-                else
-                {
-                    Logger.MsgBox("用户名 / 密码不能为空!", "警告", 0, 48, 0);
-                }
-            }
-            else
-            {
-                Logger.MsgBox("用户名 / 密码不能为空!", "警告", 0, 48, 0);
-            }
-            return false;
         }
         private void InitializeInfoForDashboard()
         {
