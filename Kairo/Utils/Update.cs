@@ -60,7 +60,7 @@ namespace Kairo.Utils
                     }
                     if (updateInfo != null) {
                         if (updateInfo.Version == Global.Version) {
-                            if (updateInfo.Subversion != Global.Revision) {
+                            if (updateInfo.Subversion > Global.Revision) {
                                 ShowUpdateWindow(updateInfo);
                             }
                         }

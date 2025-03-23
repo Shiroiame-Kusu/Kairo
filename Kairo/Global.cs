@@ -18,7 +18,7 @@ namespace Kairo
         public const string Version = "2.4.0";
         public const string VersionName = "Crychic";
         public const string Branch = "Beta";
-        public const int Revision = 3;
+        public const int Revision = 4;
         public static readonly BuildInfo BuildInfo = new();
         public const string Developer = "Shiroiame-Kusu & Daiyangcheng";
         public const string Copyright = "Copyright © Shiroiame-Kusu All Rights Reserved";
@@ -38,7 +38,7 @@ namespace Kairo
             "Tips:再急, 再急就给你Crash了"
 
         };
-        public const string API = "https://api-v2.locyanfrp.cn/api/v2";
+        public const string API = "https://locyan-api.nyat.icu/v2";
         //public const string UpdateCheckerAPI = "http://localhost:5043/api";
         public const string UpdateCheckerAPI = "http://kairo.nyat.icu/api";
         public const string GithubMirror = "https://proxy-gh.1l1.icu/";
