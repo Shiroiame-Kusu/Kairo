@@ -1,0 +1,1 @@
+﻿//global using HttpClient = Kairo.Utils.DoH.DoHHttpClient;

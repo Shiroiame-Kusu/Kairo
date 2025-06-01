@@ -13,6 +13,7 @@ namespace Kairo.Utils
         public string RefreshToken = "";
         public string Username = "";
         public int ID = 0;
+        public int OAuthPort = 10000;
         //public string Password = "";
         public string FrpToken = "";
         public string FrpcPath = "";

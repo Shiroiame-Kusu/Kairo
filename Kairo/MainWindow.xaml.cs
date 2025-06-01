@@ -136,7 +136,7 @@ namespace Kairo
 
         private async void Login_Click(object sender, RoutedEventArgs e)
         {
-            var url = $"https://dashboard.locyanfrp.cn/auth/oauth/authorize?app_id={Global.APPID}&scopes=User,Proxy,Sign&redirect_url=http://localhost:16092/oauth/callback";
+            var url = $"{Global.APIList.GetTheFUCKINGRefreshToken}{Global.APPID}&scopes=User,Proxy,Sign&redirect_url=http://localhost:{Global.OAuthPort}/oauth/callback";
             Process.Start(new ProcessStartInfo(url)
             {
                 UseShellExecute = true

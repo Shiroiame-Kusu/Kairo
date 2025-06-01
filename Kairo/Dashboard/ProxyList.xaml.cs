@@ -97,7 +97,7 @@ namespace Kairo.Dashboard
             using (var client = new HttpClient())
             {
                 // 定义API链接
-                string url = $"{Global.API}/proxy/all?user_id={Global.Config.ID}";
+                string url = $"{Global.APIList.GetAllProxy}{Global.Config.ID}";
                 client.DefaultRequestHeaders.Add("Authorization", $"Bearer {Global.Config.AccessToken}");
                 // 防止API报错
                 try
@@ -587,7 +587,7 @@ namespace Kairo.Dashboard
                 using (HttpClient httpClient = new HttpClient()) {
 
                     httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {Global.Config.AccessToken}");
-                    var b = httpClient.DeleteAsync($"{Global.API}/proxy?user_id={Global.Config.ID}&proxy_id={this.ID}").Await();
+                    var b = httpClient.DeleteAsync($"{Global.APIList.DeleteProxy}{Global.Config.ID}&proxy_id={this.ID}").Await();
                     var a = b.Content.ReadAsStringAsync().Await();
 
                     if (a == null )

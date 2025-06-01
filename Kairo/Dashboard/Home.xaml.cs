@@ -39,10 +39,10 @@ namespace Kairo.Dashboard
 
         private async void CheckIsSignedTodayOrNot()
         {
-            using (HttpClient hc = new())
+            using (System.Net.Http.HttpClient hc = new())
             {
                 hc.DefaultRequestHeaders.Add("Authorization",$"Bearer {Global.Config.AccessToken}");
-                var result = await hc.GetAsync($"{Global.API}/sign?user_id={Global.Config.ID}").Await().Content.ReadAsStringAsync();
+                var result = await hc.GetAsync($"{Global.APIList.GetSign}{Global.Config.ID}").Await().Content.ReadAsStringAsync();
                 if (result == null) return;
                 var temp = JObject.Parse(result);
                 if (int.Parse(temp["status"].ToString()) == 200)
@@ -80,7 +80,7 @@ namespace Kairo.Dashboard
             {
                 using (HttpClient client = new())
                 {
-                    var result = await client.GetAsync($"{Global.API}/notice").Await().Content.ReadAsStringAsync();
+                    var result = await client.GetAsync(Global.APIList.GetNotice).Await().Content.ReadAsStringAsync();
                     var result2 = JObject.Parse(result);
                     if (result2 != null && int.Parse(result2["status"].ToString()) == 200) {
                         var html = Markdown.ToHtml(result2["data"]["broadcast"].ToString());
@@ -125,7 +125,7 @@ namespace Kairo.Dashboard
         {
             try
             {
-                using (var client = new HttpClient())
+                using (var client = new System.Net.Http.HttpClient())
                 {
                     var Avatar2 = await client.GetAsync(MainWindow.Avatar).Await().Content.ReadAsStreamAsync();
                     var path = System.IO.Path.Combine(Global.PATH, "Avatar.png");
@@ -189,7 +189,7 @@ namespace Kairo.Dashboard
                 using (var hc = new HttpClient())
                 {
                     hc.DefaultRequestHeaders.Add("Authorization", $"Bearer {Global.Config.AccessToken}");
-                    HttpResponseMessage responseMessage = hc.PostAsync($"{Global.API}/sign?user_id={Global.Config.ID}",null).Result;
+                    HttpResponseMessage responseMessage = hc.PostAsync($"{Global.APIList.GetSign}{Global.Config.ID}", null).Result;
                     
                     
                     var temp = JObject.Parse(responseMessage.Content.ReadAsStringAsync().Result);
