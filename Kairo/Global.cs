@@ -18,7 +18,7 @@ namespace Kairo
         public const string Version = "2.4.0";
         public const string VersionName = "Crychic";
         public const string Branch = "Beta";
-        public const int Revision = 4;
+        public const int Revision = 5;
         public static readonly BuildInfo BuildInfo = new();
         public const string Developer = "Shiroiame-Kusu & Daiyangcheng";
         public const string Copyright = "Copyright © Shiroiame-Kusu All Rights Reserved";
