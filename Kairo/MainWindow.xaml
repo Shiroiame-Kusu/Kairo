@@ -176,12 +176,12 @@
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
                                     <TextBlock Grid.Column="0" Name="Register" FontSize="12" Text="" VerticalAlignment="Center" HorizontalAlignment="Center">
-                                        <Hyperlink NavigateUri="https://preview.locyanfrp.cn/register" RequestNavigate="Register_Navigate">
+                                        <Hyperlink NavigateUri="https://dashboard.locyanfrp.cn/auth/register" RequestNavigate="Register_Navigate">
                                             没有账号? 前往注册
                                         </Hyperlink>
                                     </TextBlock>
                                     <TextBlock Grid.Column="1" Name="ForgetPassword" FontSize="12" Text="" VerticalAlignment="Center" HorizontalAlignment="Center">
-                                        <Hyperlink NavigateUri="https://preview.locyanfrp.cn/reset_password" RequestNavigate="ForgetPassword_Navigate">
+                                        <Hyperlink NavigateUri="https://dashboard.locyanfrp.cn/reset_password" RequestNavigate="ForgetPassword_Navigate">
                                             忘记密码?
                                         </Hyperlink>
                                     </TextBlock>

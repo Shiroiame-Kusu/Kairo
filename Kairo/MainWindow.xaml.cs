@@ -64,7 +64,7 @@ namespace Kairo
         private void Init(bool TokenMode)
         {
             InitializeAllComponent();
-            if (Random.Shared.Next(0, 10000) == 5000)
+            if ( new Random().Next(0, 100) == new Random().Next(0, 100))
             {
                 CrashInterception.ShowException(new Exception("这是一个彩蛋，万分之一的机会"));
             }
@@ -136,7 +136,7 @@ namespace Kairo
 
         private async void Login_Click(object sender, RoutedEventArgs e)
         {
-            var url = $"{Global.APIList.GetTheFUCKINGRefreshToken}{Global.APPID}&scopes=User,Proxy,Sign&redirect_url=http://localhost:{Global.OAuthPort}/oauth/callback";
+            var url = $"{Global.APIList.GetTheFUCKINGRefreshToken}{Global.Config.ID}&app_id={Global.APPID}&redirect_url=http://localhost:{Global.OAuthPort}/oauth/callback&request_permission_ids=User,Proxy,Sign";
             Process.Start(new ProcessStartInfo(url)
             {
                 UseShellExecute = true

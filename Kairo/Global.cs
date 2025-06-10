@@ -50,7 +50,7 @@ namespace Kairo
         {   
             public const string GetUserInfo = $"{API}/user/info";
             public const string AGodDamnSwitch = Branch == "Alpha" ? "preview" : "dashboard";
-            public const string GetTheFUCKINGRefreshToken = $"https://{AGodDamnSwitch}.locyanfrp.cn/auth/oauth/authorize?app_id=";
+            public const string GetTheFUCKINGRefreshToken = $"https://{AGodDamnSwitch}.locyanfrp.cn/auth/oauth/authorize?user_id=";
             public const string GetAccessToken = $"{API}/auth/oauth/access-token";
             public const string GetFrpToken = $"{API}/user/frp/token";
             public const string GetSign = $"{API}/sign?user_id=";

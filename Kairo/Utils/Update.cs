@@ -45,7 +45,7 @@ namespace Kairo.Utils
                     UpdateInfo? updateInfo = null;
                     foreach (var ui in json)
                     {
-                        if (ui.ImportantLevel == 3)
+                        if (ui.ImportantLevel == 3 && Global.Branch.Equals("Release"))
                         {
                             updateInfo = ui;
                             break;
@@ -59,15 +59,24 @@ namespace Kairo.Utils
 
                     }
                     if (updateInfo != null) {
-                        if (updateInfo.Version == Global.Version) {
-                            if (updateInfo.Subversion > Global.Revision) {
-                                ShowUpdateWindow(updateInfo);
-                            }
-                        }
-                        else
+                        string[] s1 = updateInfo.Version.Split(".");
+                        string[] s2 = Global.Version.Split(".");
+                        int major1 = int.Parse(s1[0]);
+                        int minor1 = int.Parse(s1[1]);
+                        int patch1 = int.Parse(s1[2]);
+
+                        int major2 = int.Parse(s2[0]);
+                        int minor2 = int.Parse(s2[1]);
+                        int patch2 = int.Parse(s2[2]);
+
+                        if (major1 > major2 ||
+                            (major1 == major2 && minor1 > minor2) ||
+                            (major1 == major2 && minor1 == minor2 && patch1 > patch2) ||
+                            (major1 == major2 && minor1 == minor2 && patch1 == patch2 && updateInfo.Subversion > Global.Revision))
                         {
                             ShowUpdateWindow(updateInfo);
                         }
+
                     }
 
 
