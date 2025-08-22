@@ -111,11 +111,12 @@ namespace Kairo
                     }
                 }
                 int Num = UsernameNum - PasswordNum;
-                if (Num >= 2 && Num <= -2)
+                // 修正逻辑：只要都找到且下一个参数存在即可
+                if (UsernameNum > 0 && PasswordNum > 0 && UsernameNum + 1 < args.Length && PasswordNum + 1 < args.Length)
                 {
                     Username = args[UsernameNum + 1];
                     Password = args[PasswordNum + 1];
-                    if (Password != null && Username != null)
+                    if (!string.IsNullOrEmpty(Password) && !string.IsNullOrEmpty(Username))
                     {
                         Global.Config.Username = Username;
                         foreach (char c in Password.ToCharArray())

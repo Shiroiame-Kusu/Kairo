@@ -1,39 +1,42 @@
-﻿/*using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System;
 using System.Net.Http;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Kairo.Utils
 {
     public static class Request
-    {   
-        private static HttpClient httpClient = null;
-        public static async string HttpRequest(string url, RequestMethods methods)
-        {
-            if(httpClient == null)
-            {
-                httpClient = new HttpClient();
-                httpClient.DefaultRequestHeaders.Add("User-Agent", $"Kairo-{Global.Version}");
-            }
+    {
+        private static readonly HttpClient httpClient = new();
 
-            HttpResponseMessage responseMessage;
-            switch (methods) { 
-                case RequestMethods.GET:
-                    responseMessage = await httpClient.GetAsync(url);
-                    break;
-                case RequestMethods.POST:
-                    // = await httpClient.PostAsync(url, new());
-                    break;
+        public static async Task<string?> HttpRequestAsync(string url, RequestMethods method, HttpContent? content = null)
+        {
+            if (string.IsNullOrWhiteSpace(url))
+            {
+                Logger.Output(LogType.Error, "Request URL is null or empty.");
+                return null;
+            }
+            try
+            {
+                HttpResponseMessage response = method switch
+                {
+                    RequestMethods.GET => await httpClient.GetAsync(url),
+                    RequestMethods.POST => await httpClient.PostAsync(url, content ?? new StringContent("")),
+                    RequestMethods.DELETE => await httpClient.DeleteAsync(url),
+                    _ => throw new ArgumentOutOfRangeException(nameof(method), method, null)
+                };
+                response.EnsureSuccessStatusCode();
+                return await response.Content.ReadAsStringAsync();
+            }
+            catch (Exception ex)
+            {
+                Logger.Output(LogType.Error, $"HTTP request failed for {url}", ex);
+                return null;
             }
         }
-
     }
     public enum RequestMethods
     {
-        GET,POST,DELETE
+        GET, POST, DELETE
     }
 }
-*/
-//TODO
+//TODO: Add more methods and headers as needed.

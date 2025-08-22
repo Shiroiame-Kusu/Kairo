@@ -44,18 +44,39 @@ namespace Kairo
         /// </summary>
         public DashBoard()
         {
-            InitializeComponent();
-            Access.DashBoard = this;
-            
-            
-            
+            try
+            {
+                InitializeComponent();
+                Access.DashBoard = this;
+            }
+            catch (Exception ex)
+            {
+                Logger.Output(LogType.Error, "DashBoard initialization failed:", ex);
+                CrashInterception.ShowException(ex);
+            }
         }
         
         public bool CheckIfFrpcInstalled()
         {
-            if (!string.IsNullOrEmpty(Global.Config.FrpcPath))
+            try
             {
-                if (!File.Exists(Global.Config.FrpcPath))
+                if (!string.IsNullOrEmpty(Global.Config.FrpcPath))
+                {
+                    if (!File.Exists(Global.Config.FrpcPath))
+                    {
+                        bool isConfirmed = Logger.MsgBox("您需要我们自动为您安装frpc吗?", "未检测到您安装的frpc", 1, 47, 1);
+                        if (isConfirmed)
+                        {
+                            DownloadFrpc();
+                        }
+                        return false;
+                    }
+                    else
+                    {
+                        return true;
+                    }
+                }
+                else
                 {
                     bool isConfirmed = Logger.MsgBox("您需要我们自动为您安装frpc吗?", "未检测到您安装的frpc", 1, 47, 1);
                     if (isConfirmed)
@@ -64,27 +85,27 @@ namespace Kairo
                     }
                     return false;
                 }
-                else
-                {
-                    return true;
-                }
-
             }
-            else
+            catch (Exception ex)
             {
-                bool isConfirmed = Logger.MsgBox("您需要我们自动为您安装frpc吗?", "未检测到您安装的frpc", 1, 47, 1);
-                if (isConfirmed)
-                {
-                    DownloadFrpc();
-                }
+                Logger.Output(LogType.Error, "CheckIfFrpcInstalled failed:", ex);
+                CrashInterception.ShowException(ex);
                 return false;
             }
         }
         public void DownloadFrpc()
         {
-            Download downloader = new Download();
-            downloader.Owner = this;
-            downloader.Show();
+            try
+            {
+                Download downloader = new Download();
+                downloader.Owner = this;
+                downloader.Show();
+            }
+            catch (Exception ex)
+            {
+                Logger.Output(LogType.Error, "DownloadFrpc failed:", ex);
+                CrashInterception.ShowException(ex);
+            }
         }
         public void OpenSnackbar(string title, string message, SymbolRegular icon)
         {
@@ -110,13 +131,29 @@ namespace Kairo
             => ShowInTaskbar = IsVisible;
         public void Hide_Click(object sender, RoutedEventArgs e)
         {
-            ShowInTaskbar = false;
-            Hide();
+            try
+            {
+                ShowInTaskbar = false;
+                Hide();
+            }
+            catch (Exception ex)
+            {
+                Logger.Output(LogType.Error, "Hide_Click failed:", ex);
+                CrashInterception.ShowException(ex);
+            }
         }
 
         public void Exit_Click(object sender, RoutedEventArgs e)
         {
-            Environment.Exit(0);
+            try
+            {
+                Environment.Exit(0);
+            }
+            catch (Exception ex)
+            {
+                Logger.Output(LogType.Error, "Exit_Click failed:", ex);
+                CrashInterception.ShowException(ex);
+            }
         }
         public void UiWindow_Loaded(object sender, EventArgs e)
         {

@@ -30,23 +30,40 @@ namespace Kairo.Utils
         }
         private void ReadConfig()
         {
-            if (File.Exists(Path.Combine("Kairo", "Settings.json")))
+            try
             {
-                Global.Config = JsonConvert.DeserializeObject<Config>(File.ReadAllText(Path.Combine("Kairo", "Settings.json"), Encoding.UTF8)) ?? new();
+                string configPath = Path.Combine("Kairo", "Settings.json");
+                if (File.Exists(configPath))
+                {
+                    string json = File.ReadAllText(configPath, Encoding.UTF8);
+                    Global.Config = JsonConvert.DeserializeObject<Config>(json) ?? new();
+                }
+            }
+            catch (Exception ex)
+            {
+                // Log the error and fallback to default config
+                Logger.Output(LogType.Error, "Failed to read config:", ex);
+                Global.Config = new();
             }
             WriteConfig();
         }
         private void WriteConfig() {
-            string newSettings = JsonConvert.SerializeObject(Global.Config);
-            if (newSettings != _oldSettings)
+            try
             {
-                if (!Directory.Exists("Kairo"))
+                string newSettings = JsonConvert.SerializeObject(Global.Config);
+                if (newSettings != _oldSettings)
                 {
-                    Directory.CreateDirectory("Kairo");
+                    if (!Directory.Exists("Kairo"))
+                    {
+                        Directory.CreateDirectory("Kairo");
+                    }
+                    _oldSettings = newSettings;
+                    File.WriteAllText(Path.Combine("Kairo", "Settings.json"), JsonConvert.SerializeObject(Global.Config, Formatting.Indented));
                 }
-                _oldSettings = newSettings;
-                File.WriteAllText(Path.Combine("Kairo", "Settings.json"), JsonConvert.SerializeObject(Global.Config, Formatting.Indented));
-
+            }
+            catch (Exception ex)
+            {
+                Logger.Output(LogType.Error, "Failed to write config:", ex);
             }
         }
         public static void Init()
