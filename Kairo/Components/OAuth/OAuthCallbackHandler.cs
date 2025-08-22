@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Builder;
+﻿using Kairo.Utils;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Net;
@@ -50,12 +51,20 @@ namespace Kairo.Components.OAuth
                 }
                 string[] a = { $"--urls=http://localhost:{Global.OAuthPort}" };
                 Global.Config.OAuthPort = Global.OAuthPort;
-                WebApplicationBuilder builder = WebApplication.CreateBuilder(a);
-                builder.Services.AddControllers();
-                WebApplication app = builder.Build();
-                app.UseRouting();
-                app.MapControllers();
-                app.RunAsync();
+
+                try
+                {
+                    WebApplicationBuilder builder = WebApplication.CreateBuilder();
+                    builder.Services.AddControllers();
+                    WebApplication app = builder.Build();
+                    app.UseRouting();
+                    app.MapControllers();
+                    app.RunAsync();
+                }
+                catch (Exception e) { 
+                    CrashInterception.ShowException(e);
+                    Access.MainWindow.VisibilityChange(false);
+                }
             });
         }
         private static bool IsPortInUse(int port)

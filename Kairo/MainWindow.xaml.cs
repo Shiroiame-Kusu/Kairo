@@ -155,49 +155,52 @@ namespace Kairo
             {
                 using (HttpClient httpClient = new())
                 {
-                    httpClient.DefaultRequestHeaders.Add("User-Agent", $"Kairo-{Global.Version}");
-                    Console.WriteLine($"{Global.APIList.GetAccessToken}?app_id={Global.APPID}&refresh_token={Global.Config.RefreshToken}");
-                    HttpResponseMessage response = await httpClient.PostAsync($"{Global.APIList.GetAccessToken}?app_id={Global.APPID}&refresh_token={Global.Config.RefreshToken}", null);
-                    JObject json = JObject.Parse(await response.Content.ReadAsStringAsync());
-                    if (int.Parse(json["status"].ToString()) == 200)
-                    {
-                        Global.Config.ID = int.Parse(json["data"]["user_id"].ToString());
-                        Global.Config.AccessToken = json["data"]["access_token"].ToString();
-                        httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {Global.Config.AccessToken}");
-                        Console.WriteLine($"{Global.APIList.GetUserInfo}?user_id={json["data"]["user_id"].ToString()}");
-                        response = httpClient.GetAsync($"{Global.APIList.GetUserInfo}?user_id={json["data"]["user_id"].ToString()}").Await();
-                        json = JObject.Parse(response.Content.ReadAsStringAsync().Await());
-                        UserInfo = JsonConvert.DeserializeObject<UserInfo>(json["data"].ToString());
-                        Logger.MsgBox($"登录成功\n获取到登录Token: {UserInfo.Token}", "提示", 0, 48, 0);
-                        InitializeInfoForDashboard();
-                        response = await httpClient.GetAsync($"{Global.APIList.GetFrpToken}?user_id={Global.Config.ID}");
-                        json = JObject.Parse(response.Content.ReadAsStringAsync().Await());
-                        UserInfo.FrpToken = json["data"]["frp_token"].ToString();
-                        Global.Config.Username = UserInfo.Username;
-                        Global.Config.FrpToken = UserInfo.FrpToken;
-                        islogin = true;
-                        Dispatcher.BeginInvoke(() =>
+                    try{
+                        httpClient.DefaultRequestHeaders.Add("User-Agent", $"Kairo-{Global.Version}");
+                        Console.WriteLine($"{Global.APIList.GetAccessToken}?app_id={Global.APPID}&refresh_token={Global.Config.RefreshToken}");
+                        HttpResponseMessage response = await httpClient.PostAsync($"{Global.APIList.GetAccessToken}?app_id={Global.APPID}&refresh_token={Global.Config.RefreshToken}", null);
+                        JObject json = JObject.Parse(await response.Content.ReadAsStringAsync());
+                        if (int.Parse(json["status"].ToString()) == 200)
                         {
+                            Global.Config.ID = int.Parse(json["data"]["user_id"].ToString());
+                            Global.Config.AccessToken = json["data"]["access_token"].ToString();
+                            httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {Global.Config.AccessToken}");
+                            Console.WriteLine($"{Global.APIList.GetUserInfo}?user_id={json["data"]["user_id"].ToString()}");
+                            response = httpClient.GetAsync($"{Global.APIList.GetUserInfo}?user_id={json["data"]["user_id"].ToString()}").Await();
+                            json = JObject.Parse(response.Content.ReadAsStringAsync().Await());
+                            UserInfo = JsonConvert.DeserializeObject<UserInfo>(json["data"].ToString());
+                            Logger.MsgBox($"登录成功\n获取到登录Token: {UserInfo.Token}", "提示", 0, 48, 0);
+                            InitializeInfoForDashboard();
+                            response = await httpClient.GetAsync($"{Global.APIList.GetFrpToken}?user_id={Global.Config.ID}");
+                            json = JObject.Parse(response.Content.ReadAsStringAsync().Await());
+                            UserInfo.FrpToken = json["data"]["frp_token"].ToString();
+                            Global.Config.Username = UserInfo.Username;
+                            Global.Config.FrpToken = UserInfo.FrpToken;
+                            islogin = true;
+                            Dispatcher.BeginInvoke(() =>
+                            {
 
-                            DashBoard = new DashBoard();
-                            DashBoard.Show();
-                            Close();
-                            Access.DashBoard.CheckIfFrpcInstalled();
-                        });
-                        return true;
-                    }
-                    else
+                                DashBoard = new DashBoard();
+                                DashBoard.Show();
+                                Close();
+                                Access.DashBoard.CheckIfFrpcInstalled();
+                            });
+                            return true;
+                        }
+                        else
+                        {
+                            Logger.MsgBox($"请求API的过程中出错 \n 状态: {int.Parse(json["status"].ToString())} {json["message"].ToString()}", "错误", 0, 48, 0);
+
+                        }
+                    }catch(Exception _)
                     {
-                        Logger.MsgBox($"请求API的过程中出错 \n 状态: {int.Parse(json["status"].ToString())} {json["message"].ToString()}", "错误", 0, 48, 0);
-
+                        VisibilityChange(false);
+                        CrashInterception.ShowException(_);
+                        return false;
                     }
 
                 }
 
-            }
-            else
-            {
-                
             }
             VisibilityChange(false);
             return false;
