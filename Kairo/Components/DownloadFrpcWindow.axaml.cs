@@ -28,6 +28,7 @@ namespace Kairo.Components
         private string? _tempFile;
         private long _lastBytes;
         private DateTime _lastTime;
+        private const int MaxAttempts = 3;
 
         public DownloadFrpcWindow()
         {
@@ -47,39 +48,56 @@ namespace Kairo.Components
                 string apiMirror = "https://api-gh.1l1.icu/repos/LoCyan-Team/LocyanFrpPureApp/releases/latest";
                 string apiOrigin = "https://api.github.com/repos/LoCyan-Team/LocyanFrpPureApp/releases/latest";
                 JObject release = await TryFetch(apiMirror) ?? await TryFetch(apiOrigin) ?? throw new Exception("无法获取版本信息");
-                var tag = release["tag_name"]?.ToString() ?? "";
-                // tag e.g. v1.2.3-123 extract version
-                var m = Regex.Match(tag, "v(\\d+\\.\\d+\\.\\d+)-\\d+");
-                string version = m.Success ? m.Groups[1].Value : tag.TrimStart('v');
-                var assets = release["assets"] as JArray ?? new JArray();
-                string arch = RuntimeInformation.OSArchitecture switch
-                {
-                    Architecture.X86 => "386",
-                    Architecture.Arm => "arm",
-                    Architecture.Arm64 => "arm64",
-                    _ => "amd64"
-                };
-                string platform = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "windows" : RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "linux" : "windows"; // fallback windows
-                string pattern = $"frp_LoCyanFrp-{version}_{platform}_{arch}(.zip|.tar.gz)";
-                var asset = assets.FirstOrDefault(a => Regex.IsMatch(a["name"]?.ToString() ?? string.Empty, pattern));
-                if (asset == null)
-                {
-                    asset = assets.FirstOrDefault();
-                    if (asset == null) throw new Exception("未找到资产");
-                }
-                string assetName = asset["name"]?.ToString() ?? string.Empty;
+                var (version, assets, asset, assetName, platform, arch) = SelectBestAsset(release);
+                StatusText.Text = $"最新版本: {version} 体系结构: {platform}-{arch}";
+
                 string downloadUrl = asset["browser_download_url"]?.ToString() ?? throw new Exception("下载地址缺失");
                 if (Global.Config.UsingDownloadMirror)
-                {
-                    // simple mirror rewrite
                     downloadUrl = Global.GithubMirror + downloadUrl;
-                }
-                StatusText.Text = "正在下载...";
+
                 Progress.IsIndeterminate = false;
-                await DownloadAndExtract(downloadUrl, version, platform, arch, _cts.Token, assets, assetName);
-                StatusText.Text = "完成";
-                CloseBtn.IsEnabled = true;
-                CancelBtn.IsEnabled = false;
+                Exception? lastError = null;
+                for (int attempt = 1; attempt <= MaxAttempts; attempt++)
+                {
+                    if (_cts.IsCancellationRequested) break;
+                    try
+                    {
+                        StatusText.Text = attempt == 1 ? "正在下载..." : $"正在下载...(重试 {attempt}/{MaxAttempts})";
+                        await DownloadAndExtract(downloadUrl, version, platform, arch, _cts.Token, assets, assetName);
+                        StatusText.Text = "完成";
+                        CloseBtn.IsEnabled = true;
+                        CancelBtn.IsEnabled = false;
+                        return;
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        StatusText.Text = "已取消";
+                        CloseBtn.IsEnabled = true;
+                        return;
+                    }
+                    catch (Exception ex)
+                    {
+                        lastError = ex;
+                        if (attempt < MaxAttempts && !_cts.IsCancellationRequested)
+                        {
+                            StatusText.Text = $"失败: {ex.Message} - 正在重试 ({attempt}/{MaxAttempts})";
+                            await Task.Delay(1500, _cts.Token);
+                            ResetProgressUI();
+                            continue;
+                        }
+                        else
+                        {
+                            StatusText.Text = $"失败: {ex.Message}";
+                            CloseBtn.IsEnabled = true;
+                            return;
+                        }
+                    }
+                }
+                if (lastError != null)
+                {
+                    StatusText.Text = $"失败: {lastError.Message}";
+                    CloseBtn.IsEnabled = true;
+                }
             }
             catch (OperationCanceledException)
             {
@@ -115,6 +133,58 @@ namespace Kairo.Components
                 return JObject.Parse(await resp.Content.ReadAsStringAsync(cts.Token));
             }
             catch { return null; }
+        }
+
+        private (string version, JArray assets, JToken asset, string assetName, string platform, string arch) SelectBestAsset(JObject release)
+        {
+            var tag = release["tag_name"]?.ToString() ?? string.Empty;
+            var m = Regex.Match(tag, "v(\\d+\\.\\d+\\.\\d+)-\\d+");
+            string version = m.Success ? m.Groups[1].Value : tag.TrimStart('v');
+            var assets = release["assets"] as JArray ?? new JArray();
+            string arch = RuntimeInformation.OSArchitecture switch
+            {
+                Architecture.X86 => "386",
+                Architecture.Arm => "arm",
+                Architecture.Arm64 => "arm64",
+                _ => "amd64"
+            };
+            string platform = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "windows" : RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "linux" : "windows";
+            string basePattern = $"frp_LoCyanFrp-{version}_{platform}_{arch}";
+            var candidates = assets.Where(a => (a["name"]?.ToString() ?? "").StartsWith(basePattern, StringComparison.OrdinalIgnoreCase)).ToList();
+            if (candidates.Count == 0)
+            {
+                // fallback widen search
+                candidates = assets.Where(a => (a["name"]?.ToString() ?? "").Contains($"{platform}_{arch}")).ToList();
+            }
+            if (candidates.Count == 0)
+            {
+                var any = assets.FirstOrDefault();
+                if (any == null) throw new Exception("未找到资产");
+                return (version, assets, any, any["name"]?.ToString() ?? string.Empty, platform, arch);
+            }
+            // rank preference
+            JToken? pick = null;
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                pick = candidates.FirstOrDefault(a => (a["name"]?.ToString() ?? "").EndsWith(".zip"));
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                pick = candidates.FirstOrDefault(a => (a["name"]?.ToString() ?? "").EndsWith(".tar.gz")) ?? candidates.FirstOrDefault(a => (a["name"]?.ToString() ?? "").EndsWith(".zip"));
+            }
+            pick ??= candidates.First();
+            string assetName = pick["name"]?.ToString() ?? string.Empty;
+            return (version, assets, pick, assetName, platform, arch);
+        }
+
+        private void ResetProgressUI()
+        {
+            Dispatcher.UIThread.Post(() =>
+            {
+                Progress.Value = 0;
+                ProgressText.Text = string.Empty;
+                SpeedText.Text = string.Empty;
+            });
         }
 
         private async Task DownloadAndExtract(string url, string version, string platform, string arch, CancellationToken token, JArray assets, string assetName)
@@ -154,7 +224,14 @@ namespace Kairo.Components
                 Dispatcher.UIThread.Post(() =>
                 {
                     if (e.TotalBytesToReceive > 0)
+                    {
                         Progress.Value = e.ProgressPercentage;
+                        ProgressText.Text = FormatBytes(e.ReceivedBytesSize) + " / " + FormatBytes(e.TotalBytesToReceive) + $" ({e.ProgressPercentage:F1}%)";
+                    }
+                    else
+                    {
+                        ProgressText.Text = FormatBytes(e.ReceivedBytesSize);
+                    }
                     string speedStr = e.BytesPerSecondSpeed > 1024 * 1024 ? ($"{e.BytesPerSecondSpeed / 1024d / 1024d:F2} MB/s") : ($"{e.BytesPerSecondSpeed / 1024d:F1} KB/s");
                     SpeedText.Text = $"速度: {speedStr}";
                 });
@@ -284,6 +361,17 @@ namespace Kairo.Components
                 throw new Exception("文件哈希不匹配");
             }
             StatusText.Text = "校验通过";
+        }
+
+        private static string FormatBytes(long bytes)
+        {
+            if (bytes < 1024) return bytes + " B";
+            double kb = bytes / 1024d;
+            if (kb < 1024) return kb.ToString("F1") + " KB";
+            double mb = kb / 1024d;
+            if (mb < 1024) return mb.ToString("F2") + " MB";
+            double gb = mb / 1024d;
+            return gb.ToString("F2") + " GB";
         }
     }
 
