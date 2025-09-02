@@ -6,7 +6,7 @@ using System.Linq;
 using System.Security;
 using System.Text;
 using System.Threading.Tasks;
-using System.Windows.Documents;
+using Kairo.Utils.Configuration;
 
 namespace Kairo
 {

@@ -1,0 +1,43 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Kairo.Components.SettingsPage">
+  <ScrollViewer>
+    <StackPanel Margin="12" Spacing="16">
+      <TextBlock Text="Frpc路径" FontSize="12"/>
+      <Grid ColumnDefinitions="*,Auto" >
+        <TextBox x:Name="FrpcPathBox" IsReadOnly="True" Text=""/>
+        <Button Grid.Column="1" Margin="8,0,0,0" Content="选择文件" Click="SelectFile_OnClick"/>
+      </Grid>
+      <TextBlock Text="功能" FontSize="12"/>
+      <WrapPanel>
+        <StackPanel Width="180" Spacing="8">
+          <ToggleSwitch x:Name="FollowSystemSwitch" Content="跟随系统主题" IsChecked="True" Checked="FollowSystemSwitch_OnChanged" Unchecked="FollowSystemSwitch_OnChanged"/>
+          <ToggleSwitch x:Name="DarkThemeSwitch" Content="使用暗黑主题" IsEnabled="False" Checked="DarkThemeSwitch_OnChanged" Unchecked="DarkThemeSwitch_OnChanged"/>
+          <ToggleSwitch x:Name="AutoStartSwitch" Content="开机自动启动" Checked="AutoStartSwitch_OnChanged" Unchecked="AutoStartSwitch_OnChanged"/>
+        </StackPanel>
+        <StackPanel Width="160" Spacing="8">
+          <Button x:Name="CopyTokenBtn" Content="复制Token" Click="CopyTokenBtn_OnClick"/>
+          <Button x:Name="SignOutBtn" Content="退出登录" Click="SignOutBtn_OnClick"/>
+        </StackPanel>
+        <StackPanel Width="160" Spacing="8">
+            <Button x:Name="DownloadFrpcBtn" Content="下载FRPC" Click="DownloadFrpcBtn_OnClick"/>
+            <ToggleSwitch x:Name="UseMirrorSwitch" Content="国内镜像" IsChecked="True" Checked="UseMirrorSwitch_OnChanged" Unchecked="UseMirrorSwitch_OnChanged"/>
+        </StackPanel>
+        <StackPanel Width="220" Spacing="8" HorizontalAlignment="Left">
+          <Button x:Name="EasterEggBtn" Content="不要点击这个按钮哦" Click="EasterEggBtn_OnClick"/>
+          <TextBlock Text="会有意想不到的后果" HorizontalAlignment="Center"/>
+        </StackPanel>
+      </WrapPanel>
+      <Border CornerRadius="8" Background="{DynamicResource SystemControlBackgroundBaseLowBrush}" Padding="12">
+        <Grid ColumnDefinitions="*,Auto" >
+          <TextBlock x:Name="BuildInfoText" TextWrapping="Wrap"/>
+          <StackPanel Grid.Column="1" Margin="24,0,0,0" Spacing="4">
+            <TextBlock x:Name="VersionText"/>
+            <TextBlock x:Name="DeveloperText"/>
+            <TextBlock x:Name="CopyrightText"/>
+          </StackPanel>
+        </Grid>
+      </Border>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

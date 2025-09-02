@@ -1,0 +1,34 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:fa="using:FluentAvalonia.UI.Controls"
+        mc:Ignorable="d"
+        x:Class="Kairo.Components.DashBoard"
+        Title="Kairo - DashBoard"
+        Width="1000" Height="650"
+        MinWidth="900" MinHeight="550"
+        WindowStartupLocation="CenterScreen"
+        Icon="avares://Kairo/Assets/kairo.ico"
+        Closing="DashBoard_OnClosing">
+  <Grid>
+    <fa:NavigationView x:Name="NavView"
+                       PaneTitle="Kairo"
+                       IsSettingsVisible="True"
+                       AlwaysShowHeader="False"
+                       SelectionChanged="NavView_OnSelectionChanged">
+      <fa:NavigationView.MenuItems>
+        <fa:NavigationViewItem Content="开始" Tag="home" />
+        <fa:NavigationViewItem Content="隧道列表" Tag="proxylist" />
+        <fa:NavigationViewItem Content="运行状态" Tag="status" />
+      </fa:NavigationView.MenuItems>
+      <fa:NavigationView.FooterMenuItems>
+        <fa:NavigationViewItem Content="设置" Tag="settings" />
+      </fa:NavigationView.FooterMenuItems>
+      <Grid>
+        <ContentControl x:Name="ContentHost" />
+        <fa:InfoBar x:Name="Snackbar" IsOpen="False" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,16,16" />
+      </Grid>
+    </fa:NavigationView>
+  </Grid>
+</Window>

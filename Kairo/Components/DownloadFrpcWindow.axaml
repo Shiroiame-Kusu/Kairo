@@ -1,0 +1,18 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Kairo.Components.DownloadFrpcWindow"
+        Title="下载 FRPC" Width="420" Height="260" WindowStartupLocation="CenterOwner">
+  <Grid RowDefinitions="Auto,*,Auto" Margin="12">
+    <TextBlock Text="正在获取最新版本信息..." x:Name="StatusText" Margin="0,0,0,8"/>
+    <StackPanel Spacing="8">
+      <ProgressBar x:Name="Progress" Minimum="0" Maximum="100" Height="20" IsIndeterminate="True"/>
+      <TextBlock x:Name="SpeedText" FontSize="12" Foreground="Gray"/>
+      <TextBlock x:Name="TipText" FontSize="11" Foreground="Gray" TextWrapping="Wrap"/>
+    </StackPanel>
+    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+      <Button x:Name="CancelBtn" Content="取消" Click="CancelBtn_OnClick"/>
+      <Button x:Name="CloseBtn" Content="关闭" IsEnabled="False" Click="CloseBtn_OnClick"/>
+    </StackPanel>
+  </Grid>
+</Window>
+

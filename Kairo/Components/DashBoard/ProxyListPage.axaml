@@ -1,0 +1,25 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Kairo.Components.ProxyListPage">
+  <Grid RowDefinitions="60,*,70" Margin="12">
+    <DockPanel Height="60">
+      <Border Height="40" Width="40" CornerRadius="20" BorderBrush="LightBlue" BorderThickness="1" Margin="0,10,10,10">
+        <Image Source="avares://Kairo/Assets/kairo.ico" Stretch="UniformToFill"/>
+      </Border>
+      <TextBlock VerticalAlignment="Center" FontSize="24" Text="隧道列表"/>
+    </DockPanel>
+    <Border Grid.Row="1" CornerRadius="8" Padding="12" Background="{DynamicResource SystemControlBackgroundBaseLowBrush}">
+      <ScrollViewer>
+        <WrapPanel x:Name="ListPanel" ItemWidth="220" ItemHeight="120" />
+      </ScrollViewer>
+    </Border>
+    <Grid Grid.Row="2" ColumnDefinitions="Auto,Auto,*" Margin="0,12,0,0" ColumnSpacing="12">
+      <Button x:Name="CreateProxyBtn" Content="创建新隧道" Click="CreateProxyBtn_OnClick"/>
+      <Button x:Name="RefreshBtn" Grid.Column="1" Content="刷新" Click="RefreshBtn_OnClick"/>
+      <Border Grid.Column="2" Padding="8" CornerRadius="6" Background="{DynamicResource SystemControlBackgroundBaseLowBrush}">
+        <TextBlock Text="PS:右键隧道可以打开菜单哦喵~"/>
+      </Border>
+    </Grid>
+  </Grid>
+</UserControl>
+

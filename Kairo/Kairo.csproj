@@ -9,21 +9,23 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Avalonia" Version="11.3.4"/>
-        <PackageReference Include="Avalonia.Desktop" Version="11.3.4"/>
-        <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.4"/>
-        <PackageReference Include="Avalonia.Fonts.Inter" Version="11.3.4"/>
+        <PackageReference Include="Avalonia" Version="11.3.4" />
+        <PackageReference Include="Avalonia.Desktop" Version="11.3.4" />
+        <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.4" />
+        <PackageReference Include="Avalonia.Fonts.Inter" Version="11.3.4" />
         <!--Condition below is needed to remove Avalonia.Diagnostics package from build output in Release configuration.-->
         <PackageReference Include="Avalonia.Diagnostics" Version="11.3.4">
             <IncludeAssets Condition="'$(Configuration)' != 'Debug'">None</IncludeAssets>
             <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
         </PackageReference>
         <PackageReference Include="FluentAvaloniaUI" Version="2.4.0" />
+        <PackageReference Include="MessageBox.Avalonia" Version="3.2.0" />
+        <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="Assets\" />
-      <Folder Include="Utils\" />
+      <!-- Embed Avalonia assets (icon, images) -->
+      <AvaloniaResource Include="Assets/**" />
     </ItemGroup>
 
     <ItemGroup>
@@ -40,7 +42,9 @@
         <DependentUpon>Resources.resx</DependentUpon>
       </Compile>
     </ItemGroup>
-
+    <ItemGroup>
+        <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    </ItemGroup>
     <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
       <Exec Command="bash ./Components/BuildInfo.sh" />
     </Target>
