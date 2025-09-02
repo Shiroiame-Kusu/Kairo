@@ -1,0 +1,47 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Kairo.Controls.CustomTitleBar"
+             x:Name="Root"
+             Height="36">
+  <UserControl.Styles>
+    <Style Selector="Button.TitleBarButton">
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="BorderBrush" Value="Transparent"/>
+      <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}"/>
+      <Setter Property="CornerRadius" Value="4"/>
+      <Setter Property="Padding" Value="0"/>
+    </Style>
+    <Style Selector="Button.TitleBarButton:pointerover">
+      <Setter Property="Background" Value="{DynamicResource SystemControlBackgroundBaseMediumBrush}"/>
+    </Style>
+    <Style Selector="Button.TitleBarButton:pressed">
+      <Setter Property="Background" Value="{DynamicResource SystemControlBackgroundBaseMediumHighBrush}"/>
+    </Style>
+    <Style Selector="Button.TitleBarButton.Close:pointerover">
+      <Setter Property="Background" Value="#E81123"/>
+      <Setter Property="Foreground" Value="White"/>
+    </Style>
+    <Style Selector="Button.TitleBarButton.Close:pressed">
+      <Setter Property="Background" Value="#C50F1F"/>
+    </Style>
+  </UserControl.Styles>
+  <Border Background="{DynamicResource SystemControlBackgroundBaseLowBrush}" Padding="12,0,8,0">
+    <Grid ColumnDefinitions="Auto,8,*,Auto,Auto,Auto" Height="36">
+      <!-- App Icon -->
+      <Image Source="avares://Kairo/Assets/kairo.ico" Width="20" Height="20" VerticalAlignment="Center"/> 
+      <!-- Title -->
+      <TextBlock Grid.Column="2" Text="{Binding Title, ElementName=Root}" VerticalAlignment="Center" FontSize="14" FontWeight="SemiBold" />
+      <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center" Spacing="4">
+        <!-- Minimize Button -->
+        <Button Classes="TitleBarButton" Click="Minimize_Click" Width="36" Height="28" Content="_"/>
+      </StackPanel>
+      <Button Grid.Column="4" Classes="TitleBarButton" Click="MaxRestore_Click" Width="36" Height="28">
+        <ContentControl x:Name="MaxIcon" Content="▢" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+      </Button>
+      <Button Grid.Column="5" Classes="TitleBarButton Close" Click="Close_Click" Width="44" Height="28">
+        <ContentControl Content="✕" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+      </Button>
+    </Grid>
+  </Border>
+</UserControl>
+

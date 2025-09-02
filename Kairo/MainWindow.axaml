@@ -3,6 +3,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:fa="using:FluentAvalonia.UI.Controls"
+        xmlns:controls="clr-namespace:Kairo.Controls"
         mc:Ignorable="d"
         x:Class="Kairo.MainWindow"
         Title="Kairo - Another LocyanFrp Client"
@@ -10,7 +11,8 @@
         MinWidth="800" MinHeight="450"
         WindowStartupLocation="CenterScreen"
         Icon="avares://Kairo/Assets/kairo.ico"
-        KeyDown="Window_KeyDown">
+        KeyDown="Window_KeyDown"
+        SystemDecorations="None">
   <Window.Styles>
     <!-- Style for fade transitions on controls -->
     <Style x:SetterTargetType="Control" Selector="Control.fade">
@@ -22,9 +24,8 @@
     </Style>
   </Window.Styles>
   <Grid RowDefinitions="Auto,*">
-    <Border Background="Transparent" Padding="8,4" >
-      <TextBlock Text="Kairo" FontSize="18" FontWeight="SemiBold" />
-    </Border>
+    <!-- Custom Title Bar -->
+    <controls:CustomTitleBar Title="Kairo - Another LocyanFrp Client" />
     <Grid Grid.Row="1" ColumnDefinitions="*,300,*">
       <Grid Grid.Column="1" Margin="0" >
         <Grid Height="420" VerticalAlignment="Center" RowDefinitions="20,120,20,*">

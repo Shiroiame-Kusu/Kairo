@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
+using Kairo.Components.OAuth;
 using Kairo.Utils;
 using Kairo.Utils.Configuration; // added for Access
 
@@ -20,6 +21,7 @@ public partial class App : Application
         }
         CrashInterception.Init(); // already hooks AppDomain + TaskScheduler
         ConfigManager.Init();
+        OAuthCallbackHandler.Init();
         // Apply persisted theme
         ThemeManager.Apply(Global.Config.FollowSystemTheme, Global.Config.DarkTheme);
         // Hook UI thread unhandled exceptions (Avalonia dispatcher)
@@ -35,6 +37,7 @@ public partial class App : Application
 
     public override void OnFrameworkInitializationCompleted()
     {   
+        // Start OAuth callback server early
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             desktop.MainWindow = new MainWindow();

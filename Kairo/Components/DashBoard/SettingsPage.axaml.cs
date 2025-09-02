@@ -87,7 +87,8 @@ namespace Kairo.Components
             // show main window login again
             if (Access.MainWindow is MainWindow mw)
             {
-                mw.Show();
+                MainWindow.LogoutCleanup();
+                mw.PrepareForLogin();
             }
         }
 
@@ -116,5 +117,6 @@ namespace Kairo.Components
                 (Access.DashBoard as DashBoard)?.OpenSnackbar("???", "别点啦");
             }
         }
+        
     }
 }

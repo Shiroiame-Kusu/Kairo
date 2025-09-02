@@ -10,9 +10,12 @@ using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
+using Downloader;
 using Kairo.Utils;
 using Kairo.Utils.Configuration;
 using Newtonsoft.Json.Linq;
+using System.Security.Cryptography;
+using System.Formats.Tar;
 
 namespace Kairo.Components
 {
@@ -21,6 +24,8 @@ namespace Kairo.Components
     {
         private readonly HttpClient _http = new();
         private CancellationTokenSource _cts = new();
+        private DownloadService? _downloadService;
+        private string? _tempFile;
         private long _lastBytes;
         private DateTime _lastTime;
 
@@ -62,6 +67,7 @@ namespace Kairo.Components
                     asset = assets.FirstOrDefault();
                     if (asset == null) throw new Exception("未找到资产");
                 }
+                string assetName = asset["name"]?.ToString() ?? string.Empty;
                 string downloadUrl = asset["browser_download_url"]?.ToString() ?? throw new Exception("下载地址缺失");
                 if (Global.Config.UsingDownloadMirror)
                 {
@@ -70,7 +76,7 @@ namespace Kairo.Components
                 }
                 StatusText.Text = "正在下载...";
                 Progress.IsIndeterminate = false;
-                await DownloadAndExtract(downloadUrl, version, platform, arch, _cts.Token);
+                await DownloadAndExtract(downloadUrl, version, platform, arch, _cts.Token, assets, assetName);
                 StatusText.Text = "完成";
                 CloseBtn.IsEnabled = true;
                 CancelBtn.IsEnabled = false;
@@ -87,6 +93,18 @@ namespace Kairo.Components
             }
         }
 
+        private void CancelBtn_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+        {
+            CancelBtn.IsEnabled = false;
+            try { _downloadService?.CancelAsync(); } catch { }
+            _cts.Cancel();
+        }
+
+        private void CloseBtn_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+        {
+            Close();
+        }
+
         private async Task<JObject?> TryFetch(string url)
         {
             try
@@ -99,29 +117,61 @@ namespace Kairo.Components
             catch { return null; }
         }
 
-        private async Task DownloadAndExtract(string url, string version, string platform, string arch, CancellationToken token)
+        private async Task DownloadAndExtract(string url, string version, string platform, string arch, CancellationToken token, JArray assets, string assetName)
         {
             string workDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Kairo", "frpc");
             Directory.CreateDirectory(workDir);
-            string tempFile = Path.Combine(workDir, "frpc_download.tmp");
-            if (File.Exists(tempFile)) File.Delete(tempFile);
+            _tempFile = Path.Combine(workDir, "frpc_download.tmp");
+            if (File.Exists(_tempFile)) File.Delete(_tempFile);
 
-            using var resp = await _http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, token);
-            resp.EnsureSuccessStatusCode();
-            var total = resp.Content.Headers.ContentLength ?? -1;
-            await using var inStream = await resp.Content.ReadAsStreamAsync(token);
-            await using var outStream = File.OpenWrite(tempFile);
-
-            _lastBytes = 0; _lastTime = DateTime.UtcNow;
-            var buffer = new byte[81920];
-            long downloaded = 0;
-            while (true)
+            var config = new DownloadConfiguration
             {
-                int read = await inStream.ReadAsync(buffer.AsMemory(0, buffer.Length), token);
-                if (read == 0) break;
-                await outStream.WriteAsync(buffer.AsMemory(0, read), token);
-                downloaded += read;
-                UpdateProgress(downloaded, total);
+                BufferBlockSize = 8192,
+                MaxTryAgainOnFailover = 3,
+                ParallelDownload = true,
+                ParallelCount = 4,
+                Timeout = 10000
+            };
+            _downloadService = new DownloadService(config);
+            var tcs = new TaskCompletionSource<bool>();
+
+            using var reg = token.Register(() =>
+            {
+                try { _downloadService?.CancelAsync(); } catch { }
+            });
+
+            _downloadService.DownloadFileCompleted += (s, e) =>
+            {
+                if (e.Error != null)
+                    tcs.TrySetException(e.Error);
+                else if (e.Cancelled)
+                    tcs.TrySetCanceled();
+                else
+                    tcs.TrySetResult(true);
+            };
+            _downloadService.DownloadProgressChanged += (s, e) =>
+            {
+                Dispatcher.UIThread.Post(() =>
+                {
+                    if (e.TotalBytesToReceive > 0)
+                        Progress.Value = e.ProgressPercentage;
+                    string speedStr = e.BytesPerSecondSpeed > 1024 * 1024 ? ($"{e.BytesPerSecondSpeed / 1024d / 1024d:F2} MB/s") : ($"{e.BytesPerSecondSpeed / 1024d:F1} KB/s");
+                    SpeedText.Text = $"速度: {speedStr}";
+                });
+            };
+
+            await _downloadService.DownloadFileTaskAsync(url, _tempFile);
+            await tcs.Task; // ensure completion events processed
+
+            // Hash verification
+            StatusText.Text = "正在校验...";
+            try
+            {
+                await VerifyChecksumAsync(_tempFile, assets, assetName, token);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"校验失败: {ex.Message}");
             }
 
             // Extract
@@ -130,20 +180,15 @@ namespace Kairo.Components
             if (Directory.Exists(extractDir)) Directory.Delete(extractDir, true);
             Directory.CreateDirectory(extractDir);
 
-            if (tempFile.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+            if (_tempFile.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
             {
-                ZipFile.ExtractToDirectory(tempFile, extractDir);
+                ZipFile.ExtractToDirectory(_tempFile, extractDir);
             }
-            else if (tempFile.EndsWith(".tar.gz", StringComparison.OrdinalIgnoreCase))
+            else if (_tempFile.EndsWith(".tar.gz", StringComparison.OrdinalIgnoreCase))
             {
-                // Minimal tar.gz handling (requires .NET 8+ has GZipStream). For simplicity, skip complex tar parse if not zip.
-                using var fs = File.OpenRead(tempFile);
-                using var gzip = new System.IO.Compression.GZipStream(fs, CompressionMode.Decompress);
-                // Tar extraction (very simplified, only for expected structure) - omitted for brevity.
-                // Fallback: leave gzip content if complex; user can manually extract.
+                ExtractTarGz(_tempFile, extractDir);
             }
 
-            // Find frpc executable
             string exeName = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "frpc.exe" : "frpc";
             var frpcPath = Directory.GetFiles(extractDir, exeName, SearchOption.AllDirectories).FirstOrDefault();
             if (frpcPath == null) throw new Exception("未找到 frpc 可执行文件");
@@ -153,7 +198,6 @@ namespace Kairo.Components
             {
                 if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 {
-                    // set executable bit (best effort)
                     System.Diagnostics.Process.Start("/bin/chmod", $"+x '{finalPath}'");
                 }
             }
@@ -163,35 +207,83 @@ namespace Kairo.Components
             Dispatcher.UIThread.Post(() => (Access.DashBoard as DashBoard)?.OpenSnackbar("下载完成", finalPath, FluentAvalonia.UI.Controls.InfoBarSeverity.Success));
         }
 
-        private void UpdateProgress(long downloaded, long total)
+        private void ExtractTarGz(string gzFile, string extractDir)
         {
-            var now = DateTime.UtcNow;
-            var dt = (now - _lastTime).TotalSeconds;
-            if (dt >= 0.5)
+            using var fs = File.OpenRead(gzFile);
+            using var gzip = new GZipStream(fs, CompressionMode.Decompress, leaveOpen: false);
+            using var tar = new TarReader(gzip, leaveOpen: false);
+            TarEntry? entry;
+            while ((entry = tar.GetNextEntry()) != null)
             {
-                var diff = downloaded - _lastBytes;
-                var speed = diff / dt; // bytes/sec
-                _lastBytes = downloaded;
-                _lastTime = now;
-                string speedStr = speed > 1024 * 1024 ? ($"{speed / 1024 / 1024:F2} MB/s") : ($"{speed / 1024:F1} KB/s");
-                Dispatcher.UIThread.Post(() => SpeedText.Text = $"速度: {speedStr}");
-            }
-            if (total > 0)
-            {
-                double percent = downloaded * 100d / total;
-                Dispatcher.UIThread.Post(() => { Progress.Value = percent; });
+                var fullPath = Path.Combine(extractDir, entry.Name.TrimStart('.', '/'));
+                switch (entry.EntryType)
+                {
+                    case TarEntryType.Directory:
+                        Directory.CreateDirectory(fullPath);
+                        break;
+                    case TarEntryType.RegularFile:
+                        Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);
+                        using (var outFs = File.Open(fullPath, FileMode.Create, FileAccess.Write))
+                        {
+                            entry.DataStream?.CopyTo(outFs);
+                        }
+                        break;
+                    default:
+                        break;
+                }
             }
         }
 
-        private void CancelBtn_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+        private async Task VerifyChecksumAsync(string filePath, JArray assets, string assetName, CancellationToken token)
         {
-            CancelBtn.IsEnabled = false;
-            _cts.Cancel();
-        }
-
-        private void CloseBtn_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
-        {
-            Close();
+            // Prefer SHA256 then MD5
+            JToken? checksumAsset = assets.FirstOrDefault(a => (a["name"]?.ToString() ?? "").EndsWith(".sha256", StringComparison.OrdinalIgnoreCase) && (a["name"]?.ToString() ?? "").Contains(assetName.Split('.')[0]))
+                                     ?? assets.FirstOrDefault(a => (a["name"]?.ToString() ?? "").EndsWith(".sha256.txt", StringComparison.OrdinalIgnoreCase) && (a["name"]?.ToString() ?? "").Contains(assetName.Split('.')[0]))
+                                     ?? assets.FirstOrDefault(a => (a["name"]?.ToString() ?? "").EndsWith(".md5", StringComparison.OrdinalIgnoreCase) && (a["name"]?.ToString() ?? "").Contains(assetName.Split('.')[0]))
+                                     ?? assets.FirstOrDefault(a => (a["name"]?.ToString() ?? "").EndsWith(".md5.txt", StringComparison.OrdinalIgnoreCase) && (a["name"]?.ToString() ?? "").Contains(assetName.Split('.')[0]));
+            if (checksumAsset == null)
+            {
+                StatusText.Text = "未提供校验文件, 跳过校验";
+                return;
+            }
+            string checksumUrl = checksumAsset["browser_download_url"]?.ToString() ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(checksumUrl))
+            {
+                StatusText.Text = "校验文件链接缺失, 跳过校验";
+                return;
+            }
+            if (Global.Config.UsingDownloadMirror)
+                checksumUrl = Global.GithubMirror + checksumUrl;
+            string checksumContent = await _http.GetStringAsync(checksumUrl, token);
+            // Parse first valid hash line
+            string? expectedHash = null;
+            bool sha256 = false;
+            foreach (var line in checksumContent.Split('\n'))
+            {
+                var trimmed = line.Trim();
+                if (trimmed.Length == 0) continue;
+                var parts = trimmed.Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
+                if (Regex.IsMatch(parts[0], "^[a-fA-F0-9]{64}$")) { expectedHash = parts[0].ToLowerInvariant(); sha256 = true; break; }
+                if (Regex.IsMatch(parts[0], "^[a-fA-F0-9]{32}$")) { expectedHash = parts[0].ToLowerInvariant(); sha256 = false; break; }
+            }
+            if (expectedHash == null)
+            {
+                StatusText.Text = "校验文件无有效哈希, 跳过校验";
+                return;
+            }
+            string actualHash;
+            using (var fs = File.OpenRead(filePath))
+            {
+                if (sha256)
+                    actualHash = Convert.ToHexString(SHA256.HashData(fs)).ToLowerInvariant();
+                else
+                    actualHash = Convert.ToHexString(MD5.HashData(fs)).ToLowerInvariant();
+            }
+            if (!string.Equals(expectedHash, actualHash, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new Exception("文件哈希不匹配");
+            }
+            StatusText.Text = "校验通过";
         }
     }
 

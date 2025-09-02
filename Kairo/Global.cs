@@ -15,7 +15,7 @@ namespace Kairo
         public static readonly string PATH = Path.GetDirectoryName(Environment.ProcessPath);
         public static readonly DateTime StartTime = DateTime.Now;
         public static bool LoginedByConsole = false;
-        public const string Version = "3.0.0";
+        public const string Version = "3.1.0";
         public const string VersionName = "Haruhikage";
         public const string Branch = "Alpha";
         public const int Revision = 1;

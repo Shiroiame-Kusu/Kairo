@@ -64,11 +64,14 @@ namespace Kairo.Components
 
         public void DashBoard_OnClosing(object? sender, WindowClosingEventArgs e)
         {
-            e.Cancel = true;
-            this.Hide();
-            if (Utils.Access.MainWindow is { IsVisible: false } mw)
+            if (MainWindow.IsLoggedIn)
             {
-                mw.Show();
+                e.Cancel = true;
+                this.Hide();
+            }
+            else
+            {
+                // allow close when logged out
             }
         }
     }

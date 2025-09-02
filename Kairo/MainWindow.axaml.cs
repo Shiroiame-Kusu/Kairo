@@ -13,6 +13,7 @@ using System.Text;
 using System.Numerics;
 using Newtonsoft.Json;
 using FluentAvalonia.UI.Controls;
+using Avalonia.Controls.ApplicationLifetimes;
 
 namespace Kairo;
 
@@ -26,13 +27,20 @@ public partial class MainWindow : Window
     public static int Inbound { get; private set; }
     public static int Outbound { get; private set; }
     public static BigInteger Traffic { get; private set; }
+    public static bool IsLoggedIn => _isLoggedIn;
+
+    private TrayIcon? _trayIcon;
+    private NativeMenuItem? _showHideMenuItem;
+    private NativeMenuItem? _exitMenuItem;
 
     public MainWindow()
     {
         InitializeComponent();
         Access.MainWindow = this;
-        Kairo.Components.OAuth.OAuthCallbackHandler.Init(); // start OAuth callback server
+        // OAuthCallbackHandler.Init moved to App.OnFrameworkInitializationCompleted
+        SetupTrayIcon();
         Init();
+        this.Closed += (_, _) => DisposeTrayIcon();
     }
 
     private void Init()
@@ -142,6 +150,7 @@ public partial class MainWindow : Window
             if (!db.IsVisible)
                 db.Show();
             this.Hide();
+            if (_showHideMenuItem != null) _showHideMenuItem.Header = "隐藏窗口";
             return true;
         }
         catch (Exception ex)
@@ -179,7 +188,7 @@ public partial class MainWindow : Window
         Traffic = _userInfo.Traffic;
     }
 
-    private void OpenSnackbar(string title, string? message, InfoBarSeverity severity)
+    public void OpenSnackbar(string title, string? message, InfoBarSeverity severity)
     {
         if (Snackbar == null) return;
         Snackbar.Title = title;
@@ -230,6 +239,92 @@ public partial class MainWindow : Window
         }
     }
 
+    private void SetupTrayIcon()
+    {
+        try
+        {
+            var menu = new NativeMenu();
+            _showHideMenuItem = new NativeMenuItem("隐藏窗口");
+            _showHideMenuItem.Click += (_, _) => ToggleWindowVisibility();
+            _exitMenuItem = new NativeMenuItem("退出");
+            _exitMenuItem.Click += (_, _) => ShutdownApplication();
+            menu.Items.Add(_showHideMenuItem);
+            menu.Items.Add(new NativeMenuItemSeparator());
+            menu.Items.Add(_exitMenuItem);
+            _trayIcon = new TrayIcon
+            {
+                Icon = this.Icon,
+                ToolTipText = "Kairo",
+                IsVisible = true,
+                Menu = menu
+            };
+            _trayIcon.Clicked += (_, _) => ToggleWindowVisibility();
+        }
+        catch { }
+    }
+
+    private void ShutdownApplication()
+    {
+        DisposeTrayIcon();
+        try
+        {
+            (Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)?.Shutdown();
+        }
+        catch { Close(); }
+    }
+
+    private void ToggleWindowVisibility()
+    {
+        if (IsLoggedIn)
+        {
+            if (Utils.Access.DashBoard is Components.DashBoard db)
+            {
+                if (db.IsVisible)
+                {
+                    db.Hide();
+                    if (_showHideMenuItem != null) _showHideMenuItem.Header = "显示窗口";
+                }
+                else
+                {
+                    db.Show();
+                    db.Activate();
+                    if (_showHideMenuItem != null) _showHideMenuItem.Header = "隐藏窗口";
+                }
+            }
+            else
+            {
+                var dbNew = new Components.DashBoard();
+                Utils.Access.DashBoard = dbNew;
+                dbNew.Show();
+                if (_showHideMenuItem != null) _showHideMenuItem.Header = "隐藏窗口";
+            }
+        }
+        else
+        {
+            if (IsVisible)
+            {
+                Hide();
+                if (_showHideMenuItem != null) _showHideMenuItem.Header = "显示窗口";
+            }
+            else
+            {
+                Show();
+                Activate();
+                if (_showHideMenuItem != null) _showHideMenuItem.Header = "隐藏窗口";
+            }
+        }
+    }
+
+    private void DisposeTrayIcon()
+    {
+        if (_trayIcon != null)
+        {
+            _trayIcon.IsVisible = false;
+            _trayIcon.Dispose();
+            _trayIcon = null;
+        }
+    }
+
     // Represents the user info JSON contract
     public class UserInfo
     {
@@ -246,5 +341,34 @@ public partial class MainWindow : Window
         [JsonProperty("status")] public int Status { get; set; }
         [JsonProperty("frp_token")] public string? FrpToken { get; set; }
         public string? Token { get; set; }
+    }
+
+    public void PrepareForLogin()
+    {
+        _isLoggedIn = false;
+        Show();
+        Activate();
+        ToggleLoggingIn(false);
+        if (_showHideMenuItem != null)
+            _showHideMenuItem.Header = IsVisible ? "隐藏窗口" : "显示窗口";
+    }
+
+    public void OnLoggedOut()
+    {
+        _isLoggedIn = false;
+        if (_showHideMenuItem != null)
+            _showHideMenuItem.Header = IsVisible ? "隐藏窗口" : "显示窗口";
+    }
+
+    public static void LogoutCleanup()
+    {
+        _isLoggedIn = false;
+        if (Utils.Access.DashBoard is Window db)
+        {
+            try { db.Close(); } catch { }
+            Utils.Access.DashBoard = null;
+        }
+        if (Utils.Access.MainWindow is MainWindow mw)
+            mw.OnLoggedOut();
     }
 }

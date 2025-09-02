@@ -3,6 +3,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:fa="using:FluentAvalonia.UI.Controls"
+        xmlns:controls="clr-namespace:Kairo.Controls"
         mc:Ignorable="d"
         x:Class="Kairo.Components.DashBoard"
         Title="Kairo - DashBoard"
@@ -10,25 +11,29 @@
         MinWidth="900" MinHeight="550"
         WindowStartupLocation="CenterScreen"
         Icon="avares://Kairo/Assets/kairo.ico"
-        Closing="DashBoard_OnClosing">
-  <Grid>
-    <fa:NavigationView x:Name="NavView"
-                       PaneTitle="Kairo"
-                       IsSettingsVisible="True"
-                       AlwaysShowHeader="False"
-                       SelectionChanged="NavView_OnSelectionChanged">
-      <fa:NavigationView.MenuItems>
-        <fa:NavigationViewItem Content="开始" Tag="home" />
-        <fa:NavigationViewItem Content="隧道列表" Tag="proxylist" />
-        <fa:NavigationViewItem Content="运行状态" Tag="status" />
-      </fa:NavigationView.MenuItems>
-      <fa:NavigationView.FooterMenuItems>
-        <fa:NavigationViewItem Content="设置" Tag="settings" />
-      </fa:NavigationView.FooterMenuItems>
-      <Grid>
-        <ContentControl x:Name="ContentHost" />
-        <fa:InfoBar x:Name="Snackbar" IsOpen="False" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,16,16" />
-      </Grid>
-    </fa:NavigationView>
+        Closing="DashBoard_OnClosing"
+        SystemDecorations="None">
+  <Grid RowDefinitions="Auto,*">
+    <controls:CustomTitleBar Title="Kairo - DashBoard" />
+    <Grid Grid.Row="1">
+      <fa:NavigationView x:Name="NavView"
+                         PaneTitle="Kairo"
+                         IsSettingsVisible="True"
+                         AlwaysShowHeader="False"
+                         SelectionChanged="NavView_OnSelectionChanged">
+        <fa:NavigationView.MenuItems>
+          <fa:NavigationViewItem IconSource="" Content="开始" Tag="home" />
+          <fa:NavigationViewItem IconSource="" Content="隧道列表" Tag="proxylist" />
+          <fa:NavigationViewItem IconSource="" Content="运行状态" Tag="status" />
+        </fa:NavigationView.MenuItems>
+        <fa:NavigationView.FooterMenuItems>
+          <fa:NavigationViewItem IconSource="" Content="设置" Tag="settings" />
+        </fa:NavigationView.FooterMenuItems>
+        <Grid>
+          <ContentControl x:Name="ContentHost" />
+          <fa:InfoBar x:Name="Snackbar" IsOpen="False" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,16,16" />
+        </Grid>
+      </fa:NavigationView>
+    </Grid>
   </Grid>
 </Window>
