@@ -1,6 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kairo", "Kairo.csproj", "{5639118E-6DB1-4450-87D5-239D2D388587}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kairo", "Kairo\Kairo.csproj", "{C658691D-2F37-44FA-B5ED-EA8AE43CD1D6}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -8,9 +8,9 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{5639118E-6DB1-4450-87D5-239D2D388587}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{5639118E-6DB1-4450-87D5-239D2D388587}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{5639118E-6DB1-4450-87D5-239D2D388587}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{5639118E-6DB1-4450-87D5-239D2D388587}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C658691D-2F37-44FA-B5ED-EA8AE43CD1D6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C658691D-2F37-44FA-B5ED-EA8AE43CD1D6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C658691D-2F37-44FA-B5ED-EA8AE43CD1D6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C658691D-2F37-44FA-B5ED-EA8AE43CD1D6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
