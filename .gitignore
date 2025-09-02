@@ -363,3 +363,5 @@ MigrationBackup/
 FodyWeavers.xsd
 /Kairo/Output
 Kairo/resource/net9.0-windows/win-x64
+Legacy/
+.idea/
