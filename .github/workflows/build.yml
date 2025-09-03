@@ -57,7 +57,7 @@ jobs:
           /p:PublishTrimmed=false
           /p:DebugType=none
           /p:GenerateDocumentationFile=false
-          /p:InvariantGlobalization=true
+          /p:InvariantGlobalization=false
 
       - name: Prepare Artifact
         run: |
@@ -66,7 +66,9 @@ jobs:
           ART_NAME=Kairo-${{ matrix.rid }}
           if [ "${{ matrix.rid }}" = "win-x64" ]; then BIN=Kairo.exe; else BIN=Kairo; fi
           chmod +x "$OUT_DIR/$BIN" || true
-          (cd "$OUT_DIR" && zip -r ../../../../${ART_NAME}.zip .)
+          # Place zip into Kairo/bin/Release so upload path matches
+          (cd "$OUT_DIR" && zip -r ../../../${ART_NAME}.zip .)
+          ls -al Kairo/bin/$Configuration | grep ${ART_NAME}.zip || true
           echo "ART_ZIP=${ART_NAME}.zip" >> $GITHUB_ENV
 
       - name: Upload Artifact

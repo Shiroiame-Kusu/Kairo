@@ -8,6 +8,11 @@
         <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
     </PropertyGroup>
 
+    <!-- Ensure full globalization support (FluentAvalonia requires real cultures like en-US) -->
+    <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+        <InvariantGlobalization>false</InvariantGlobalization>
+    </PropertyGroup>
+
     <ItemGroup>
         <PackageReference Include="Avalonia" Version="11.3.4" />
         <PackageReference Include="Avalonia.Desktop" Version="11.3.4" />
