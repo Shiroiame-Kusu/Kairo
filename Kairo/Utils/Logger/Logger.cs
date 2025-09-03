@@ -7,6 +7,8 @@ using Avalonia.Threading;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.VisualTree;
+using FluentAvalonia.UI.Controls; // for InfoBarSeverity
+using Kairo.Components; // for DashBoard cast
 
 namespace Kairo.Utils.Logger
 {
@@ -20,6 +22,8 @@ namespace Kairo.Utils.Logger
 
         public static bool EnableFileLogging { get; set; } = true;
         public static string LogDirectory { get; set; } = Path.Combine("logs", "app");
+        public static int MaxCacheSize { get; set; } = 500;
+        public static int CacheTrimTo { get; set; } = 400;
 
         public static void Output(LogType type, params object?[] objects)
         {
@@ -28,9 +32,11 @@ namespace Kairo.Utils.Logger
             lock (_cacheLock)
             {
                 LogPreProcess.Process.Cache.Add(new(type, line));
-                if (LogPreProcess.Process.Cache.Count > 500)
+                if (LogPreProcess.Process.Cache.Count > MaxCacheSize)
                 {
-                    LogPreProcess.Process.Cache.RemoveRange(0, LogPreProcess.Process.Cache.Count - 400);
+                    int remove = LogPreProcess.Process.Cache.Count - CacheTrimTo;
+                    if (remove > 0)
+                        LogPreProcess.Process.Cache.RemoveRange(0, remove);
                 }
             }
             if (EnableFileLogging) TryWriteFile(type, line);
@@ -99,10 +105,41 @@ namespace Kairo.Utils.Logger
         }
 
         /// <summary>
-        /// Displays a simple message box using an Avalonia Window. Returns true if user confirmed (Ok/Yes) else false.
+        /// Displays a message: if buttons == 0 show snackbar (legacy behavior), else modal dialog. Returns true if confirmed.
+        /// buttons: 0 => snackbar only; 1 => OK/Cancel; >1 => Yes/No.
+        /// icon: 48 => Warning, else Error/Informational.
+        /// className currently unused (kept for legacy signature compatibility).
         /// </summary>
         public static bool MsgBox(string text, string caption, int buttons, int icon, int className)
         {
+            // Snackbar path
+            if (buttons == 0)
+            {
+                try
+                {
+                    string title;
+                    string body;
+                    if (text.Contains('\n'))
+                    {
+                        int idx = text.IndexOf('\n');
+                        title = text[..idx];
+                        body = text[(idx + 1)..].TrimStart('\n');
+                    }
+                    else
+                    {
+                        title = "执行失败";
+                        body = text;
+                    }
+                    var severity = icon == 48 ? InfoBarSeverity.Warning : InfoBarSeverity.Error;
+                    (Access.DashBoard as DashBoard)?.OpenSnackbar(title, body, severity);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("[MSGBOX SNACKBAR ERROR] " + ex.Message);
+                }
+                return true;
+            }
+
             try
             {
                 bool confirmed = false;
@@ -113,9 +150,9 @@ namespace Kairo.Utils.Logger
                     {
                         Title = caption,
                         Width = 420,
-                        Height = 240,
+                        Height = 260,
                         CanResize = false,
-                        Content = BuildDialogContent(text, buttons, () => { confirmed = true; }, () => { confirmed = false; }, tcs)
+                        Content = BuildDialogContent(text, buttons, () => confirmed = true, () => confirmed = false, tcs)
                     };
                     if (Access.MainWindow != null)
                         await dialog.ShowDialog(Access.MainWindow);
@@ -158,7 +195,7 @@ namespace Kairo.Utils.Logger
             var btnOk = new Button { Content = okContent, Width = 80 };
             btnOk.Click += (_, _) => { confirm(); CloseOwner(btnOk); tcs.TrySetResult(); };
             panel.Children.Add(btnOk);
-            if (buttons != 0)
+            if (buttons != 0) // show second button for any modal dialog (legacy behavior)
             {
                 var btnCancel = new Button { Content = cancelContent, Width = 80 };
                 btnCancel.Click += (_, _) => { cancel(); CloseOwner(btnCancel); tcs.TrySetResult(); };

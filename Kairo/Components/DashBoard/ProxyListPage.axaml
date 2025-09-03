@@ -8,7 +8,7 @@
       </Border>
       <TextBlock VerticalAlignment="Center" FontSize="24" Text="隧道列表"/>
     </DockPanel>
-    <Border Grid.Row="1" CornerRadius="8" Padding="12" Background="{DynamicResource SystemControlBackgroundBaseLowBrush}">
+    <Border Grid.Row="1" CornerRadius="8" Padding="12" Background="{DynamicResource LayerFillColorDefaultBrush}">
       <ScrollViewer>
         <WrapPanel x:Name="ListPanel" ItemWidth="220" ItemHeight="120" />
       </ScrollViewer>
@@ -16,10 +16,9 @@
     <Grid Grid.Row="2" ColumnDefinitions="Auto,Auto,*" Margin="0,12,0,0" ColumnSpacing="12">
       <Button x:Name="CreateProxyBtn" Content="创建新隧道" Click="CreateProxyBtn_OnClick"/>
       <Button x:Name="RefreshBtn" Grid.Column="1" Content="刷新" Click="RefreshBtn_OnClick"/>
-      <Border Grid.Column="2" Padding="8" CornerRadius="6" Background="{DynamicResource SystemControlBackgroundBaseLowBrush}">
+      <Border Grid.Column="2" Padding="8" CornerRadius="6" Background="{DynamicResource LayerFillColorDefaultBrush}">
         <TextBlock Text="PS:右键隧道可以打开菜单哦喵~"/>
       </Border>
     </Grid>
   </Grid>
 </UserControl>
-

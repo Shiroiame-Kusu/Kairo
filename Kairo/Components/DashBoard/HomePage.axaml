@@ -10,25 +10,26 @@
       <TextBlock x:Name="WelcomeText" VerticalAlignment="Center" FontSize="24" Text="欢迎回来，"/>
     </DockPanel>
     <!-- Announcement / Content -->
-    <Border Grid.Row="1" CornerRadius="8" Padding="12" Background="{DynamicResource SystemControlBackgroundBaseLowBrush}">
+    <Border Grid.Row="1" CornerRadius="8" Padding="12" Background="{DynamicResource LayerFillColorDefaultBrush}">
       <ScrollViewer>
         <TextBlock x:Name="Announcement" Text="加载公告中..." TextWrapping="Wrap"/>
       </ScrollViewer>
     </Border>
     <!-- Footer stats -->
     <Grid Grid.Row="2" ColumnDefinitions="Auto,Auto,Auto,*" Margin="0,12,0,0">
-      <Border Margin="0,0,16,0" Padding="12" CornerRadius="8" Background="{DynamicResource SystemControlBackgroundBaseLowBrush}">
+      <Border Grid.Column="0" Margin="0,0,16,0" Padding="12" CornerRadius="8" Background="{DynamicResource LayerFillColorDefaultBrush}">
         <TextBlock x:Name="BandwidthText" Text="上行/下行带宽: -/-"/>
       </Border>
-      <Border Margin="0,0,16,0" Padding="12" CornerRadius="8" Background="{DynamicResource SystemControlBackgroundBaseLowBrush}">
+      <Border Grid.Column="1" Margin="0,0,16,0" Padding="12" CornerRadius="8" Background="{DynamicResource LayerFillColorDefaultBrush}">
         <TextBlock x:Name="TrafficText" Text="剩余流量: -"/>
       </Border>
-      <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+      <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
         <Button x:Name="SignButton" Content="签到" Click="SignButton_OnClick"/>
         <Border x:Name="SignedBorder" IsVisible="False" CornerRadius="6" Padding="8" Background="#33999999">
           <TextBlock Text="你今天已经签到过啦！"/>
         </Border>
       </StackPanel>
+      <!-- Column 3 is the star (*) to take remaining space -->
     </Grid>
   </Grid>
 </UserControl>

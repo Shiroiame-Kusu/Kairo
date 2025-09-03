@@ -31,7 +31,7 @@
         <Grid Height="420" VerticalAlignment="Center" RowDefinitions="20,120,20,*">
           <!-- Banner region -->
           <Grid Grid.Row="1" RowDefinitions="*,120,*">
-            <Border Grid.Row="1" CornerRadius="8" Background="{DynamicResource SystemControlBackgroundBaseLowBrush}" >
+            <Border Grid.Row="1" CornerRadius="8" Background="Transparent" >
               <Image x:Name="Banner" Source="avares://Kairo/Assets/banner.png" Stretch="Uniform" />
             </Border>
           </Grid>
@@ -43,7 +43,7 @@
             </StackPanel>
           </Grid>
           <!-- Login Form -->
-          <Border x:Name="LoginForm" Grid.Row="3" Margin="0" Padding="16" CornerRadius="8" Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}" Classes="fade" Opacity="0" IsVisible="False">
+          <Border x:Name="LoginForm" Grid.Row="3" Margin="0" Padding="16" CornerRadius="8" Background="{DynamicResource LayerFillColorAltBrush}" Classes="fade" Opacity="0" IsVisible="False">
             <Grid RowDefinitions="220,*">
               <Grid>
                 <Grid RowDefinitions="*,*">

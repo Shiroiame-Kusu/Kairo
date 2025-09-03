@@ -7,15 +7,15 @@
     <Style Selector="Button.TitleBarButton">
       <Setter Property="Background" Value="Transparent"/>
       <Setter Property="BorderBrush" Value="Transparent"/>
-      <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}"/>
+      <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}"/>
       <Setter Property="CornerRadius" Value="4"/>
       <Setter Property="Padding" Value="0"/>
     </Style>
     <Style Selector="Button.TitleBarButton:pointerover">
-      <Setter Property="Background" Value="{DynamicResource SystemControlBackgroundBaseMediumBrush}"/>
+      <Setter Property="Background" Value="{DynamicResource ControlFillColorSecondaryBrush}"/>
     </Style>
     <Style Selector="Button.TitleBarButton:pressed">
-      <Setter Property="Background" Value="{DynamicResource SystemControlBackgroundBaseMediumHighBrush}"/>
+      <Setter Property="Background" Value="{DynamicResource ControlFillColorTertiaryBrush}"/>
     </Style>
     <Style Selector="Button.TitleBarButton.Close:pointerover">
       <Setter Property="Background" Value="#E81123"/>
@@ -25,7 +25,7 @@
       <Setter Property="Background" Value="#C50F1F"/>
     </Style>
   </UserControl.Styles>
-  <Border Background="{DynamicResource SystemControlBackgroundBaseLowBrush}" Padding="12,0,8,0">
+  <Border Background="{DynamicResource LayerFillColorDefaultBrush}" Padding="12,0,8,0">
     <Grid ColumnDefinitions="Auto,8,*,Auto,Auto,Auto" Height="36">
       <!-- App Icon -->
       <Image Source="avares://Kairo/Assets/kairo.ico" Width="20" Height="20" VerticalAlignment="Center"/> 
@@ -44,4 +44,3 @@
     </Grid>
   </Border>
 </UserControl>
-

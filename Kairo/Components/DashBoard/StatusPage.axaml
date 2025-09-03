@@ -2,9 +2,9 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="Kairo.Components.StatusPage">
   <Grid Margin="12" RowDefinitions="*,Auto">
-    <Border Grid.Row="0" CornerRadius="8" Background="{DynamicResource SystemControlBackgroundBaseLowBrush}" Padding="8">
-      <ScrollViewer>
-        <TextBlock x:Name="LogText" FontFamily="Consolas,JetBrains Mono,monospace" FontSize="12" TextWrapping="Wrap"/>
+    <Border Grid.Row="0" CornerRadius="8" Background="{DynamicResource LayerFillColorDefaultBrush}" Padding="8">
+      <ScrollViewer x:Name="LogScroll">
+        <StackPanel x:Name="LogPanel" />
       </ScrollViewer>
     </Border>
     <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Left" Spacing="12" Margin="0,12,0,0">
@@ -12,4 +12,3 @@
     </StackPanel>
   </Grid>
 </UserControl>
-

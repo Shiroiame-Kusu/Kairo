@@ -20,9 +20,11 @@ public partial class ProxyListPage : UserControl
     private readonly HttpClient _http = new();
     private bool _loaded;
     private readonly Dictionary<int, Border> _cardByProxyId = new();
+    private WrapPanel? _listPanel; // cached reference
     public ProxyListPage()
     {
         InitializeComponent();
+        _listPanel = this.FindControl<WrapPanel>("ListPanel");
         Loaded += OnLoaded;
     }
     private void InitializeComponent() => AvaloniaXamlLoader.Load(this);
@@ -30,6 +32,27 @@ public partial class ProxyListPage : UserControl
     private async void OnLoaded(object? sender, RoutedEventArgs e)
     {
         if (_loaded) return; _loaded = true;
+        if (Design.IsDesignMode)
+        {
+            if (_listPanel == null) return; // nothing to populate
+            _listPanel.Children.Clear();
+            var placeholder = new Proxy
+            {
+                Id = 0,
+                ProxyName = "示例隧道",
+                ProxyType = "tcp",
+                LocalIp = "127.0.0.1",
+                LocalPort = 7000,
+                RemotePort = "6000",
+                UseCompression = "false",
+                UseEncryption = "false",
+                Domain = "example.local",
+                Node = 1,
+                Icp = string.Empty
+            };
+            _listPanel.Children.Add(BuildCard(placeholder, 0));
+            return;
+        }
         await LoadProxies();
     }
 
@@ -37,6 +60,7 @@ public partial class ProxyListPage : UserControl
     {
         try
         {
+            if (Design.IsDesignMode) return; // extra guard
             _http.DefaultRequestHeaders.Remove("Authorization");
             _http.DefaultRequestHeaders.Add("Authorization", $"Bearer {Global.Config.AccessToken}");
             var resp = await _http.GetAsync($"{Global.APIList.GetAllProxy}{Global.Config.ID}");
@@ -49,17 +73,18 @@ public partial class ProxyListPage : UserControl
             var arrToken = json["data"]?["proxies"] ?? json["data"]?["list"]; // fallback to legacy key 'list'
             if (arrToken == null)
             {
-                ListPanel.Children.Clear();
+                _listPanel?.Children.Clear();
                 return;
             }
             var proxies = JsonConvert.DeserializeObject<List<Proxy>>(arrToken.ToString()) ?? new();
             Dispatcher.UIThread.Post(() =>
             {
-                ListPanel.Children.Clear();
+                if (_listPanel == null) return;
+                _listPanel.Children.Clear();
                 int idx = 0;
                 foreach (var p in proxies)
                 {
-                    ListPanel.Children.Add(BuildCard(p, idx++));
+                    _listPanel.Children.Add(BuildCard(p, idx++));
                 }
             });
         }

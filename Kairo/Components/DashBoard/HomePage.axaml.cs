@@ -6,6 +6,7 @@ using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
 using Newtonsoft.Json.Linq;
 using Kairo.Utils;
+using Avalonia; // for Design.IsDesignMode
 
 namespace Kairo.Components;
 
@@ -27,12 +28,31 @@ public partial class HomePage : UserControl
     {
         if (_init) return;
         _init = true;
-        WelcomeText.Text += Global.Config.Username;
-        BandwidthText.Text = $"上行/下行带宽: {MainWindow.Inbound * 8 / 1024}/{MainWindow.Outbound * 8 / 1024}Mbps";
-        TrafficText.Text = $"剩余流量: {MainWindow.Traffic / 1024}GB";
-        _ = RefreshAnnouncement();
-        _ = CheckSigned();
-        _ = RefreshAvatar();
+        DesignModeHelper.SafeRuntime(
+            runtimeAction: () =>
+            {
+                if (WelcomeText != null)
+                    WelcomeText.Text += Global.Config.Username ?? string.Empty;
+                if (BandwidthText != null)
+                    BandwidthText.Text = $"上行/下行带宽: {MainWindow.Inbound * 8 / 1024}/{MainWindow.Outbound * 8 / 1024}Mbps";
+                if (TrafficText != null)
+                    TrafficText.Text = $"剩余流量: {MainWindow.Traffic / 1024}GB";
+                _ = RefreshAnnouncement();
+                _ = CheckSigned();
+                _ = RefreshAvatar();
+            },
+            designFallback: () =>
+            {
+                if (WelcomeText != null)
+                    WelcomeText.Text = "欢迎回来，设计预览用户";
+                if (BandwidthText != null)
+                    BandwidthText.Text = "上行/下行带宽: 0/0 Mbps";
+                if (TrafficText != null)
+                    TrafficText.Text = "剩余流量: 0GB";
+                if (Announcement != null)
+                    Announcement.Text = "(设计时) 公告示例文本。";
+            }
+        );
     }
 
     private async Task RefreshAnnouncement()
@@ -132,4 +152,3 @@ public partial class HomePage : UserControl
         }
     }
 }
-

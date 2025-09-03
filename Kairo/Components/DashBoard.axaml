@@ -18,16 +18,32 @@
     <Grid Grid.Row="1">
       <fa:NavigationView x:Name="NavView"
                          PaneTitle="Kairo"
-                         IsSettingsVisible="True"
+                         IsSettingsVisible="False"
                          AlwaysShowHeader="False"
                          SelectionChanged="NavView_OnSelectionChanged">
         <fa:NavigationView.MenuItems>
-          <fa:NavigationViewItem IconSource="" Content="开始" Tag="home" />
-          <fa:NavigationViewItem IconSource="" Content="隧道列表" Tag="proxylist" />
-          <fa:NavigationViewItem IconSource="" Content="运行状态" Tag="status" />
+          <fa:NavigationViewItem x:Name="HomeNavItem" Content="开始" Tag="home">
+            <fa:NavigationViewItem.IconSource>
+              <fa:SymbolIconSource Symbol="Home" />
+            </fa:NavigationViewItem.IconSource>
+          </fa:NavigationViewItem>
+          <fa:NavigationViewItem Content="隧道列表" Tag="proxylist">
+            <fa:NavigationViewItem.IconSource>
+              <fa:SymbolIconSource Symbol="List" />
+            </fa:NavigationViewItem.IconSource>
+          </fa:NavigationViewItem>
+          <fa:NavigationViewItem Content="运行状态" Tag="status">
+            <fa:NavigationViewItem.IconSource>
+              <fa:SymbolIconSource Symbol="Code" />
+            </fa:NavigationViewItem.IconSource>
+          </fa:NavigationViewItem>
         </fa:NavigationView.MenuItems>
         <fa:NavigationView.FooterMenuItems>
-          <fa:NavigationViewItem IconSource="" Content="设置" Tag="settings" />
+          <fa:NavigationViewItem Content="设置" Tag="settings">
+            <fa:NavigationViewItem.IconSource>
+              <fa:SymbolIconSource Symbol="Settings" />
+            </fa:NavigationViewItem.IconSource>
+          </fa:NavigationViewItem>
         </fa:NavigationView.FooterMenuItems>
         <Grid>
           <ContentControl x:Name="ContentHost" />

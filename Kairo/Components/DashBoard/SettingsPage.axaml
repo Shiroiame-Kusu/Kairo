@@ -28,7 +28,7 @@
           <TextBlock Text="会有意想不到的后果" HorizontalAlignment="Center"/>
         </StackPanel>
       </WrapPanel>
-      <Border CornerRadius="8" Background="{DynamicResource SystemControlBackgroundBaseLowBrush}" Padding="12">
+      <Border CornerRadius="8" Background="{DynamicResource LayerFillColorDefaultBrush}" Padding="12">
         <Grid ColumnDefinitions="*,Auto" >
           <TextBlock x:Name="BuildInfoText" TextWrapping="Wrap"/>
           <StackPanel Grid.Column="1" Margin="24,0,0,0" Spacing="4">

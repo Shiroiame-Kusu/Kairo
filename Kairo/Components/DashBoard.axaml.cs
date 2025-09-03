@@ -19,7 +19,9 @@ namespace Kairo.Components
         {
             InitializeComponent();
             Access.DashBoard = this;
-            OpenPage("home");
+            // Set default selected item so the NavigationView shows a highlighted item on startup
+            NavView.SelectedItem = HomeNavItem;
+            // SelectionChanged handler will load the page (home) automatically
         }
 
         private void NavView_OnSelectionChanged(object? sender, NavigationViewSelectionChangedEventArgs e)
