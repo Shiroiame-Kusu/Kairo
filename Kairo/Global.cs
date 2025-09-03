@@ -1,4 +1,3 @@
-using Kairo.Utils;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -6,6 +5,7 @@ using System.Linq;
 using System.Security;
 using System.Text;
 using System.Threading.Tasks;
+using Kairo.Components;
 using Kairo.Utils.Configuration;
 
 namespace Kairo
@@ -16,7 +16,7 @@ namespace Kairo
         public static readonly DateTime StartTime = DateTime.Now;
         public static bool LoginedByConsole = false;
         public const string Version = "3.1.0";
-        public const string VersionName = "Haruhikage";
+        public const string VersionName = "Iris Bloom";
         public const string Branch = "Alpha";
         public const int Revision = 1;
         public static readonly BuildInfo BuildInfo = new();
@@ -42,24 +42,27 @@ namespace Kairo
             "Sayings:你这个人，满脑子都只想着自己呢。"
 
         };
-        public const string API = "https://api.locyanfrp.cn/v3";
+        // Switched to stable v2 API base
+        public const string API = "https://api.locyanfrp.cn/v2";
         //public const string UpdateCheckerAPI = "http://localhost:5043/api";
         public const string UpdateCheckerAPI = "https://kairo.nyat.icu/api";
         public const string GithubMirror = "https://proxy-gh.1l1.icu/";
         public class APIList
         {   
             public const string GetUserInfo = $"{API}/user/info";
-            public const string AGodDamnSwitch = Branch == "Alpha" ? "preview" : "dashboard";
-            public const string GetTheFUCKINGRefreshToken = $"https://{AGodDamnSwitch}.locyanfrp.cn/auth/oauth/authorize?user_id=";
+            // v2 OAuth authorize base (scopes parameter used instead of request_permission_ids/user_id)
+            public const string GetTheFUCKINGRefreshToken = "https://dashboard.locyanfrp.cn/auth/oauth/authorize";
             public const string GetAccessToken = $"{API}/auth/oauth/access-token";
             public const string GetFrpToken = $"{API}/user/frp/token";
+            // Keep sign/notice endpoints for forward compatibility; may be unsupported in v2 but referenced in UI
             public const string GetSign = $"{API}/sign?user_id=";
             public const string GetNotice = $"{API}/notice";
-            public const string GetAllProxy = $"{API}/proxy/all?user_id=";
-            public const string DeleteProxy = $"{API}/proxy?user_id=";
+            public const string GetAllProxy = $"{API}/proxy/all?user_id="; // retained for potential future use
+            public const string DeleteProxy = $"{API}/proxy?user_id="; // retained for potential future use
         }
         public static int OAuthPort = 10000;
-        public const int APPID = 9;
+        public const int APPID = 236;
+        public static bool DebugMode = false;
 
     }
 }

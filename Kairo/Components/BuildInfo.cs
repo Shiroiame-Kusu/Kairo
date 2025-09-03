@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Kairo.Utils
+namespace Kairo.Components
 {
     internal class BuildInfo
     {
@@ -14,6 +14,10 @@ namespace Kairo.Utils
             string[] arg = System.Text.RegularExpressions.Regex.Replace(
                 (Resources.BuildInfo ?? string.Empty).Trim(' ', '\n', '\r').Replace("\r", string.Empty),
                 @"[^\u0000-\u007f]+", string.Empty).Split(new[] { '\n' }, 3, StringSplitOptions.RemoveEmptyEntries);
+            foreach (string arg0 in arg)
+            {
+             Console.WriteLine(arg0);   
+            }
             switch (arg.Length)
             {
                 case 1:

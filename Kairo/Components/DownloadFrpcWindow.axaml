@@ -4,7 +4,7 @@
         Title="下载 FRPC" Width="420" Height="260" WindowStartupLocation="CenterOwner">
   <Grid RowDefinitions="Auto,*,Auto" Margin="12">
     <TextBlock Text="正在获取最新版本信息..." x:Name="StatusText" Margin="0,0,0,8"/>
-    <StackPanel Spacing="6">
+    <StackPanel Grid.Row="1" Spacing="6">
       <ProgressBar x:Name="Progress" Minimum="0" Maximum="100" Height="20" IsIndeterminate="True"/>
       <TextBlock x:Name="ProgressText" FontSize="12" Foreground="Gray"/>
       <TextBlock x:Name="SpeedText" FontSize="12" Foreground="Gray"/>

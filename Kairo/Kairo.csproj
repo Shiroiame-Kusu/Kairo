@@ -6,6 +6,7 @@
         <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
         <ApplicationManifest>app.manifest</ApplicationManifest>
         <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+        <GenerateAssemblyInfo>false</GenerateAssemblyInfo> <!-- custom assembly info -->
     </PropertyGroup>
 
     <!-- Ensure full globalization support (FluentAvalonia requires real cultures like en-US) -->

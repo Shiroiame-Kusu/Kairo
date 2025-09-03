@@ -37,11 +37,15 @@ public partial class App : Application
 
     public override void OnFrameworkInitializationCompleted()
     {   
-        // Start OAuth callback server early
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             desktop.MainWindow = new MainWindow();
             Access.MainWindow = desktop.MainWindow; // store reference for Logger dialogs
+            desktop.Exit += async (_, __) =>
+            {
+                try { await Components.OAuth.OAuthCallbackHandler.StopAsync(); } catch { }
+                try { FrpcProcessManager.StopAll(); } catch { }
+            };
         }
 
         base.OnFrameworkInitializationCompleted();

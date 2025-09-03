@@ -29,50 +29,90 @@ namespace Kairo.Components
         private long _lastBytes;
         private DateTime _lastTime;
         private const int MaxAttempts = 3;
+        private TextBlock? _statusTextRef; // null-safe refs
+        private ProgressBar? _progressRef;
+        private TextBlock? _progressTextRef;
+        private TextBlock? _speedTextRef;
+        private TextBlock? _tipTextRef;
+        private Button? _cancelBtnRef;
+        private Button? _closeBtnRef;
 
         public DownloadFrpcWindow()
         {
             InitializeComponent();
-            TipText.Text = Global.Tips[Random.Shared.Next(0, Global.Tips.Count)];
+            // Acquire controls defensively (compiled XAML fields may be null on some platforms / build modes)
+            _statusTextRef = this.FindControl<TextBlock>("StatusText");
+            _progressRef = this.FindControl<ProgressBar>("Progress");
+            _progressTextRef = this.FindControl<TextBlock>("ProgressText");
+            _speedTextRef = this.FindControl<TextBlock>("SpeedText");
+            _tipTextRef = this.FindControl<TextBlock>("TipText");
+            _cancelBtnRef = this.FindControl<Button>("CancelBtn");
+            _closeBtnRef = this.FindControl<Button>("CloseBtn");
+            if (_tipTextRef != null && Global.Tips != null && Global.Tips.Count > 0)
+                _tipTextRef.Text = Global.Tips[Random.Shared.Next(0, Global.Tips.Count)];
             Opened += async (_, _) => await StartAsync();
         }
 
         private void InitializeComponent() => AvaloniaXamlLoader.Load(this);
 
+        private void UpdateProgress(double percent, long received, long total, double speedBytesPerSec)
+        {
+            Dispatcher.UIThread.Post(() =>
+            {
+                if (_progressRef != null)
+                {
+                    _progressRef.IsIndeterminate = false;
+                    _progressRef.Value = percent;
+                }
+                if (_progressTextRef != null)
+                {
+                    if (total > 0)
+                        _progressTextRef.Text = FormatBytes(received) + " / " + FormatBytes(total) + $" ({percent:F1}%)";
+                    else
+                        _progressTextRef.Text = FormatBytes(received);
+                }
+                if (_speedTextRef != null)
+                {
+                    string speedStr = speedBytesPerSec > 1024 * 1024 ? ($"{speedBytesPerSec / 1024d / 1024d:F2} MB/s") : ($"{speedBytesPerSec / 1024d:F1} KB/s");
+                    _speedTextRef.Text = $"速度: {speedStr}";
+                }
+            });
+        }
+
         private async Task StartAsync()
         {
             try
             {
-                StatusText.Text = "正在获取版本信息...";
+                SetStatus("正在获取版本信息...");
                 _http.DefaultRequestHeaders.UserAgent.ParseAdd("Kairo-FrpcDownloader");
                 string apiMirror = "https://api-gh.1l1.icu/repos/LoCyan-Team/LocyanFrpPureApp/releases/latest";
                 string apiOrigin = "https://api.github.com/repos/LoCyan-Team/LocyanFrpPureApp/releases/latest";
                 JObject release = await TryFetch(apiMirror) ?? await TryFetch(apiOrigin) ?? throw new Exception("无法获取版本信息");
                 var (version, assets, asset, assetName, platform, arch) = SelectBestAsset(release);
-                StatusText.Text = $"最新版本: {version} 体系结构: {platform}-{arch}";
+                SetStatus($"最新版本: {version} 体系结构: {platform}-{arch}");
 
                 string downloadUrl = asset["browser_download_url"]?.ToString() ?? throw new Exception("下载地址缺失");
                 if (Global.Config.UsingDownloadMirror)
                     downloadUrl = Global.GithubMirror + downloadUrl;
 
-                Progress.IsIndeterminate = false;
+                if (_progressRef != null) _progressRef.IsIndeterminate = false;
                 Exception? lastError = null;
                 for (int attempt = 1; attempt <= MaxAttempts; attempt++)
                 {
                     if (_cts.IsCancellationRequested) break;
                     try
                     {
-                        StatusText.Text = attempt == 1 ? "正在下载..." : $"正在下载...(重试 {attempt}/{MaxAttempts})";
+                        SetStatus(attempt == 1 ? "正在下载..." : $"正在下载...(重试 {attempt}/{MaxAttempts})");
                         await DownloadAndExtract(downloadUrl, version, platform, arch, _cts.Token, assets, assetName);
-                        StatusText.Text = "完成";
-                        CloseBtn.IsEnabled = true;
-                        CancelBtn.IsEnabled = false;
+                        SetStatus("完成");
+                        if (_closeBtnRef != null) _closeBtnRef.IsEnabled = true;
+                        if (_cancelBtnRef != null) _cancelBtnRef.IsEnabled = false;
                         return;
                     }
                     catch (OperationCanceledException)
                     {
-                        StatusText.Text = "已取消";
-                        CloseBtn.IsEnabled = true;
+                        SetStatus("已取消");
+                        if (_closeBtnRef != null) _closeBtnRef.IsEnabled = true;
                         return;
                     }
                     catch (Exception ex)
@@ -80,40 +120,40 @@ namespace Kairo.Components
                         lastError = ex;
                         if (attempt < MaxAttempts && !_cts.IsCancellationRequested)
                         {
-                            StatusText.Text = $"失败: {ex.Message} - 正在重试 ({attempt}/{MaxAttempts})";
+                            SetStatus($"失败: {ex.Message} - 正在重试 ({attempt}/{MaxAttempts})");
                             await Task.Delay(1500, _cts.Token);
                             ResetProgressUI();
                             continue;
                         }
                         else
                         {
-                            StatusText.Text = $"失败: {ex.Message}";
-                            CloseBtn.IsEnabled = true;
+                            SetStatus($"失败: {ex.Message}");
+                            if (_closeBtnRef != null) _closeBtnRef.IsEnabled = true;
                             return;
                         }
                     }
                 }
                 if (lastError != null)
                 {
-                    StatusText.Text = $"失败: {lastError.Message}";
-                    CloseBtn.IsEnabled = true;
+                    SetStatus($"失败: {lastError.Message}");
+                    if (_closeBtnRef != null) _closeBtnRef.IsEnabled = true;
                 }
             }
             catch (OperationCanceledException)
             {
-                StatusText.Text = "已取消";
-                CloseBtn.IsEnabled = true;
+                SetStatus("已取消");
+                if (_closeBtnRef != null) _closeBtnRef.IsEnabled = true;
             }
             catch (Exception ex)
             {
-                StatusText.Text = "失败: " + ex.Message;
-                CloseBtn.IsEnabled = true;
+                SetStatus("失败: " + ex.Message);
+                if (_closeBtnRef != null) _closeBtnRef.IsEnabled = true;
             }
         }
 
         private void CancelBtn_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
         {
-            CancelBtn.IsEnabled = false;
+            if (_cancelBtnRef != null) _cancelBtnRef.IsEnabled = false;
             try { _downloadService?.CancelAsync(); } catch { }
             _cts.Cancel();
         }
@@ -181,9 +221,9 @@ namespace Kairo.Components
         {
             Dispatcher.UIThread.Post(() =>
             {
-                Progress.Value = 0;
-                ProgressText.Text = string.Empty;
-                SpeedText.Text = string.Empty;
+                if (_progressRef != null) _progressRef.Value = 0;
+                if (_progressTextRef != null) _progressTextRef.Text = string.Empty;
+                if (_speedTextRef != null) _speedTextRef.Text = string.Empty;
             });
         }
 
@@ -221,27 +261,15 @@ namespace Kairo.Components
             };
             _downloadService.DownloadProgressChanged += (s, e) =>
             {
-                Dispatcher.UIThread.Post(() =>
-                {
-                    if (e.TotalBytesToReceive > 0)
-                    {
-                        Progress.Value = e.ProgressPercentage;
-                        ProgressText.Text = FormatBytes(e.ReceivedBytesSize) + " / " + FormatBytes(e.TotalBytesToReceive) + $" ({e.ProgressPercentage:F1}%)";
-                    }
-                    else
-                    {
-                        ProgressText.Text = FormatBytes(e.ReceivedBytesSize);
-                    }
-                    string speedStr = e.BytesPerSecondSpeed > 1024 * 1024 ? ($"{e.BytesPerSecondSpeed / 1024d / 1024d:F2} MB/s") : ($"{e.BytesPerSecondSpeed / 1024d:F1} KB/s");
-                    SpeedText.Text = $"速度: {speedStr}";
-                });
+                double percent = e.ProgressPercentage;
+                UpdateProgress(percent, e.ReceivedBytesSize, e.TotalBytesToReceive, e.BytesPerSecondSpeed);
             };
 
             await _downloadService.DownloadFileTaskAsync(url, _tempFile);
             await tcs.Task; // ensure completion events processed
 
             // Hash verification
-            StatusText.Text = "正在校验...";
+            SetStatus("正在校验...");
             try
             {
                 await VerifyChecksumAsync(_tempFile, assets, assetName, token);
@@ -252,7 +280,7 @@ namespace Kairo.Components
             }
 
             // Extract
-            StatusText.Text = "正在解压...";
+            SetStatus("正在解压...");
             string extractDir = Path.Combine(workDir, "extract");
             if (Directory.Exists(extractDir)) Directory.Delete(extractDir, true);
             Directory.CreateDirectory(extractDir);
@@ -320,13 +348,13 @@ namespace Kairo.Components
                                      ?? assets.FirstOrDefault(a => (a["name"]?.ToString() ?? "").EndsWith(".md5.txt", StringComparison.OrdinalIgnoreCase) && (a["name"]?.ToString() ?? "").Contains(assetName.Split('.')[0]));
             if (checksumAsset == null)
             {
-                StatusText.Text = "未提供校验文件, 跳过校验";
+                SetStatus("未提供校验文件, 跳过校验");
                 return;
             }
             string checksumUrl = checksumAsset["browser_download_url"]?.ToString() ?? string.Empty;
             if (string.IsNullOrWhiteSpace(checksumUrl))
             {
-                StatusText.Text = "校验文件链接缺失, 跳过校验";
+                SetStatus("校验文件链接缺失, 跳过校验");
                 return;
             }
             if (Global.Config.UsingDownloadMirror)
@@ -345,7 +373,7 @@ namespace Kairo.Components
             }
             if (expectedHash == null)
             {
-                StatusText.Text = "校验文件无有效哈希, 跳过校验";
+                SetStatus("校验文件无有效哈希, 跳过校验");
                 return;
             }
             string actualHash;
@@ -360,7 +388,7 @@ namespace Kairo.Components
             {
                 throw new Exception("文件哈希不匹配");
             }
-            StatusText.Text = "校验通过";
+            SetStatus("校验通过");
         }
 
         private static string FormatBytes(long bytes)
@@ -373,6 +401,8 @@ namespace Kairo.Components
             double gb = mb / 1024d;
             return gb.ToString("F2") + " GB";
         }
+
+        private void SetStatus(string txt) => Dispatcher.UIThread.Post(() => { if (_statusTextRef != null) _statusTextRef.Text = txt; });
     }
 
 

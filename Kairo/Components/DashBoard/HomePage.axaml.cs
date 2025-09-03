@@ -13,6 +13,14 @@ namespace Kairo.Components;
 public partial class HomePage : UserControl
 {
     private bool _init;
+    private TextBlock? _welcomeText;
+    private TextBlock? _bandwidthText;
+    private TextBlock? _trafficText;
+    private TextBlock? _announcementPlain;
+    private Image? _avatarImage;
+    private Button? _signButton;
+    private Border? _signedBorder;
+
     public HomePage()
     {
         InitializeComponent();
@@ -22,35 +30,42 @@ public partial class HomePage : UserControl
     private void InitializeComponent()
     {
         AvaloniaXamlLoader.Load(this);
+        _welcomeText = this.FindControl<TextBlock>("WelcomeText");
+        _bandwidthText = this.FindControl<TextBlock>("BandwidthText");
+        _trafficText = this.FindControl<TextBlock>("TrafficText");
+        _announcementPlain = this.FindControl<TextBlock>("AnnouncementPlain");
+        _avatarImage = this.FindControl<Image>("AvatarImage");
+        _signButton = this.FindControl<Button>("SignButton");
+        _signedBorder = this.FindControl<Border>("SignedBorder");
     }
 
-    private async void OnLoaded(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    private void OnLoaded(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         if (_init) return;
         _init = true;
         DesignModeHelper.SafeRuntime(
             runtimeAction: () =>
             {
-                if (WelcomeText != null)
-                    WelcomeText.Text += Global.Config.Username ?? string.Empty;
-                if (BandwidthText != null)
-                    BandwidthText.Text = $"上行/下行带宽: {MainWindow.Inbound * 8 / 1024}/{MainWindow.Outbound * 8 / 1024}Mbps";
-                if (TrafficText != null)
-                    TrafficText.Text = $"剩余流量: {MainWindow.Traffic / 1024}GB";
+                if (_welcomeText != null)
+                    _welcomeText.Text += Global.Config.Username ?? string.Empty;
+                if (_bandwidthText != null)
+                    _bandwidthText.Text = $"上行/下行带宽: {MainWindow.Inbound * 8 / 1024}/{MainWindow.Outbound * 8 / 1024}Mbps";
+                if (_trafficText != null)
+                    _trafficText.Text = $"剩余流量: {MainWindow.Traffic / 1024}GB";
                 _ = RefreshAnnouncement();
                 _ = CheckSigned();
                 _ = RefreshAvatar();
             },
             designFallback: () =>
             {
-                if (WelcomeText != null)
-                    WelcomeText.Text = "欢迎回来，设计预览用户";
-                if (BandwidthText != null)
-                    BandwidthText.Text = "上行/下行带宽: 0/0 Mbps";
-                if (TrafficText != null)
-                    TrafficText.Text = "剩余流量: 0GB";
-                if (Announcement != null)
-                    Announcement.Text = "(设计时) 公告示例文本。";
+                if (_welcomeText != null)
+                    _welcomeText.Text = "欢迎回来，设计预览用户";
+                if (_bandwidthText != null)
+                    _bandwidthText.Text = "上行/下行带宽: 0/0 Mbps";
+                if (_trafficText != null)
+                    _trafficText.Text = "剩余流量: 0GB";
+                if (_announcementPlain != null)
+                    _announcementPlain.Text = "(设计时) 公告示例文本。";
             }
         );
     }
@@ -61,17 +76,39 @@ public partial class HomePage : UserControl
         {
             using HttpClient hc = new();
             var resp = await hc.GetAsync(Global.APIList.GetNotice);
-            var json = JObject.Parse(await resp.Content.ReadAsStringAsync());
-            if ((int)json["status"] == 200)
+            if (!resp.IsSuccessStatusCode)
             {
-                string txt = json["data"]?["broadcast"]?.ToString() ?? "暂无公告";
-                Dispatcher.UIThread.Post(() => Announcement.Text = txt);
+                PostAnnouncement($"获取公告失败: HTTP {(int)resp.StatusCode}");
+                return;
+            }
+            var content = await resp.Content.ReadAsStringAsync();
+            if (string.IsNullOrWhiteSpace(content)) { PostAnnouncement("暂无公告"); return; }
+            JObject json;
+            try { json = JObject.Parse(content); } catch { PostAnnouncement("公告格式错误"); return; }
+            if ((int?)json["status"] == 200)
+            {
+                var raw = json["data"]?["broadcast"]?.ToString();
+                if (string.IsNullOrWhiteSpace(raw)) raw = "暂无公告";
+                PostAnnouncement(raw);
+            }
+            else
+            {
+                PostAnnouncement(json["message"]?.ToString() ?? "获取公告失败");
             }
         }
         catch (Exception ex)
         {
-            Dispatcher.UIThread.Post(() => Announcement.Text = "获取公告失败: " + ex.Message);
+            PostAnnouncement("获取公告异常: " + ex.Message);
         }
+    }
+
+    private void PostAnnouncement(string text)
+    {
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (_announcementPlain != null)
+                _announcementPlain.Text = text;
+        });
     }
 
     private async Task CheckSigned()
@@ -81,13 +118,17 @@ public partial class HomePage : UserControl
             using HttpClient hc = new();
             hc.DefaultRequestHeaders.Add("Authorization", $"Bearer {Global.Config.AccessToken}");
             var resp = await hc.GetAsync($"{Global.APIList.GetSign}{Global.Config.ID}");
-            var json = JObject.Parse(await resp.Content.ReadAsStringAsync());
-            if ((int)json["status"] == 200 && (bool)(json["data"]?["status"] ?? false))
+            var body = await resp.Content.ReadAsStringAsync();
+            if (string.IsNullOrWhiteSpace(body)) return;
+            JObject json; try { json = JObject.Parse(body); } catch { return; }
+            int? status = json["status"]?.Value<int?>();
+            bool signed = json["data"]?["status"]?.Value<bool?>() ?? false;
+            if (status == 200 && signed)
             {
                 Dispatcher.UIThread.Post(() =>
                 {
-                    SignButton.IsVisible = false;
-                    SignedBorder.IsVisible = true;
+                    if (_signButton != null) _signButton.IsVisible = false;
+                    if (_signedBorder != null) _signedBorder.IsVisible = true;
                 });
             }
         }
@@ -98,48 +139,57 @@ public partial class HomePage : UserControl
     {
         try
         {
-            if (MainWindow.Avatar == null) return;
+            if (string.IsNullOrWhiteSpace(MainWindow.Avatar) || _avatarImage == null) return;
             using HttpClient hc = new();
-            var bytes = await hc.GetByteArrayAsync(MainWindow.Avatar);
+            byte[] bytes; try { bytes = await hc.GetByteArrayAsync(MainWindow.Avatar); } catch { return; }
             using var ms = new System.IO.MemoryStream(bytes);
             var bmp = new Avalonia.Media.Imaging.Bitmap(ms);
-            Dispatcher.UIThread.Post(() => AvatarImage.Source = bmp);
+            Dispatcher.UIThread.Post(() =>
+            {
+                if (_avatarImage != null)
+                    _avatarImage.Source = bmp;
+            });
         }
         catch { }
     }
 
     private async void SignButton_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
+        if (_signButton == null || _trafficText == null || _signedBorder == null) return;
         try
         {
-            SignButton.IsEnabled = false;
+            _signButton.IsEnabled = false;
             using HttpClient hc = new();
             hc.DefaultRequestHeaders.Add("Authorization", $"Bearer {Global.Config.AccessToken}");
             var resp = await hc.PostAsync($"{Global.APIList.GetSign}{Global.Config.ID}", null);
-            var json = JObject.Parse(await resp.Content.ReadAsStringAsync());
-            if ((int)json["status"] == 200)
+            var body = await resp.Content.ReadAsStringAsync();
+            if (string.IsNullOrWhiteSpace(body)) { (Access.DashBoard as DashBoard)?.OpenSnackbar("签到失败", "空响应", FluentAvalonia.UI.Controls.InfoBarSeverity.Error); return; }
+            JObject json; try { json = JObject.Parse(body); } catch { (Access.DashBoard as DashBoard)?.OpenSnackbar("签到失败", "响应格式错误", FluentAvalonia.UI.Controls.InfoBarSeverity.Error); return; }
+            int? status = json["status"]?.Value<int?>();
+            string? message = json["message"]?.ToString();
+            int gained = json["data"]?["get_traffic"]?.Value<int?>() ?? 0;
+            if (status == 200)
             {
-                int gained = (int)(json["data"]?["get_traffic"] ?? 0);
                 Dispatcher.UIThread.Post(() =>
                 {
-                    TrafficText.Text = $"剩余流量: {(MainWindow.Traffic / 1024) + gained}GB";
-                    SignButton.IsVisible = false;
-                    SignedBorder.IsVisible = true;
+                    _trafficText.Text = $"剩余流量: {(MainWindow.Traffic / 1024) + gained}GB";
+                    _signButton.IsVisible = false;
+                    _signedBorder.IsVisible = true;
                 });
                 (Access.DashBoard as DashBoard)?.OpenSnackbar("签到成功", $"获得 {gained}GB 流量", FluentAvalonia.UI.Controls.InfoBarSeverity.Success);
             }
-            else if ((int)json["status"] == 403 && json["message"]?.ToString() == "你今天已经签到过了")
+            else if (status == 403 && message == "你今天已经签到过了")
             {
                 Dispatcher.UIThread.Post(() =>
                 {
-                    SignButton.IsVisible = false;
-                    SignedBorder.IsVisible = true;
+                    _signButton.IsVisible = false;
+                    _signedBorder.IsVisible = true;
                 });
                 (Access.DashBoard as DashBoard)?.OpenSnackbar("提示", "你今天已经签到过了", FluentAvalonia.UI.Controls.InfoBarSeverity.Informational);
             }
             else
             {
-                (Access.DashBoard as DashBoard)?.OpenSnackbar("签到失败", json["message"]?.ToString(), FluentAvalonia.UI.Controls.InfoBarSeverity.Error);
+                (Access.DashBoard as DashBoard)?.OpenSnackbar("签到失败", message ?? "未知错误", FluentAvalonia.UI.Controls.InfoBarSeverity.Error);
             }
         }
         catch (Exception ex)
@@ -148,7 +198,7 @@ public partial class HomePage : UserControl
         }
         finally
         {
-            SignButton.IsEnabled = true;
+            if (_signButton != null) _signButton.IsEnabled = true;
         }
     }
 }

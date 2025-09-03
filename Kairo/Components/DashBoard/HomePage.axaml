@@ -4,7 +4,7 @@
   <Grid RowDefinitions="60,*,70" Margin="12">
     <!-- Header -->
     <DockPanel Height="60">
-      <Border Height="40" Width="40" CornerRadius="20" BorderBrush="LightBlue" BorderThickness="1" Margin="0,10,10,10">
+      <Border Height="40" Width="40" CornerRadius="20" BorderBrush="LightBlue" BorderThickness="1" Margin="0,10,10,10" ClipToBounds="True">
         <Image x:Name="AvatarImage" Source="avares://Kairo/Assets/kairo.ico" Stretch="UniformToFill"/>
       </Border>
       <TextBlock x:Name="WelcomeText" VerticalAlignment="Center" FontSize="24" Text="欢迎回来，"/>
@@ -12,15 +12,15 @@
     <!-- Announcement / Content -->
     <Border Grid.Row="1" CornerRadius="8" Padding="12" Background="{DynamicResource LayerFillColorDefaultBrush}">
       <ScrollViewer>
-        <TextBlock x:Name="Announcement" Text="加载公告中..." TextWrapping="Wrap"/>
+        <TextBlock x:Name="AnnouncementPlain" Text="加载公告中..." TextWrapping="Wrap"/>
       </ScrollViewer>
     </Border>
     <!-- Footer stats -->
     <Grid Grid.Row="2" ColumnDefinitions="Auto,Auto,Auto,*" Margin="0,12,0,0">
-      <Border Grid.Column="0" Margin="0,0,16,0" Padding="12" CornerRadius="8" Background="{DynamicResource LayerFillColorDefaultBrush}">
+      <Border Grid.Column="0" VerticalAlignment="Center" Margin="0,0,16,0" Padding="12" CornerRadius="8" Background="{DynamicResource LayerFillColorDefaultBrush}">
         <TextBlock x:Name="BandwidthText" Text="上行/下行带宽: -/-"/>
       </Border>
-      <Border Grid.Column="1" Margin="0,0,16,0" Padding="12" CornerRadius="8" Background="{DynamicResource LayerFillColorDefaultBrush}">
+      <Border Grid.Column="1" VerticalAlignment="Center" Margin="0,0,16,0" Padding="12" CornerRadius="8" Background="{DynamicResource LayerFillColorDefaultBrush}">
         <TextBlock x:Name="TrafficText" Text="剩余流量: -"/>
       </Border>
       <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
@@ -29,7 +29,6 @@
           <TextBlock Text="你今天已经签到过啦！"/>
         </Border>
       </StackPanel>
-      <!-- Column 3 is the star (*) to take remaining space -->
     </Grid>
   </Grid>
 </UserControl>

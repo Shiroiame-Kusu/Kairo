@@ -14,6 +14,7 @@ using System.Numerics;
 using Newtonsoft.Json;
 using FluentAvalonia.UI.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Threading; // added for DispatcherTimer
 
 namespace Kairo;
 
@@ -32,6 +33,7 @@ public partial class MainWindow : Window
     private TrayIcon? _trayIcon;
     private NativeMenuItem? _showHideMenuItem;
     private NativeMenuItem? _exitMenuItem;
+    private DispatcherTimer? _snackbarTimer; // auto-dismiss timer
 
     public MainWindow()
     {
@@ -195,12 +197,27 @@ public partial class MainWindow : Window
         Snackbar.Message = message ?? string.Empty;
         Snackbar.Severity = severity;
         Snackbar.IsOpen = true;
+
+        _snackbarTimer ??= new DispatcherTimer { Interval = TimeSpan.FromSeconds(5) };
+        _snackbarTimer.Stop();
+        _snackbarTimer.Tick -= SnackbarTimer_Tick;
+        _snackbarTimer.Tick += SnackbarTimer_Tick;
+        _snackbarTimer.Start();
+    }
+
+    private void SnackbarTimer_Tick(object? sender, EventArgs e)
+    {
+        _snackbarTimer?.Stop();
+        if (Snackbar != null)
+            Snackbar.IsOpen = false;
     }
 
     private async void LoginButton_Click(object? sender, RoutedEventArgs e)
     {
-        // Open OAuth URL in system browser
-        var url = $"{Global.APIList.GetTheFUCKINGRefreshToken}{Global.Config.ID}&app_id={Global.APPID}&redirect_url=http://localhost:{Global.OAuthPort}/oauth/callback&request_permission_ids=User,Proxy,Sign";
+        // OAuth authorize (v2). Must URL-encode nested redirect (dashboard relay -> local listener) so its query params aren't parsed as outer ones.
+        var nested = $"https://dashboard.locyanfrp.cn/callback/auth/oauth/localhost?port={Global.OAuthPort}&ssl=false&path=/oauth/callback";
+        var encoded = Uri.EscapeDataString(nested);
+        var url = $"{Global.APIList.GetTheFUCKINGRefreshToken}?app_id={Global.APPID}&scopes=User,Proxy,Sign&redirect_url={encoded}";
         try
         {
             using var proc = new System.Diagnostics.Process();
