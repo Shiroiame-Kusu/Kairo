@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Net;
 using System.Net.NetworkInformation;
+using System.Threading;
 using System.Threading.Tasks;
 using Kairo.Utils.Configuration;
 using Microsoft.AspNetCore.Hosting;
@@ -14,6 +15,8 @@ namespace Kairo.Components.OAuth
     {
         private static bool _started;
         private static readonly object _lock = new();
+        private static WebApplication _application;
+        private static Task _runTask; // store host task
         public static void Init()
         {
             lock (_lock)
@@ -39,15 +42,34 @@ namespace Kairo.Components.OAuth
                     var builder = WebApplication.CreateBuilder();
                     builder.WebHost.UseUrls($"http://127.0.0.1:{Global.OAuthPort}");
                     builder.Services.AddControllers();
-                    var app = builder.Build();
-                    app.MapControllers();
-                    app.RunAsync(); // fire and forget
+                    _application = builder.Build();
+                    _application.MapControllers();
+                    _runTask = _application.RunAsync(); // keep reference
+                    
                 }
                 catch (Exception e)
                 {
                     CrashInterception.ShowException(e);
                 }
             });
+        }
+
+        public static async Task StopAsync()
+        {
+            try
+            {
+                if (_application != null)
+                {
+                    await _application.StopAsync();
+                    await _application.DisposeAsync();
+                }
+            }
+            catch { }
+        }
+        public static void Stop()
+        {
+            // synchronous wrapper used if async not awaited
+            try { StopAsync().GetAwaiter().GetResult(); } catch { }
         }
         private static bool IsPortInUse(int port)
         {

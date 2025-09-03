@@ -20,6 +20,8 @@ internal static class FrpcProcessManager
 
     private static readonly Dictionary<int, ProcInfo> _processes = new(); // key: proxyId
 
+    public static event Action<int>? ProxyExited; // new event
+
     public static bool IsRunning(int proxyId) => _processes.ContainsKey(proxyId);
 
     public static bool StartProxy(int proxyId, string frpcPath, string frpToken, Action<string>? onStarted = null, Action<string>? onFailed = null)
@@ -57,6 +59,7 @@ internal static class FrpcProcessManager
                     _processes.Remove(proxyId);
                 }
                 AppLogger.Output(LogType.Info, $"[FRPC] Proxy {proxyId} 进程已退出");
+                try { ProxyExited?.Invoke(proxyId); } catch { }
             };
             if (!proc.Start())
             {
@@ -123,4 +126,3 @@ internal static class FrpcProcessManager
         return count;
     }
 }
-

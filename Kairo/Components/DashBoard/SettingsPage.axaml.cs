@@ -14,43 +14,65 @@ namespace Kairo.Components
 {
     public partial class SettingsPage : UserControl
     {
+        // Added explicit control references (FindControl pattern) to avoid reliance on generated fields
+        private TextBox? _frpcPathBox;
+        private ToggleSwitch? _followSystemSwitch;
+        private ToggleSwitch? _darkThemeSwitch;
+        private ToggleSwitch? _useMirrorSwitch;
+        private TextBlock? _buildInfoText;
+        private TextBlock? _versionText;
+        private TextBlock? _developerText;
+        private TextBlock? _copyrightText;
+
         public SettingsPage()
         {
             InitializeComponent();
             Loaded += OnLoaded;
         }
-        private void InitializeComponent() => AvaloniaXamlLoader.Load(this);
+        private void InitializeComponent()
+        {
+            AvaloniaXamlLoader.Load(this);
+            // Resolve controls explicitly (mirrors pattern in HomePage.axaml.cs)
+            _frpcPathBox = this.FindControl<TextBox>("FrpcPathBox");
+            _followSystemSwitch = this.FindControl<ToggleSwitch>("FollowSystemSwitch");
+            _darkThemeSwitch = this.FindControl<ToggleSwitch>("DarkThemeSwitch");
+            _useMirrorSwitch = this.FindControl<ToggleSwitch>("UseMirrorSwitch");
+            _buildInfoText = this.FindControl<TextBlock>("BuildInfoText");
+            _versionText = this.FindControl<TextBlock>("VersionText");
+            _developerText = this.FindControl<TextBlock>("DeveloperText");
+            _copyrightText = this.FindControl<TextBlock>("CopyrightText");
+        }
 
         private void OnLoaded(object? sender, RoutedEventArgs e)
         {
             // Design mode sample data and early return to avoid accessing runtime-only state
             if (Design.IsDesignMode)
             {
-                if (FrpcPathBox != null) FrpcPathBox.Text = "/usr/bin/frpc";
-                if (UseMirrorSwitch != null) UseMirrorSwitch.IsChecked = true;
-                if (AutoStartSwitch != null) AutoStartSwitch.IsChecked = false;
-                if (FollowSystemSwitch != null) FollowSystemSwitch.IsChecked = true;
-                if (DarkThemeSwitch != null) { DarkThemeSwitch.IsChecked = false; DarkThemeSwitch.IsEnabled = false; }
-                if (BuildInfoText != null) BuildInfoText.Text = "(设计时) BuildInfo 占位";
-                if (VersionText != null) VersionText.Text = "版本: 0.0.0 Design";
-                if (DeveloperText != null) DeveloperText.Text = "开发者: ---";
-                if (CopyrightText != null) CopyrightText.Text = "Copyright ©";
+                if (_frpcPathBox != null) _frpcPathBox.Text = "/usr/bin/frpc"; // replaced direct name
+                if (_useMirrorSwitch != null) _useMirrorSwitch.IsChecked = true;
+                // if (AutoStartSwitch != null) AutoStartSwitch.IsChecked = false;
+                if (_followSystemSwitch != null) _followSystemSwitch.IsChecked = true;
+                if (_darkThemeSwitch != null) { _darkThemeSwitch.IsChecked = false; _darkThemeSwitch.IsEnabled = false; }
+                if (_buildInfoText != null) _buildInfoText.Text = "(设计时) BuildInfo 占位";
+                if (_versionText != null) _versionText.Text = "版本: 0.0.0 Design";
+                if (_developerText != null) _developerText.Text = "开发者: ---";
+                if (_copyrightText != null) _copyrightText.Text = "Copyright ©";
                 return;
             }
 
-            if (FrpcPathBox != null) FrpcPathBox.Text = Global.Config.FrpcPath ?? string.Empty;
-            if (UseMirrorSwitch != null) UseMirrorSwitch.IsChecked = Global.Config.UsingDownloadMirror;
-            if (AutoStartSwitch != null) AutoStartSwitch.IsChecked = Global.Config.AutoStartUp;
-            if (FollowSystemSwitch != null) FollowSystemSwitch.IsChecked = Global.Config.FollowSystemTheme;
-            if (DarkThemeSwitch != null)
+            if (_frpcPathBox != null) _frpcPathBox.Text = Global.Config.FrpcPath ?? string.Empty; // replaced direct name
+            if (_useMirrorSwitch != null) _useMirrorSwitch.IsChecked = Global.Config.UsingDownloadMirror;
+            // if (AutoStartSwitch != null) AutoStartSwitch.IsChecked = Global.Config.AutoStartUp;
+            if (_followSystemSwitch != null) _followSystemSwitch.IsChecked = Global.Config.FollowSystemTheme;
+            if (_darkThemeSwitch != null)
             {
-                DarkThemeSwitch.IsChecked = Global.Config.DarkTheme;
-                DarkThemeSwitch.IsEnabled = !Global.Config.FollowSystemTheme;
+                _darkThemeSwitch.IsChecked = Global.Config.DarkTheme;
+                _darkThemeSwitch.IsEnabled = !Global.Config.FollowSystemTheme;
             }
-            if (BuildInfoText != null) BuildInfoText.Text = Global.BuildInfo?.ToString() ?? string.Empty;
-            if (VersionText != null) VersionText.Text = $"版本: {Global.Version} {Global.VersionName}";
-            if (DeveloperText != null) DeveloperText.Text = $"开发者: {Global.Developer}";
-            if (CopyrightText != null) CopyrightText.Text = Global.Copyright;
+            if (_buildInfoText != null) _buildInfoText.Text = Global.BuildInfo?.ToString() ?? string.Empty;
+            if (_versionText != null) _versionText.Text = $"版本: {Global.Version} {Global.VersionName}";
+            if (_developerText != null) _developerText.Text = $"开发者: {Global.Developer}";
+            if (_copyrightText != null) _copyrightText.Text = Global.Copyright;
         }
 
         private async void SelectFile_OnClick(object? sender, RoutedEventArgs e)
@@ -65,7 +87,7 @@ namespace Kairo.Components
             if (file != null)
             {
                 Global.Config.FrpcPath = file.Path.LocalPath;
-                if (FrpcPathBox != null) FrpcPathBox.Text = Global.Config.FrpcPath;
+                if (_frpcPathBox != null) _frpcPathBox.Text = Global.Config.FrpcPath;
                 ConfigManager.Save();
                 (Access.DashBoard as DashBoard)?.OpenSnackbar("已选择", Global.Config.FrpcPath);
             }
@@ -73,21 +95,28 @@ namespace Kairo.Components
 
         private void FollowSystemSwitch_OnChanged(object? sender, RoutedEventArgs e)
         {
-            Global.Config.FollowSystemTheme = FollowSystemSwitch.IsChecked == true;
-            DarkThemeSwitch.IsEnabled = !Global.Config.FollowSystemTheme;
-            ThemeManager.Apply(Global.Config.FollowSystemTheme, Global.Config.DarkTheme);
+            var toggle = sender as ToggleSwitch; // null-safe
+            bool follow = toggle?.IsChecked == true;
+            Global.Config.FollowSystemTheme = follow;
+            if (_darkThemeSwitch != null)
+                _darkThemeSwitch.IsEnabled = !follow;
+            ThemeManager.Apply(follow, Global.Config.DarkTheme);
+            ConfigManager.Save();
         }
 
         private void DarkThemeSwitch_OnChanged(object? sender, RoutedEventArgs e)
         {
-            if (Global.Config.FollowSystemTheme) return;
-            Global.Config.DarkTheme = DarkThemeSwitch.IsChecked == true;
+            if (Global.Config.FollowSystemTheme) return; // ignore when system theme is followed
+            var toggle = sender as ToggleSwitch;
+            Global.Config.DarkTheme = toggle?.IsChecked == true;
             ThemeManager.Apply(false, Global.Config.DarkTheme);
+            ConfigManager.Save();
         }
 
         private void AutoStartSwitch_OnChanged(object? sender, RoutedEventArgs e)
         {
-            Global.Config.AutoStartUp = AutoStartSwitch.IsChecked == true;
+            var toggle = sender as ToggleSwitch;
+            Global.Config.AutoStartUp = toggle?.IsChecked == true;
             ConfigManager.Save();
         }
 
@@ -118,12 +147,14 @@ namespace Kairo.Components
                 await win.ShowDialog(owner);
             else
                 win.Show();
-            FrpcPathBox.Text = Global.Config.FrpcPath;
+            if (_frpcPathBox != null)
+                _frpcPathBox.Text = Global.Config.FrpcPath; // replaced direct name
         }
 
         private void UseMirrorSwitch_OnChanged(object? sender, RoutedEventArgs e)
         {
-            Global.Config.UsingDownloadMirror = UseMirrorSwitch.IsChecked == true;
+            var toggle = sender as ToggleSwitch;
+            Global.Config.UsingDownloadMirror = toggle?.IsChecked == true;
             ConfigManager.Save();
         }
 
@@ -136,6 +167,5 @@ namespace Kairo.Components
                 (Access.DashBoard as DashBoard)?.OpenSnackbar("???", "别点啦");
             }
         }
-        
     }
 }
