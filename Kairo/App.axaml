@@ -1,0 +1,10 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:sty="using:FluentAvalonia.Styling"
+             x:Class="Kairo.App"
+             RequestedThemeVariant="Default">
+  <!-- Theme variant specific color adjustment will be applied in code (App.axaml.cs) -->
+  <Application.Styles>
+    <sty:FluentAvaloniaTheme />
+  </Application.Styles>
+</Application>

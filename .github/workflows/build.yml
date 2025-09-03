@@ -1,0 +1,79 @@
+name: Build
+
+on:
+  push:
+    branches: [ main, master, preview ]
+    tags: [ 'v*' ]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    name: Build (${{ matrix.rid }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        rid: [ win-x64, linux-x64 ]
+    env:
+      DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
+      DOTNET_NOLOGO: 1
+      Configuration: Release
+      PROJECT_PATH: Kairo/Kairo.csproj
+      FRAMEWORK: net9.0
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Cache NuGet
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/packages.lock.json', '**/*.csproj') }}
+          restore-keys: |
+            nuget-${{ runner.os }}-
+
+      - name: Restore
+        run: dotnet restore $PROJECT_PATH
+
+      - name: Publish (single-file, self-contained)
+        run: >-
+          dotnet publish $PROJECT_PATH
+          -c $Configuration
+          -r ${{ matrix.rid }}
+          -f $FRAMEWORK
+          --self-contained true
+          /p:PublishSingleFile=true
+          /p:IncludeAllContentForSelfExtract=true
+          /p:EnableCompressionInSingleFile=true
+          /p:PublishTrimmed=false
+          /p:DebugType=none
+          /p:GenerateDocumentationFile=false
+          /p:InvariantGlobalization=false
+
+      - name: Prepare Artifact
+        run: |
+          OUT_DIR=Kairo/bin/$Configuration/$FRAMEWORK/${{ matrix.rid }}/publish
+          ls -al "$OUT_DIR"
+          ART_NAME=Kairo-${{ matrix.rid }}
+          if [ "${{ matrix.rid }}" = "win-x64" ]; then BIN=Kairo.exe; else BIN=Kairo; fi
+          chmod +x "$OUT_DIR/$BIN" || true
+          # Place zip into Kairo/bin/Release so upload path matches
+          (cd "$OUT_DIR" && zip -r ../../../${ART_NAME}.zip .)
+          ls -al Kairo/bin/$Configuration | grep ${ART_NAME}.zip || true
+          echo "ART_ZIP=${ART_NAME}.zip" >> $GITHUB_ENV
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Kairo-${{ matrix.rid }}
+          path: Kairo/bin/${{ env.Configuration }}/Kairo-${{ matrix.rid }}.zip
+          if-no-files-found: error

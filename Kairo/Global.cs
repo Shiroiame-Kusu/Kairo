@@ -1,4 +1,4 @@
-﻿using Kairo.Utils;
+using Kairo.Utils;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -6,7 +6,7 @@ using System.Linq;
 using System.Security;
 using System.Text;
 using System.Threading.Tasks;
-using System.Windows.Documents;
+using Kairo.Utils.Configuration;
 
 namespace Kairo
 {
@@ -15,7 +15,7 @@ namespace Kairo
         public static readonly string PATH = Path.GetDirectoryName(Environment.ProcessPath);
         public static readonly DateTime StartTime = DateTime.Now;
         public static bool LoginedByConsole = false;
-        public const string Version = "3.0.0";
+        public const string Version = "3.1.0";
         public const string VersionName = "Haruhikage";
         public const string Branch = "Alpha";
         public const int Revision = 1;
