@@ -130,7 +130,7 @@ jobs:
           dotnet publish Kairo/Kairo.csproj \
             -c Release \
             -r ${{ matrix.rid }} \
-            --self-contained true \
+            --self-contained \
             /p:PublishSingleFile=true \
             /p:IncludeNativeLibrariesForSelfExtract=true \
             /p:Version=${{ needs.prepare.outputs.version }} \
