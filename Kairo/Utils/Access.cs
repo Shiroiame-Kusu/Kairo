@@ -1,21 +1,11 @@
-﻿using Kairo.Dashboard;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Avalonia.Controls;
 
-namespace Kairo.Utils
+namespace Kairo.Utils;
+
+public static class Access
 {
-    internal static class Access
-    {
-        public static Status? Status { get; set; }
-        public static MainWindow? MainWindow { get; set; }
-        public static DashBoard? DashBoard { get; set; }
-        public static Settings? Settings { get; set; }
-        public static Download? Download { get; set; }
-        public static ProxyList? ProxyList { get; set; }
-        public static Kairo.Components.Update? Update { get; set; }
-        public static Kairo.Utils.Update? Updater { get; set; }
-    }
+    // Reference to the main window for dialogs
+    public static Window? MainWindow { get; set; }
+    // Reference to dashboard window
+    public static Window? DashBoard { get; set; }
 }

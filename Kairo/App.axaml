@@ -1,0 +1,37 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:sty="using:FluentAvalonia.Styling"
+             xmlns:fa="using:FluentAvalonia.UI.Controls"
+             x:Class="Kairo.App"
+             RequestedThemeVariant="Default">
+  <!-- Theme variant specific color adjustment will be applied in code (App.axaml.cs) -->
+  <Application.Styles>
+    <sty:FluentAvaloniaTheme />
+    <!-- Improve InfoBar (Snackbar) readability: add solid background, subtle border & rounding -->
+    <Style Selector="fa|InfoBar">
+      <!-- LayerFillColorDefaultBrush is a neutral surface brush provided by FluentAvalonia -->
+      <Setter Property="Background" Value="{DynamicResource LayerFillColorDefaultBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource ControlStrokeColorDefaultBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="6" />
+      <!-- Slight opacity for layering while still readable -->
+      <Setter Property="Opacity" Value="0.97" />
+      <Setter Property="Padding" Value="12,8" />
+    </Style>
+    <!-- ContextMenu visibility styles -->
+    <Style Selector="ContextMenu">
+      <Setter Property="Background" Value="{DynamicResource LayerFillColorDefaultBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource ControlStrokeColorDefaultBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="Padding" Value="4" />
+      <Setter Property="MinWidth" Value="140" />
+      <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+    </Style>
+    <Style Selector="MenuItem">
+      <Setter Property="Padding" Value="12,6" />
+      <Setter Property="Margin" Value="0,0,0,2" />
+      <Setter Property="MinWidth" Value="120" />
+      <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+    </Style>
+  </Application.Styles>
+</Application>

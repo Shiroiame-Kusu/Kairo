@@ -1,0 +1,14 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Kairo.Components.DashBoard.StatusPage">
+  <Grid Margin="12" RowDefinitions="*,Auto">
+    <Border Grid.Row="0" CornerRadius="8" Background="{DynamicResource LayerFillColorDefaultBrush}" Padding="8">
+      <ScrollViewer x:Name="LogScroll">
+        <StackPanel x:Name="LogPanel" />
+      </ScrollViewer>
+    </Border>
+    <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Left" Spacing="12" Margin="0,12,0,0">
+      <Button x:Name="StopAllBtn" Content="强制结束所有隧道" Click="StopAllBtn_OnClick" />
+    </StackPanel>
+  </Grid>
+</UserControl>
