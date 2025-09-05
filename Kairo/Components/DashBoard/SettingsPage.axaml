@@ -1,45 +1,51 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             x:Class="Kairo.Components.SettingsPage"
+             x:Class="Kairo.Components.DashBoard.SettingsPage"
              VerticalAlignment="Stretch">
-    <StackPanel Margin="12" Spacing="16">
-      <TextBlock Text="Frpc路径" FontSize="12"/>
-      <Grid ColumnDefinitions="*,Auto" >
-        <TextBox x:Name="FrpcPathBox" IsReadOnly="True" Text=""/>
-        <Button Grid.Column="1" Margin="8,0,0,0" Content="选择文件" Click="SelectFile_OnClick"/>
-      </Grid>
-      <TextBlock Text="功能" FontSize="12"/>
-      <Border  Background="{DynamicResource LayerFillColorDefaultBrush}" Padding="12" CornerRadius="8">
-        <WrapPanel>
-          <StackPanel Width="140" Spacing="8">
-            <ToggleSwitch x:Name="FollowSystemSwitch" Content="跟随系统主题" IsChecked="True" IsCheckedChanged="FollowSystemSwitch_OnChanged"/>
-            <ToggleSwitch x:Name="DarkThemeSwitch" Content="使用深色主题" IsEnabled="False" IsCheckedChanged="DarkThemeSwitch_OnChanged"/>
-            <!-- <ToggleSwitch x:Name="AutoStartSwitch" Content="开机自动启动" IsCheckedChanged="AutoStartSwitch_OnChanged"/> -->
-          </StackPanel>
-          <StackPanel Width="140" Spacing="8">
-            <Button x:Name="CopyTokenBtn" Content="复制Token" Click="CopyTokenBtn_OnClick"/>
-            <Button x:Name="SignOutBtn" Content="退出登录" Click="SignOutBtn_OnClick"/>
-          </StackPanel>
-          <StackPanel Width="140" Spacing="8">
-            <Button x:Name="DownloadFrpcBtn"  Content="下载FRPC" Click="DownloadFrpcBtn_OnClick"/>
-            <ToggleSwitch x:Name="UseMirrorSwitch" Content="国内镜像" IsChecked="True" IsCheckedChanged="UseMirrorSwitch_OnChanged"/>
-          </StackPanel>
-          <StackPanel Width="200" Spacing="8" HorizontalAlignment="Left">
-            <Button x:Name="EasterEggBtn" Content="不要点击这个按钮哦" Click="EasterEggBtn_OnClick" HorizontalAlignment="Center"/>
-            <TextBlock Text="会有意想不到的后果" HorizontalAlignment="Center"/>
-          </StackPanel>
-        </WrapPanel>
-      </Border>
-      
-      <Border VerticalAlignment="Bottom" CornerRadius="8" Background="Transparent" Padding="12">
+  <Grid Margin="12" RowDefinitions="*,Auto">
+    <!-- Scrollable settings content -->
+    <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+      <StackPanel Spacing="16">
+        <TextBlock Text="Frpc路径" FontSize="12"/>
         <Grid ColumnDefinitions="*,Auto" >
-          <TextBlock x:Name="BuildInfoText" Text="" TextWrapping="Wrap"/>
-          <StackPanel Grid.Column="1" Margin="24,0,0,0" Spacing="4">
-            <TextBlock x:Name="VersionText" Text=""/>
-            <TextBlock x:Name="DeveloperText" Text=""/>
-            <TextBlock x:Name="CopyrightText" Text=""/>
-          </StackPanel>
+          <TextBox x:Name="FrpcPathBox" IsReadOnly="True" Text=""/>
+          <Button Grid.Column="1" Margin="8,0,0,0" Content="选择文件" Click="SelectFile_OnClick"/>
         </Grid>
-      </Border>
-    </StackPanel>
+        <TextBlock Text="功能" FontSize="12"/>
+        <Border  Background="{DynamicResource LayerFillColorDefaultBrush}" Padding="12" CornerRadius="8">
+          <WrapPanel>
+            <StackPanel Width="140" Spacing="8">
+              <ToggleSwitch x:Name="FollowSystemSwitch" Content="跟随系统主题" IsChecked="True" IsCheckedChanged="FollowSystemSwitch_OnChanged"/>
+              <ToggleSwitch x:Name="DarkThemeSwitch" Content="使用深色主题" IsEnabled="False" IsCheckedChanged="DarkThemeSwitch_OnChanged"/>
+              <!-- <ToggleSwitch x:Name="AutoStartSwitch" Content="开机自动启动" IsCheckedChanged="AutoStartSwitch_OnChanged"/> -->
+            </StackPanel>
+            <StackPanel Width="140" Spacing="8">
+              <Button x:Name="CopyTokenBtn" Content="复制Token" Click="CopyTokenBtn_OnClick"/>
+              <Button x:Name="SignOutBtn" Content="退出登录" Click="SignOutBtn_OnClick"/>
+            </StackPanel>
+            <StackPanel Width="140" Spacing="8">
+              <Button x:Name="DownloadFrpcBtn"  Content="下载FRPC" Click="DownloadFrpcBtn_OnClick"/>
+              <ToggleSwitch x:Name="UseMirrorSwitch" Content="国内镜像" IsChecked="True" IsCheckedChanged="UseMirrorSwitch_OnChanged"/>
+            </StackPanel>
+            <StackPanel Width="200" Spacing="8" HorizontalAlignment="Left">
+              <Button x:Name="EasterEggBtn" Content="不要点击这个按钮哦" Click="EasterEggBtn_OnClick" HorizontalAlignment="Center"/>
+              <TextBlock Text="会有意想不到的后果" HorizontalAlignment="Center"/>
+            </StackPanel>
+          </WrapPanel>
+        </Border>
+      </StackPanel>
+    </ScrollViewer>
+
+    <!-- Fixed bottom build info -->
+    <Border Grid.Row="1" CornerRadius="8" Background="Transparent" Padding="12" Margin="0,16,0,0">
+      <Grid ColumnDefinitions="*,Auto" >
+        <TextBlock x:Name="BuildInfoText" Text="" FontSize="12" TextWrapping="Wrap"/>
+        <StackPanel Grid.Column="1" Margin="24,0,0,0" Spacing="4">
+          <TextBlock x:Name="VersionText" Text="" FontSize="12"/>
+          <TextBlock x:Name="DeveloperText" Text="" FontSize="12"/>
+          <TextBlock x:Name="CopyrightText" Text="" FontSize="12"/>
+        </StackPanel>
+      </Grid>
+    </Border>
+  </Grid>
 </UserControl>

@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.VisualTree;
 using FluentAvalonia.UI.Controls; // for InfoBarSeverity
-using Kairo.Components; // for DashBoard cast
+using Kairo.Components.DashBoard; // for DashBoard cast
 
 namespace Kairo.Utils.Logger
 {
@@ -17,6 +17,7 @@ namespace Kairo.Utils.Logger
         private static readonly object _cacheLock = new();
         private static readonly object _fileLock = new();
         private static bool _logDirEnsured;
+        private static int _totalLines; // monotonically increasing count of all lines ever logged (since process start)
 
         public static event Action<LogType, string>? LineWritten; // UI or other subscribers can hook
 
@@ -25,6 +26,25 @@ namespace Kairo.Utils.Logger
         public static int MaxCacheSize { get; set; } = 500;
         public static int CacheTrimTo { get; set; } = 400;
 
+        // New: expose a snapshot of cached lines for late subscribers / page reloads
+        public static System.Collections.Generic.List<(LogType, string)> GetCacheSnapshot()
+        {
+            lock (_cacheLock)
+            {
+                return new System.Collections.Generic.List<(LogType, string)>(LogPreProcess.Process.Cache);
+            }
+        }
+
+        // Newer: snapshot returning base global index so UI can recover after trimming
+        public static (System.Collections.Generic.List<(LogType, string)> snapshot, int baseIndex) GetCacheSnapshotWithBase()
+        {
+            lock (_cacheLock)
+            {
+                int baseIndex = _totalLines - LogPreProcess.Process.Cache.Count; // global index of first cached item
+                return (new System.Collections.Generic.List<(LogType, string)>(LogPreProcess.Process.Cache), baseIndex);
+            }
+        }
+
         public static void Output(LogType type, params object?[] objects)
         {
             string line = BuildLine(type, objects);
@@ -32,6 +52,7 @@ namespace Kairo.Utils.Logger
             lock (_cacheLock)
             {
                 LogPreProcess.Process.Cache.Add(new(type, line));
+                _totalLines++;
                 if (LogPreProcess.Process.Cache.Count > MaxCacheSize)
                 {
                     int remove = LogPreProcess.Process.Cache.Count - CacheTrimTo;

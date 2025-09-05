@@ -16,6 +16,10 @@ using Kairo.Utils.Configuration;
 using Newtonsoft.Json.Linq;
 using System.Security.Cryptography;
 using System.Formats.Tar;
+using System.Net;
+using System.Reflection;
+using Kairo.Utils.Logger;
+using Microsoft.Extensions.Logging;
 
 namespace Kairo.Components
 {
@@ -36,7 +40,7 @@ namespace Kairo.Components
         private TextBlock? _tipTextRef;
         private Button? _cancelBtnRef;
         private Button? _closeBtnRef;
-
+        CookieContainer cookies = new();
         public DownloadFrpcWindow()
         {
             InitializeComponent();
@@ -93,7 +97,12 @@ namespace Kairo.Components
 
                 string downloadUrl = asset["browser_download_url"]?.ToString() ?? throw new Exception("下载地址缺失");
                 if (Global.Config.UsingDownloadMirror)
-                    downloadUrl = Global.GithubMirror + downloadUrl;
+                {
+                    // locyan mirrors format: https://mirrors.locyan.cn/github-release/LoCyan-Team/LoCyanFrpPureApp/{releaseName}/ + assetName
+                    string releaseName = release["name"]?.ToString() ?? release["tag_name"]?.ToString() ?? version;
+                    downloadUrl = "https://mirrors.locyan.cn/github-release/LoCyan-Team/LoCyanFrpPureApp/" +
+                                   Uri.EscapeDataString(releaseName) + "/" + Uri.EscapeDataString(assetName);
+                }
 
                 if (_progressRef != null) _progressRef.IsIndeterminate = false;
                 Exception? lastError = null;
@@ -103,7 +112,9 @@ namespace Kairo.Components
                     try
                     {
                         SetStatus(attempt == 1 ? "正在下载..." : $"正在下载...(重试 {attempt}/{MaxAttempts})");
-                        await DownloadAndExtract(downloadUrl, version, platform, arch, _cts.Token, assets, assetName);
+                        // Pass release name for checksum mirror construction
+                        string releaseNameForPass = release["name"]?.ToString() ?? release["tag_name"]?.ToString() ?? version;
+                        await DownloadAndExtract(downloadUrl, version, platform, arch, _cts.Token, assets, assetName, releaseNameForPass);
                         SetStatus("完成");
                         if (_closeBtnRef != null) _closeBtnRef.IsEnabled = true;
                         if (_cancelBtnRef != null) _cancelBtnRef.IsEnabled = false;
@@ -227,29 +238,28 @@ namespace Kairo.Components
             });
         }
 
-        private async Task DownloadAndExtract(string url, string version, string platform, string arch, CancellationToken token, JArray assets, string assetName)
+        private async Task DownloadAndExtract(string url, string version, string platform, string arch, CancellationToken token, JArray assets, string assetName, string releaseName)
         {
             string workDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Kairo", "frpc");
             Directory.CreateDirectory(workDir);
-            _tempFile = Path.Combine(workDir, "frpc_download.tmp");
+            // Preserve the original asset file name (with extension) so we can detect archive type (.zip / .tar.gz)
+            // Previously used a .tmp extension which broke the EndsWith checks and caused "未找到 frpc 可执行文件" later.
+            string downloadFileName = string.IsNullOrWhiteSpace(assetName) ? "frpc_download" : assetName;
+            _tempFile = Path.Combine(workDir, downloadFileName);
             if (File.Exists(_tempFile)) File.Delete(_tempFile);
 
             var config = new DownloadConfiguration
             {
                 BufferBlockSize = 8192,
-                MaxTryAgainOnFailover = 3,
+                ChunkCount = Math.Clamp(Environment.ProcessorCount, 4, 12),
                 ParallelDownload = true,
-                ParallelCount = 4,
-                Timeout = 10000
+                ParallelCount = Math.Clamp(Environment.ProcessorCount, 4, 12),
+                Timeout = 5000,
+                MaxTryAgainOnFailure = 3
             };
             _downloadService = new DownloadService(config);
             var tcs = new TaskCompletionSource<bool>();
-
-            using var reg = token.Register(() =>
-            {
-                try { _downloadService?.CancelAsync(); } catch { }
-            });
-
+            using var reg = token.Register(() => { try { _downloadService?.CancelAsync(); } catch { } });
             _downloadService.DownloadFileCompleted += (s, e) =>
             {
                 if (e.Error != null)
@@ -264,27 +274,21 @@ namespace Kairo.Components
                 double percent = e.ProgressPercentage;
                 UpdateProgress(percent, e.ReceivedBytesSize, e.TotalBytesToReceive, e.BytesPerSecondSpeed);
             };
-
             await _downloadService.DownloadFileTaskAsync(url, _tempFile);
-            await tcs.Task; // ensure completion events processed
-
-            // Hash verification
+            await tcs.Task;
             SetStatus("正在校验...");
             try
             {
-                await VerifyChecksumAsync(_tempFile, assets, assetName, token);
+                await VerifyChecksumAsync(_tempFile, assets, assetName, token, releaseName);
             }
             catch (Exception ex)
             {
                 throw new Exception($"校验失败: {ex.Message}");
             }
-
-            // Extract
             SetStatus("正在解压...");
             string extractDir = Path.Combine(workDir, "extract");
             if (Directory.Exists(extractDir)) Directory.Delete(extractDir, true);
             Directory.CreateDirectory(extractDir);
-
             if (_tempFile.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
             {
                 ZipFile.ExtractToDirectory(_tempFile, extractDir);
@@ -303,13 +307,13 @@ namespace Kairo.Components
             {
                 if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 {
-                    System.Diagnostics.Process.Start("/bin/chmod", $"+x '{finalPath}'");
+                    System.Diagnostics.Process.Start("/bin/chmod", $"+x {finalPath}");
                 }
             }
             catch { }
             Global.Config.FrpcPath = finalPath;
             ConfigManager.Save();
-            Dispatcher.UIThread.Post(() => (Access.DashBoard as DashBoard)?.OpenSnackbar("下载完成", finalPath, FluentAvalonia.UI.Controls.InfoBarSeverity.Success));
+            Dispatcher.UIThread.Post(() => (Access.DashBoard as DashBoard.DashBoard)?.OpenSnackbar("下载完成", finalPath, FluentAvalonia.UI.Controls.InfoBarSeverity.Success));
         }
 
         private void ExtractTarGz(string gzFile, string extractDir)
@@ -339,7 +343,7 @@ namespace Kairo.Components
             }
         }
 
-        private async Task VerifyChecksumAsync(string filePath, JArray assets, string assetName, CancellationToken token)
+        private async Task VerifyChecksumAsync(string filePath, JArray assets, string assetName, CancellationToken token, string releaseName)
         {
             // Prefer SHA256 then MD5
             JToken? checksumAsset = assets.FirstOrDefault(a => (a["name"]?.ToString() ?? "").EndsWith(".sha256", StringComparison.OrdinalIgnoreCase) && (a["name"]?.ToString() ?? "").Contains(assetName.Split('.')[0]))
@@ -358,7 +362,12 @@ namespace Kairo.Components
                 return;
             }
             if (Global.Config.UsingDownloadMirror)
-                checksumUrl = Global.GithubMirror + checksumUrl;
+            {
+                // Mirror path uses release folder + checksum file name
+                string checksumFileName = checksumAsset["name"]?.ToString() ?? string.Empty;
+                checksumUrl = "https://mirrors.locyan.cn/github-release/LoCyan-Team/LoCyanFrpPureApp/" +
+                              Uri.EscapeDataString(releaseName) + "/" + Uri.EscapeDataString(checksumFileName);
+            }
             string checksumContent = await _http.GetStringAsync(checksumUrl, token);
             // Parse first valid hash line
             string? expectedHash = null;

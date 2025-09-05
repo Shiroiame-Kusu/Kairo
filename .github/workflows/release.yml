@@ -1,0 +1,202 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Full version (e.g. 1.2.3-Release.1, 1.2.3-RC.1, 1.2.3-Beta.2, 1.2.3-Alpha.3). If empty and no tag, a dev version is used.'
+        required: false
+      prerelease:
+        description: 'Force mark as pre-release (ignored for *-Release.N pattern; RC/Beta/Alpha auto prerelease)'
+        type: boolean
+        required: false
+        default: false
+      iteration:
+        description: 'If base version A.B.C provided without suffix, append -Release.<iteration>'
+        required: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    name: Prepare Version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      assembly_version: ${{ steps.version.outputs.assembly_version }}
+      prerelease: ${{ steps.prerelease.outputs.flag }}
+    steps:
+      - name: Derive version
+        id: version
+        run: |
+          set -euo pipefail
+          INPUT_VERSION="${{ github.event.inputs.version || '' }}"
+            INPUT_ITERATION="${{ github.event.inputs.iteration || '' }}"
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            RAW_VERSION="${GITHUB_REF#refs/tags/}"
+          elif [[ -n "$INPUT_VERSION" ]]; then
+            RAW_VERSION="$INPUT_VERSION"
+            if [[ "$RAW_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ && -n "$INPUT_ITERATION" ]]; then
+              RAW_VERSION="$RAW_VERSION-Release.$INPUT_ITERATION"
+            fi
+          else
+            RAW_VERSION="0.0.0-dev-${GITHUB_SHA::7}"
+          fi
+          RAW_VERSION=${RAW_VERSION#v}
+
+          ASSEMBLY_VERSION=""
+          if [[ "$RAW_VERSION" =~ ^([0-9]+\.[0-9]+\.[0-9]+)-(Release|RC|Beta|Alpha)\.([0-9]+)$ ]]; then
+            BASE="${BASH_REMATCH[1]}"; ITER="${BASH_REMATCH[3]}"
+            ASSEMBLY_VERSION="${BASE}.${ITER}"
+          elif [[ "$RAW_VERSION" =~ ^([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+            ASSEMBLY_VERSION="${BASH_REMATCH[1]}.0"
+          else
+            ASSEMBLY_VERSION="0.0.0.0"
+          fi
+
+          echo "version=$RAW_VERSION" >> "$GITHUB_OUTPUT"
+          echo "assembly_version=$ASSEMBLY_VERSION" >> "$GITHUB_OUTPUT"
+          echo "Derived version: $RAW_VERSION";
+          echo "Assembly version: $ASSEMBLY_VERSION";
+      - name: Prerelease flag
+        id: prerelease
+        run: |
+          VER='${{ steps.version.outputs.version }}'
+          if [[ "$VER" =~ -Release\.[0-9]+$ ]]; then
+            echo "flag=false" >> "$GITHUB_OUTPUT"
+          elif [[ "$VER" =~ -(RC|Beta|Alpha)\.[0-9]+$ ]]; then
+            echo "flag=true" >> "$GITHUB_OUTPUT"
+          elif [[ "${{ github.event_name }}" == 'workflow_dispatch' && "${{ github.event.inputs.prerelease }}" == 'true' ]]; then
+            echo "flag=true" >> "$GITHUB_OUTPUT"
+          elif [[ "${GITHUB_REF}" == refs/tags/* && "${GITHUB_REF#refs/tags/}" == *-* ]]; then
+            echo "flag=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "flag=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  build:
+    name: Build (${{ matrix.rid }})
+    needs: prepare
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            rid: linux-x64
+            archive: tar.gz
+          - os: ubuntu-latest
+            rid: linux-arm64
+            archive: tar.gz
+          - os: windows-latest
+            rid: win-x64
+            archive: zip
+          - os: windows-latest
+            rid: win-arm64
+            archive: zip
+          - os: macos-latest
+            rid: osx-x64
+            archive: tar.gz
+          - os: macos-latest
+            rid: osx-arm64
+            archive: tar.gz
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+      - name: Display .NET info
+        run: dotnet --info
+      - name: Generate build info
+        shell: bash
+        run: |
+          chmod +x Kairo/Components/BuildInfo.sh || true
+          Kairo/Components/BuildInfo.sh || echo "BuildInfo script skipped"
+      - name: Restore
+        run: dotnet restore Kairo/Kairo.csproj
+      - name: Publish
+        run: |
+          dotnet publish Kairo/Kairo.csproj \
+            -c Release \
+            -r ${{ matrix.rid }} \
+            --self-contained true \
+            /p:PublishSingleFile=true \
+            /p:IncludeNativeLibrariesForSelfExtract=true \
+            /p:Version=${{ needs.prepare.outputs.version }} \
+            /p:AssemblyVersion=${{ needs.prepare.outputs.assembly_version }} \
+            /p:FileVersion=${{ needs.prepare.outputs.assembly_version }} \
+            -o publish/${{ matrix.rid }}
+      - name: Archive
+        shell: bash
+        run: |
+          set -e
+          cd publish/${{ matrix.rid }}
+          APP_NAME=Kairo-${{ needs.prepare.outputs.version }}-${{ matrix.rid }}
+          case "${{ matrix.archive }}" in
+            zip)
+              if [[ "${{ runner.os }}" == 'Windows' ]]; then
+                powershell -Command "Compress-Archive -Path * -DestinationPath ../$APP_NAME.zip"
+              else
+                zip -r ../$APP_NAME.zip .
+              fi
+              ;;
+            tar.gz)
+              tar -czf ../$APP_NAME.tar.gz .
+              ;;
+          esac
+          echo "Created archive(s):"; ls -1 ../
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ matrix.rid }}
+          path: publish/*.{zip,tar.gz}
+          if-no-files-found: error
+
+  release:
+    name: Create Release
+    needs: [prepare, build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Flatten artifacts
+        run: |
+          mkdir dist
+          find artifacts -type f -name '*.zip' -exec mv {} dist/ \;
+          find artifacts -type f -name '*.tar.gz' -exec mv {} dist/ \;
+          ls -lh dist
+      - name: Generate checksums
+        run: |
+          cd dist
+          sha256sum * > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+      - name: Create / Update Release
+        uses: softprops/action-gh-release@v2
+        with:
+            tag_name: v${{ needs.prepare.outputs.version }}
+            name: Kairo v${{ needs.prepare.outputs.version }}
+            prerelease: ${{ needs.prepare.outputs.prerelease }}
+            draft: false
+            files: |
+              dist/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Release summary
+        run: |
+          echo "Version: ${{ needs.prepare.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "Assembly Version: ${{ needs.prepare.outputs.assembly_version }}" >> $GITHUB_STEP_SUMMARY
+          echo "Pre-release: ${{ needs.prepare.outputs.prerelease }}" >> $GITHUB_STEP_SUMMARY
+          echo "Assets:" >> $GITHUB_STEP_SUMMARY
+          ls -1 dist >> $GITHUB_STEP_SUMMARY

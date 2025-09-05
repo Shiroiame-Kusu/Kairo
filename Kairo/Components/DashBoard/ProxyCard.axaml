@@ -1,0 +1,25 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Kairo.Components.DashBoard.ProxyCard">
+  <Border x:Name="RootBorder" Classes="proxy-card">
+    <FlyoutBase.AttachedFlyout>
+      <MenuFlyout>
+        <MenuItem x:Name="RefreshItem" Header="刷新" />
+        <Separator/>
+        <MenuItem x:Name="CreateItem" Header="新建隧道" />
+        <MenuItem x:Name="DeleteItem" Header="删除隧道" />
+        <Separator/>
+        <MenuItem x:Name="StartItem" Header="启动隧道" />
+        <MenuItem x:Name="StopItem" Header="停止隧道" />
+      </MenuFlyout>
+    </FlyoutBase.AttachedFlyout>
+    <!-- Remove zero padding; style now provides Padding=10 -->
+    <StackPanel x:Name="MainPanel" Spacing="6" Margin="0">
+      <StackPanel Orientation="Horizontal" Spacing="4">
+        <TextBlock x:Name="NameBlock" FontWeight="SemiBold"/>
+        <Ellipse x:Name="Indicator" Width="10" Height="10" StrokeThickness="2" Margin="4,0,0,0"/>
+      </StackPanel>
+      <TextBlock x:Name="RouteBlock" FontSize="12" TextWrapping="Wrap"/>
+    </StackPanel>
+  </Border>
+</UserControl>

@@ -8,7 +8,7 @@ using FluentAvalonia.UI.Controls;
 using Kairo.Utils;
 using Avalonia.Threading; // added for DispatcherTimer
 
-namespace Kairo.Components
+namespace Kairo.Components.DashBoard
 {
     public partial class DashBoard : Window
     {

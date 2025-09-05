@@ -8,7 +8,7 @@ using Newtonsoft.Json.Linq;
 using Kairo.Utils;
 using Avalonia; // for Design.IsDesignMode
 
-namespace Kairo.Components;
+namespace Kairo.Components.DashBoard;
 
 public partial class HomePage : UserControl
 {

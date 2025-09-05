@@ -22,11 +22,14 @@ public partial class App : Application
         CrashInterception.Init(); // already hooks AppDomain + TaskScheduler
         ConfigManager.Init();
         OAuthCallbackHandler.Init();
-        // Apply persisted theme
-        ThemeManager.Apply(Global.Config.FollowSystemTheme, Global.Config.DarkTheme);
+        AvaloniaXamlLoader.Load(this); // load XAML BEFORE applying theme so XAML doesn't overwrite our choice
+        // Apply persisted theme AFTER XAML so user's preference wins over App.axaml RequestedThemeVariant
+        ThemeManager.Apply(Global.Config.FollowSystemTheme, Global.Config.DarkTheme, persist: false);
+        // Safety: re-apply once on background priority in case system detection finishes slightly later (prevents transient dark)
+        Dispatcher.UIThread.Post(() =>
+            ThemeManager.Apply(Global.Config.FollowSystemTheme, Global.Config.DarkTheme, persist: false), DispatcherPriority.Background);
         // Hook UI thread unhandled exceptions (Avalonia dispatcher)
         Dispatcher.UIThread.UnhandledException += OnUiThreadUnhandledException;
-        AvaloniaXamlLoader.Load(this);
     }
 
     private static void OnUiThreadUnhandledException(object? sender, DispatcherUnhandledExceptionEventArgs e)

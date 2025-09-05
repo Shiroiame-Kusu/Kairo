@@ -1,6 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             x:Class="Kairo.Components.ProxyListPage">
+             x:Class="Kairo.Components.DashBoard.ProxyListPage">
   <UserControl.Styles>
     <!-- Base proxy card style -->
     <Style Selector="Border.proxy-card">

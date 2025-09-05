@@ -5,7 +5,7 @@
         xmlns:fa="using:FluentAvalonia.UI.Controls"
         xmlns:controls="clr-namespace:Kairo.Controls"
         mc:Ignorable="d"
-        x:Class="Kairo.Components.DashBoard"
+        x:Class="Kairo.Components.DashBoard.DashBoard"
         Title="Kairo - DashBoard"
         Width="800" Height="500"
         MinWidth="800" MinHeight="500"

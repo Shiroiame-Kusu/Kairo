@@ -12,22 +12,15 @@ using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;
 using Kairo.Utils;
 using System.Diagnostics;
-using Avalonia.Controls.Shapes;
-using Avalonia.Layout;
-using Avalonia.Input;
-using FluentAvalonia.UI.Controls; // for MenuFlyout
-using Avalonia.Controls.Primitives; // Popup
 
-namespace Kairo.Components;
+namespace Kairo.Components.DashBoard;
 
 public partial class ProxyListPage : UserControl
 {
     private readonly HttpClient _http = new();
-    private bool _loaded;
-    private readonly Dictionary<int, Border> _cardByProxyId = new();
-    private readonly Dictionary<int, Ellipse> _indicatorByProxyId = new();
-    private readonly Dictionary<int, MenuFlyout> _flyoutByProxyId = new();
-    private readonly Dictionary<int, MenuFlyoutItem> _startFlyoutItemByProxyId = new();
+    private bool _loaded; // rename semantic: first data load done
+    // Map proxyId -> card
+    private readonly Dictionary<int, ProxyCard> _cardByProxyId = new();
     private WrapPanel? _listPanel; // cached reference
     private int? _selectedProxyId;
 
@@ -42,30 +35,49 @@ public partial class ProxyListPage : UserControl
 
     private async void OnLoaded(object? sender, RoutedEventArgs e)
     {
-        if (_loaded) return; _loaded = true;
-        FrpcProcessManager.ProxyExited += OnProxyExited; // subscribe for indicator updates
-        if (Design.IsDesignMode)
+        // Always (re)subscribe when page becomes visible again
+        FrpcProcessManager.ProxyExited -= OnProxyExited; // ensure no duplicate
+        FrpcProcessManager.ProxyExited += OnProxyExited;
+
+        if (!_loaded)
         {
-            if (_listPanel == null) return; // nothing to populate
-            _listPanel.Children.Clear();
-            var placeholder = new Proxy
+            _loaded = true;
+            if (Design.IsDesignMode)
             {
-                Id = 0,
-                ProxyName = "示例隧道",
-                ProxyType = "tcp",
-                LocalIp = "127.0.0.1",
-                LocalPort = 7000,
-                RemotePort = "6000",
-                UseCompression = "false",
-                UseEncryption = "false",
-                Domain = "example.local",
-                Node = 1,
-                Icp = string.Empty
-            };
-            _listPanel.Children.Add(BuildCard(placeholder, 0));
-            return;
+                if (_listPanel == null) return; // nothing to populate
+                _listPanel.Children.Clear();
+                var placeholder = new Proxy
+                {
+                    Id = 0,
+                    ProxyName = "示例隧道",
+                    ProxyType = "tcp",
+                    LocalIp = "127.0.0.1",
+                    LocalPort = 7000,
+                    RemotePort = "6000",
+                    UseCompression = "false",
+                    UseEncryption = "false",
+                    Domain = "example.local",
+                    Node = 1,
+                    Icp = string.Empty
+                };
+                _listPanel.Children.Add(BuildCard(placeholder, 0));
+                return;
+            }
+            await LoadProxies();
         }
-        await LoadProxies();
+        else
+        {
+            // Subsequent navigations back: refresh visual running states (processes may have exited while hidden)
+            Dispatcher.UIThread.Post(UpdateAllCardVisuals);
+        }
+    }
+
+    private void UpdateAllCardVisuals()
+    {
+        foreach (var kv in _cardByProxyId)
+        {
+            kv.Value.UpdateRunningState(FrpcProcessManager.IsRunning(kv.Key));
+        }
     }
 
     private void OnProxyExited(int proxyId)
@@ -75,9 +87,9 @@ public partial class ProxyListPage : UserControl
 
     public void CloseAllTransientUI()
     {
-        foreach (var f in _flyoutByProxyId.Values)
+        foreach (var card in _cardByProxyId.Values)
         {
-            try { f.Hide(); } catch { }
+            try { card.HideFlyout(); } catch { }
         }
     }
 
@@ -100,6 +112,7 @@ public partial class ProxyListPage : UserControl
             if (arrToken == null)
             {
                 _listPanel?.Children.Clear();
+                _cardByProxyId.Clear();
                 return;
             }
             var proxies = JsonConvert.DeserializeObject<List<Proxy>>(arrToken.ToString()) ?? new();
@@ -107,6 +120,7 @@ public partial class ProxyListPage : UserControl
             {
                 if (_listPanel == null) return;
                 _listPanel.Children.Clear();
+                _cardByProxyId.Clear();
                 int idx = 0;
                 foreach (var p in proxies)
                 {
@@ -122,141 +136,55 @@ public partial class ProxyListPage : UserControl
 
     private Control BuildCard(Proxy proxy, int index)
     {
-        var nameBlock = new TextBlock { Text = proxy.ProxyName, FontWeight = FontWeight.SemiBold };
-        var indicator = new Ellipse
-        {
-            Width = 10,
-            Height = 10,
-            StrokeThickness = 2,
-            Margin = new Thickness(6,0,0,0)
-        };
-        _indicatorByProxyId[proxy.Id] = indicator;
+        var card = new ProxyCard();
+        card.Initialize(proxy);
+        _cardByProxyId[proxy.Id] = card;
 
-        var headerPanel = new StackPanel { Orientation = Orientation.Horizontal };
-        headerPanel.Children.Add(nameBlock);
-        headerPanel.Children.Add(indicator);
-
-        var route = new TextBlock { Text = $"{proxy.LocalIp}:{proxy.LocalPort} -> Node{proxy.Node}:{proxy.RemotePort}", FontSize = 12 };
-        var panel = new StackPanel { Spacing = 4 };
-        panel.Children.Add(headerPanel);
-        panel.Children.Add(route);
-        var border = new Border
+        // Wire events
+        card.RequestSelect += (_, p) => SelectProxy(p.Id);
+        card.RequestRefresh += async (_, __) => await LoadProxies();
+        card.RequestCreate += (_, __) => CreateProxyBtn_OnClick(null, null!);
+        card.RequestDelete += async (_, p) => await DeleteProxy(p);
+        card.RequestStart += (_, p) => TryStartProxy(p, true);
+        card.RequestStop += (_, p) =>
         {
-            Child = panel,
-            // Margin now provided by style (proxy-card) to ensure consistent spacing & full border visibility
-            Width = 220,
-            Tag = proxy
-        };
-        border.Classes.Add("proxy-card");
-        border.PointerPressed += (s,e)=>{ 
-            var pt = e.GetCurrentPoint(border);
-            if(pt.Properties.IsLeftButtonPressed)
+            if (FrpcProcessManager.StopProxy(p.Id))
             {
-                SelectProxy(proxy.Id);
+                UpdateCardVisual(p.Id);
+                (Access.DashBoard as DashBoard)?.OpenSnackbar("已停止", p.ProxyName, FluentAvalonia.UI.Controls.InfoBarSeverity.Informational);
             }
-            else if(pt.Properties.IsRightButtonPressed)
+            else
             {
-                SelectProxy(proxy.Id);
-                if(_flyoutByProxyId.TryGetValue(proxy.Id, out var fly))
-                {
-                    fly.ShowAt(border);
-                    e.Handled = true;
-                }
+                (Access.DashBoard as DashBoard)?.OpenSnackbar("未在运行", p.ProxyName, FluentAvalonia.UI.Controls.InfoBarSeverity.Warning);
             }
         };
-        border.ContextRequested += (s,e)=>{
-            if(_flyoutByProxyId.TryGetValue(proxy.Id, out var mf))
-            {
-                SelectProxy(proxy.Id);
-                mf.ShowAt(border);
-                e.Handled = true;
-            }
-        };
-        _cardByProxyId[proxy.Id] = border;
-        BuildFlyout(border, proxy);
+
         UpdateCardVisual(proxy.Id);
-        // Double click start (use DoubleTapped event)
-        border.DoubleTapped += (_, __) => TryStartProxy(proxy);
-        return border;
+        return card;
     }
 
     private void SelectProxy(int proxyId)
     {
         if (_selectedProxyId == proxyId) return;
         if (_selectedProxyId.HasValue && _cardByProxyId.TryGetValue(_selectedProxyId.Value, out var oldSel))
-            oldSel.Classes.Remove("selected");
-        _selectedProxyId = proxyId;
-        if (_cardByProxyId.TryGetValue(proxyId, out var newSel) && !newSel.Classes.Contains("selected"))
-            newSel.Classes.Add("selected");
-    }
-
-    private void BuildFlyout(Border border, Proxy proxy)
-    {
-        var flyout = new MenuFlyout();
-        MenuFlyoutItem Make(string text, Action act)
         {
-            var it = new MenuFlyoutItem { Text = text };
-            it.Click += (_, __) => act();
-            it.PointerEntered += (_, __) => it.Focus();
-            return it;
+            var oldBorder = oldSel.GetRootBorder();
+            if (oldBorder != null) oldBorder.Classes.Remove("selected");
         }
-        var refresh = Make("刷新", async () => await LoadProxies());
-        var create = Make("新建隧道", () => CreateProxyBtn_OnClick(null, null!));
-        var delete = Make("删除隧道", async () => await DeleteProxy(proxy));
-        var start = Make(FrpcProcessManager.IsRunning(proxy.Id)?"重新启动":"启动隧道", () => TryStartProxy(proxy, true));
-        _startFlyoutItemByProxyId[proxy.Id] = start;
-        var stop = Make("停止隧道", () =>
+        _selectedProxyId = proxyId;
+        if (_cardByProxyId.TryGetValue(proxyId, out var newSel))
         {
-            if (FrpcProcessManager.StopProxy(proxy.Id))
-            {
-                UpdateCardVisual(proxy.Id);
-                (Access.DashBoard as DashBoard)?.OpenSnackbar("已停止", proxy.ProxyName, FluentAvalonia.UI.Controls.InfoBarSeverity.Informational);
-            }
-            else
-            {
-                (Access.DashBoard as DashBoard)?.OpenSnackbar("未在运行", proxy.ProxyName, FluentAvalonia.UI.Controls.InfoBarSeverity.Warning);
-            }
-        });
-        flyout.Items.Add(refresh);
-        flyout.Items.Add(new MenuFlyoutSeparator());
-        flyout.Items.Add(create);
-        flyout.Items.Add(delete);
-        flyout.Items.Add(new MenuFlyoutSeparator());
-        flyout.Items.Add(start);
-        flyout.Items.Add(stop);
-        _flyoutByProxyId[proxy.Id] = flyout;
+            var newBorder = newSel.GetRootBorder();
+            if (newBorder != null && !newBorder.Classes.Contains("selected")) newBorder.Classes.Add("selected");
+        }
     }
 
     private void UpdateCardVisual(int proxyId)
     {
-        if (_cardByProxyId.TryGetValue(proxyId, out var border))
+        if (_cardByProxyId.TryGetValue(proxyId, out var card))
         {
             bool running = FrpcProcessManager.IsRunning(proxyId);
-            if (running)
-            {
-                if (!border.Classes.Contains("running")) border.Classes.Add("running");
-            }
-            else
-            {
-                if (border.Classes.Contains("running")) border.Classes.Remove("running");
-            }
-            if (_indicatorByProxyId.TryGetValue(proxyId, out var ellipse))
-            {
-                if (running)
-                {
-                    ellipse.Stroke = Brushes.LightGreen;
-                    ellipse.Fill = Brushes.LightGreen;
-                }
-                else
-                {
-                    ellipse.Stroke = Brushes.Gray;
-                    ellipse.Fill = Brushes.Gray;
-                }
-            }
-            if (_startFlyoutItemByProxyId.TryGetValue(proxyId, out var startItem))
-            {
-                startItem.Text = running ? "重新启动" : "启动隧道";
-            }
+            card.UpdateRunningState(running);
         }
     }
 
@@ -313,41 +241,4 @@ public partial class ProxyListPage : UserControl
             (Access.DashBoard as DashBoard)?.OpenSnackbar("失败", ex.Message, FluentAvalonia.UI.Controls.InfoBarSeverity.Error);
         }
     }
-
-    private void OnMenuItemClick(object? sender, RoutedEventArgs e)
-    {
-        if (e.Source is MenuItem mi && mi.Tag is ValueTuple<string, Proxy> data)
-        {
-            var (action, proxy) = data;
-            switch (action)
-            {
-                case "start":
-                    if (string.IsNullOrWhiteSpace(Global.Config.FrpcPath))
-                    {
-                        (Access.DashBoard as DashBoard)?.OpenSnackbar("未配置frpc", "请在设置中指定或下载frpc", FluentAvalonia.UI.Controls.InfoBarSeverity.Warning);
-                        return;
-                    }
-                    FrpcProcessManager.StartProxy(proxy.Id, Global.Config.FrpcPath, Global.Config.FrpToken,
-                        _ => { UpdateCardVisual(proxy.Id); (Access.DashBoard as DashBoard)?.OpenSnackbar("启动成功", proxy.ProxyName, FluentAvalonia.UI.Controls.InfoBarSeverity.Success); },
-                        err => { (Access.DashBoard as DashBoard)?.OpenSnackbar("启动失败", err, FluentAvalonia.UI.Controls.InfoBarSeverity.Error); });
-                    break;
-                case "stop":
-                    if (FrpcProcessManager.StopProxy(proxy.Id))
-                    {
-                        UpdateCardVisual(proxy.Id);
-                        (Access.DashBoard as DashBoard)?.OpenSnackbar("已停止", proxy.ProxyName, FluentAvalonia.UI.Controls.InfoBarSeverity.Informational);
-                    }
-                    else
-                    {
-                        (Access.DashBoard as DashBoard)?.OpenSnackbar("未在运行", proxy.ProxyName, FluentAvalonia.UI.Controls.InfoBarSeverity.Warning);
-                    }
-                    break;
-                case "delete":
-                    _ = DeleteProxy(proxy);
-                    break;
-            }
-        }
-    }
-
-    private Control BuildCard_oldPlaceholderRemoval() { return null; } // sentinel to force tool patch uniqueness
 }

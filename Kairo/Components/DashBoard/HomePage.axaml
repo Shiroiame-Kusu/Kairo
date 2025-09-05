@@ -1,6 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             x:Class="Kairo.Components.HomePage">
+             x:Class="Kairo.Components.DashBoard.HomePage">
   <Grid RowDefinitions="60,*,70" Margin="12">
     <!-- Header -->
     <DockPanel Height="60">

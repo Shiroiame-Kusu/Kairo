@@ -15,6 +15,7 @@ using Newtonsoft.Json;
 using FluentAvalonia.UI.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Threading; // added for DispatcherTimer
+using Kairo.Components.DashBoard; // added for new namespace
 
 namespace Kairo;
 
@@ -144,9 +145,9 @@ public partial class MainWindow : Window
             Kairo.Utils.Configuration.ConfigManager.Save(); // persist new tokens/user info
             OpenSnackbar("登录成功", $"欢迎 {_userInfo.Username}", InfoBarSeverity.Success);
             // Open dashboard window
-            if (Utils.Access.DashBoard is not Components.DashBoard db)
+            if (Utils.Access.DashBoard is not DashBoard db)
             {
-                db = new Components.DashBoard();
+                db = new DashBoard();
                 Utils.Access.DashBoard = db;
             }
             if (!db.IsVisible)
@@ -294,23 +295,22 @@ public partial class MainWindow : Window
     {
         if (IsLoggedIn)
         {
-            if (Utils.Access.DashBoard is Components.DashBoard db)
+            if (Utils.Access.DashBoard is DashBoard db)
             {
                 if (db.IsVisible)
                 {
                     db.Hide();
-                    if (_showHideMenuItem != null) _showHideMenuItem.Header = "显示窗口";
+                    if (_showHideMenuItem != null) _showHideMenuItem.Header = "显示面板";
                 }
                 else
                 {
                     db.Show();
-                    db.Activate();
-                    if (_showHideMenuItem != null) _showHideMenuItem.Header = "隐藏窗口";
+                    if (_showHideMenuItem != null) _showHideMenuItem.Header = "隐藏面板";
                 }
             }
             else
             {
-                var dbNew = new Components.DashBoard();
+                var dbNew = new DashBoard();
                 Utils.Access.DashBoard = dbNew;
                 dbNew.Show();
                 if (_showHideMenuItem != null) _showHideMenuItem.Header = "隐藏窗口";

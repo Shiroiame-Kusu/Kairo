@@ -10,7 +10,7 @@ using Kairo.Utils;
 using Kairo.Utils.Configuration;
 using Avalonia; // added for Design.IsDesignMode
 
-namespace Kairo.Components
+namespace Kairo.Components.DashBoard
 {
     public partial class SettingsPage : UserControl
     {
