@@ -156,11 +156,20 @@ jobs:
               ;;
           esac
           echo "Created archive(s):"; ls -1 ../
+      - name: List publish directory (debug)
+        shell: bash
+        run: |
+          echo 'Listing publish directory:'
+          ls -l publish || true
+          echo 'Find built archives:'
+            find publish -maxdepth 2 -type f \( -name '*.zip' -o -name '*.tar.gz' \) -printf '%p\n' || true
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: release-${{ matrix.rid }}
-          path: publish/*.{zip,tar.gz}
+          path: |
+            publish/*.zip
+            publish/*.tar.gz
           if-no-files-found: error
 
   release:
