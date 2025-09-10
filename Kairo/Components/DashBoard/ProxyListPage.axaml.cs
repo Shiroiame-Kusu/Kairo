@@ -12,6 +12,8 @@ using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;
 using Kairo.Utils;
 using System.Diagnostics;
+using System.Linq;
+using Kairo.Components;
 
 namespace Kairo.Components.DashBoard;
 
@@ -233,12 +235,36 @@ public partial class ProxyListPage : UserControl
     {
         try
         {
-            Process.Start(new ProcessStartInfo("https://dashboard.locyanfrp.cn/proxies/add") { UseShellExecute = true });
-            (Access.DashBoard as DashBoard)?.OpenSnackbar("已打开", "浏览器里创建新隧道", FluentAvalonia.UI.Controls.InfoBarSeverity.Success);
+            var win = new CreateProxyWindow();
+            win.Created += async (id, name) =>
+            {
+                (Access.DashBoard as DashBoard)?.OpenSnackbar("创建成功", name, FluentAvalonia.UI.Controls.InfoBarSeverity.Success);
+                await LoadProxies();
+            };
+            if (Access.DashBoard is Window owner)
+                win.Show(owner);
+            else
+                win.Show();
         }
         catch (Exception ex)
         {
-            (Access.DashBoard as DashBoard)?.OpenSnackbar("失败", ex.Message, FluentAvalonia.UI.Controls.InfoBarSeverity.Error);
+            (Access.DashBoard as DashBoard)?.OpenSnackbar("打开失败", ex.Message, FluentAvalonia.UI.Controls.InfoBarSeverity.Error);
+        }
+    }
+
+    private void NodePingBtn_OnClick(object? sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var win = new NodePingWindow();
+            if (Access.DashBoard is Window owner)
+                win.Show(owner);
+            else
+                win.Show();
+        }
+        catch (Exception ex)
+        {
+            (Access.DashBoard as DashBoard)?.OpenSnackbar("打开失败", ex.Message, FluentAvalonia.UI.Controls.InfoBarSeverity.Error);
         }
     }
 }

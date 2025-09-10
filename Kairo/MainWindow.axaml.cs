@@ -125,6 +125,7 @@ public partial class MainWindow : Window
             Global.Config.AccessToken = json["data"]["access_token"]!.ToString();
             Global.Config.RefreshToken = refreshToken; // persist
             http.DefaultRequestHeaders.Add("Authorization", $"Bearer {Global.Config.AccessToken}");
+            Console.WriteLine(Global.Config.AccessToken);
             var userResp = await http.GetAsync($"{Global.APIList.GetUserInfo}?user_id={Global.Config.ID}");
             var userJson = JObject.Parse(await userResp.Content.ReadAsStringAsync());
             _userInfo = JsonConvert.DeserializeObject<UserInfo>(userJson["data"]!.ToString());

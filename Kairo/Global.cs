@@ -59,6 +59,7 @@ namespace Kairo
             public const string GetNotice = $"{API}/notice";
             public const string GetAllProxy = $"{API}/proxy/all?user_id="; // retained for potential future use
             public const string DeleteProxy = $"{API}/proxy?user_id="; // retained for potential future use
+            public const string GetAllNodes = $"{API}/node/all?user_id="; // list all nodes
         }
         public static int OAuthPort = 10000;
         public const int APPID = 236;

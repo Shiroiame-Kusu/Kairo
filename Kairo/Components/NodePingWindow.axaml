@@ -1,0 +1,22 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Kairo.Components.NodePingWindow"
+        x:CompileBindings="False"
+        Title="节点延迟" Width="520" Height="480" WindowStartupLocation="CenterOwner">
+  <Grid RowDefinitions="Auto,*,Auto" Margin="12">
+    <TextBlock Text="每秒刷新一次各节点的延迟值" Margin="0,0,0,8"/>
+    <DataGrid x:Name="Grid" Grid.Row="1" AutoGenerateColumns="False"
+              HeadersVisibility="Column" IsReadOnly="True">
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="节点" Binding="{Binding Node}" Width="60"/>
+        <DataGridTextColumn Header="主机" Binding="{Binding Host}" Width="*"/>
+        <DataGridTextColumn Header="延迟(ms)" Binding="{Binding LatencyDisplay}" Width="120"/>
+        <DataGridTextColumn Header="状态" Binding="{Binding Status}" Width="120"/>
+      </DataGrid.Columns>
+    </DataGrid>
+    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+      <TextBlock x:Name="StatusText" VerticalAlignment="Center" Foreground="Gray"/>
+      <Button Content="关闭" Click="CloseBtn_OnClick"/>
+    </StackPanel>
+  </Grid>
+</Window>
