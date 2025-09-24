@@ -13,7 +13,8 @@ using Avalonia.Controls;
 using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
 using Newtonsoft.Json.Linq;
-using Kairo; // for Global
+using Kairo;
+using Kairo.Utils; // for Global
 
 namespace Kairo.Components;
 
@@ -21,7 +22,6 @@ public partial class NodePingWindow : Window
 {
     private readonly ObservableCollection<Row> _rows = new();
     private readonly DispatcherTimer _timer;
-    private readonly Ping _pinger = new();
     private bool _isPinging;
     private readonly bool _useApi;
     private bool _permissionWarned;
@@ -39,7 +39,7 @@ public partial class NodePingWindow : Window
         }
         else if (!_useApi)
         {
-            var pattern = string.IsNullOrWhiteSpace(hostPattern) ? "node{0}.locyanfrp.cn" : hostPattern!;
+            var pattern = string.IsNullOrWhiteSpace(hostPattern) ? "node{0}.locyanfrp.cn" : hostPattern;
             var set = new SortedSet<int>((nodes ?? Enumerable.Empty<int>()).Where(n => n > 0));
             foreach (var n in set)
             {
@@ -119,8 +119,7 @@ public partial class NodePingWindow : Window
         _isPinging = true;
         try
         {
-            var tasks = _rows.Select(row => PingOneAsync(row)).ToArray();
-            await Task.WhenAll(tasks);
+            await Task.WhenAll(_rows.Select(row => PingOneAsync(row)));
             UpdateStatus();
         }
         finally
@@ -144,14 +143,18 @@ public partial class NodePingWindow : Window
     {
         try
         {
-            var reply = await _pinger.SendPingAsync(row.Host, 900);
-            if (reply.Status == IPStatus.Success)
+            using (var ping = new Ping())
             {
-                Dispatcher.UIThread.Post(() => { row.LatencyMs = reply.RoundtripTime; row.Status = "成功"; });
-            }
-            else
-            {
-                Dispatcher.UIThread.Post(() => { row.LatencyMs = null; row.Status = reply.Status == IPStatus.TimedOut ? "超时" : reply.Status.ToString(); });
+                var timeout = 900;
+                var reply = await ping.SendPingAsync(row.Host, timeout);
+                if (reply.Status == IPStatus.Success)
+                {
+                    Dispatcher.UIThread.Post(() => { row.LatencyMs = reply.RoundtripTime; row.Status = "成功"; });
+                }
+                else
+                {
+                    Dispatcher.UIThread.Post(() => { row.LatencyMs = null; row.Status = reply.Status == IPStatus.TimedOut ? "超时" : reply.Status.ToString(); });
+                }
             }
         }
         catch (Exception ex)

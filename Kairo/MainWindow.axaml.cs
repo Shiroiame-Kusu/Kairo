@@ -219,7 +219,7 @@ public partial class MainWindow : Window
         // OAuth authorize (v2). Must URL-encode nested redirect (dashboard relay -> local listener) so its query params aren't parsed as outer ones.
         var nested = $"https://dashboard.locyanfrp.cn/callback/auth/oauth/localhost?port={Global.OAuthPort}&ssl=false&path=/oauth/callback";
         var encoded = Uri.EscapeDataString(nested);
-        var url = $"{Global.APIList.GetTheFUCKINGRefreshToken}?app_id={Global.APPID}&scopes=User,Proxy,Sign&redirect_url={encoded}";
+        var url = $"{Global.APIList.GetTheFUCKINGRefreshToken}?app_id={Global.APPID}&scopes=User,Proxy,Sign,Node&redirect_url={encoded}";
         try
         {
             using var proc = new System.Diagnostics.Process();
