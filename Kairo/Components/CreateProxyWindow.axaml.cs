@@ -30,6 +30,7 @@ public partial class CreateProxyWindow : Window
     private TextBox? _domain;
     private TextBlock? _status;
     private Button? _createBtn;
+    private Button? _pingBtn;
 
     private readonly List<NodeItem> _nodes = new();
 
@@ -53,9 +54,13 @@ public partial class CreateProxyWindow : Window
         _domain = this.FindControl<TextBox>("DomainBox");
         _status = this.FindControl<TextBlock>("StatusText");
         _createBtn = this.FindControl<Button>("CreateButton");
+        _pingBtn = this.FindControl<Button>("PingButton");
 
         if (_type != null)
             _type.SelectionChanged += (_, __) => UpdateVisibilityByType();
+
+        if (_pingBtn != null)
+            _pingBtn.IsEnabled = false; // enable after nodes loaded
 
         Opened += async (_, __) =>
         {
@@ -133,6 +138,11 @@ public partial class CreateProxyWindow : Window
         catch (Exception ex)
         {
             SetStatus($"获取节点失败: {ex.Message}");
+        }
+        finally
+        {
+            if (_pingBtn != null)
+                _pingBtn.IsEnabled = true; // allow ping regardless of populated count
         }
     }
 
@@ -230,6 +240,22 @@ public partial class CreateProxyWindow : Window
         finally
         {
             if (_createBtn != null) _createBtn.IsEnabled = true;
+        }
+    }
+
+    private void PingBtn_OnClick(object? sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var win = new NodePingWindow
+            {
+                WindowStartupLocation = WindowStartupLocation.CenterOwner
+            };
+            win.Show(this);
+        }
+        catch (Exception ex)
+        {
+            SetStatus($"无法打开延迟测试: {ex.Message}");
         }
     }
 

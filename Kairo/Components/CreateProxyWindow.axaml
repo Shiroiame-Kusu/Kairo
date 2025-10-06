@@ -32,7 +32,11 @@
         </StackPanel>
 
         <TextBlock Text="节点"/>
-        <ComboBox x:Name="NodeBox"/>
+        <!-- Replace single ComboBox with ComboBox + latency test button -->
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <ComboBox x:Name="NodeBox" MinWidth="260"/>
+          <Button x:Name="PingButton" Content="测试延迟" Click="PingBtn_OnClick"/>
+        </StackPanel>
 
         <StackPanel Orientation="Horizontal" Spacing="20">
           <CheckBox x:Name="EncryptionBox" Content="启用加密"/>
