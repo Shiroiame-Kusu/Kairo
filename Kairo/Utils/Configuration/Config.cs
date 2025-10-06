@@ -24,6 +24,9 @@ namespace Kairo.Utils.Configuration
         public bool FollowSystemTheme = true;
         public bool DarkTheme = false;
 
+        // Preferred update branch: "Stable", "Beta", or "Alpha" (case-insensitive). Empty = follow current branch.
+        public string UpdateBranch = "";
+
         public List<Proxy> AutoLaunch = new();
     }
 }
