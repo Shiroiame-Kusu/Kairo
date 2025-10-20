@@ -17,7 +17,7 @@ namespace Kairo
         public static bool LoginedByConsole = false;
         public const string Version = "3.1.1";
         public const string VersionName = "Iris Bloom";
-        public const string Branch = "Beta";
+        public const string Branch = "Release";
         public const int Revision = 1;
         public static readonly BuildInfo BuildInfo = new();
         public const string Developer = "Shiroiame-Kusu & Daiyangcheng";
