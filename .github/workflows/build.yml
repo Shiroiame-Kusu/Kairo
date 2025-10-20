@@ -13,11 +13,17 @@ permissions:
 jobs:
   publish:
     name: Build (${{ matrix.rid }})
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        rid: [ win-x64, linux-x64 ]
+        include:
+          - rid: win-x64
+            os: ubuntu-latest
+          - rid: linux-x64
+            os: ubuntu-latest
+          - rid: osx-x64
+            os: macos-14
     env:
       DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
       DOTNET_NOLOGO: 1
