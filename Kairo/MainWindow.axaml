@@ -15,7 +15,7 @@
         SystemDecorations="None">
   <Window.Styles>
     <!-- Style for fade transitions on controls -->
-    <Style x:SetterTargetType="Control" Selector="Control.fade">
+    <Style Selector="Control.fade">
       <Setter Property="Transitions">
         <Transitions>
           <DoubleTransition Property="Opacity" Duration="0:0:0.3" Easing="CircularEaseOut" />
