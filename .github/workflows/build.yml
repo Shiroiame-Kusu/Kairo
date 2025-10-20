@@ -18,13 +18,15 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - rid: Win-x64
+          - rid: win-x64
             os: ubuntu-latest
-          - rid: Linux-x64
+          - rid: linux-x64
             os: ubuntu-latest
-          - rid: MacOS-x64
+          - rid: linux-arm64
+            os: ubuntu-latest
+          - rid: osx-x64
             os: macos-14
-          - rid: MacOS-arm64
+          - rid: osx-arm64
             os: macos-14
     env:
       DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
@@ -68,20 +70,28 @@ jobs:
           /p:InvariantGlobalization=false
 
       - name: Prepare Artifact
+        id: prepare_artifact
         run: |
           OUT_DIR=Kairo/bin/$Configuration/$FRAMEWORK/${{ matrix.rid }}/publish
           ls -al "$OUT_DIR"
           ART_NAME=Kairo-${{ matrix.rid }}
+          if [ "${{ matrix.rid }}" = "osx-arm64" ]; then ART_NAME=Kairo-MacOS-arm64; fi
+          if [ "${{ matrix.rid }}" = "osx-x64" ]; then ART_NAME=Kairo-MacOS-x64; fi
+          if [ "${{ matrix.rid }}" = "linux-x64" ]; then ART_NAME=Kairo-Linux-x64; fi
+          if [ "${{ matrix.rid }}" = "linux-arm64" ]; then ART_NAME=Kairo-Linux-arm64; fi
+          if [ "${{ matrix.rid }}" = "win-x64" ]; then ART_NAME=Kairo-Windows-x64; fi
           if [ "${{ matrix.rid }}" = "win-x64" ]; then BIN=Kairo.exe; else BIN=Kairo; fi
           chmod +x "$OUT_DIR/$BIN" || true
           # Place zip into Kairo/bin/Release so upload path matches
           (cd "$OUT_DIR" && zip -r ../../../${ART_NAME}.zip .)
           ls -al Kairo/bin/$Configuration | grep ${ART_NAME}.zip || true
-          echo "ART_ZIP=${ART_NAME}.zip" >> $GITHUB_ENV
+          echo "artifact_name=$ART_NAME" >> "$GITHUB_OUTPUT"
+          echo "artifact_zip=${ART_NAME}.zip" >> "$GITHUB_OUTPUT"
+          echo "artifact_path=$OUT_DIR" >> "$GITHUB_OUTPUT"
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Kairo-${{ matrix.rid }}
-          path: Kairo/bin/${{ env.Configuration }}/Kairo-${{ matrix.rid }}.zip
+          name: ${{ steps.prepare_artifact.outputs.artifact_name }}
+          path: ${{ steps.prepare_artifact.outputs.artifact_path }}
           if-no-files-found: error
