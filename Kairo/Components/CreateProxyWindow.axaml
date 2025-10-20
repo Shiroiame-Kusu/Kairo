@@ -1,0 +1,65 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Kairo.Components.CreateProxyWindow"
+        x:CompileBindings="False"
+        Title="创建隧道" Width="520" Height="640" WindowStartupLocation="CenterOwner">
+  <Grid RowDefinitions="Auto,* ,Auto" Margin="16" RowSpacing="12">
+    <TextBlock Text="填写信息以创建新隧道"/>
+    <ScrollViewer Grid.Row="1">
+      <StackPanel Spacing="10">
+        <TextBlock Text="隧道名称"/>
+        <TextBox x:Name="NameBox"/>
+
+        <TextBlock Text="协议类型"/>
+        <ComboBox x:Name="TypeBox" SelectedIndex="0">
+          <ComboBoxItem Content="tcp"/>
+          <ComboBoxItem Content="udp"/>
+          <ComboBoxItem Content="xtcp"/>
+          <ComboBoxItem Content="stcp"/>
+          <ComboBoxItem Content="http"/>
+          <ComboBoxItem Content="https"/>
+        </ComboBox>
+
+        <TextBlock Text="本地服务 IP"/>
+        <TextBox x:Name="LocalIpBox" Text="127.0.0.1"/>
+
+        <TextBlock Text="本地服务端口"/>
+        <TextBox x:Name="LocalPortBox"/>
+
+        <StackPanel x:Name="RemotePortPanel">
+          <TextBlock Text="远端服务端口 (tcp/udp 需要)"/>
+          <TextBox x:Name="RemotePortBox"/>
+        </StackPanel>
+
+        <TextBlock Text="节点"/>
+        <!-- Replace single ComboBox with ComboBox + latency test button -->
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <ComboBox x:Name="NodeBox" MinWidth="260"/>
+          <Button x:Name="PingButton" Content="测试延迟" Click="PingBtn_OnClick"/>
+        </StackPanel>
+
+        <StackPanel Orientation="Horizontal" Spacing="20">
+          <CheckBox x:Name="EncryptionBox" Content="启用加密"/>
+          <CheckBox x:Name="CompressionBox" Content="启用压缩"/>
+        </StackPanel>
+
+        <StackPanel x:Name="SecretKeyPanel">
+          <TextBlock Text="访问密钥 (xtcp/stcp 需要)"/>
+          <TextBox x:Name="SecretKeyBox"/>
+        </StackPanel>
+
+        <StackPanel x:Name="DomainPanel">
+          <TextBlock Text="域名 (http/https 需要)"/>
+          <TextBox x:Name="DomainBox"/>
+        </StackPanel>
+
+        <TextBlock x:Name="StatusText" Foreground="Gray"/>
+      </StackPanel>
+    </ScrollViewer>
+
+    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+      <Button x:Name="CreateButton" Content="创建" Click="CreateBtn_OnClick"/>
+      <Button Content="取消" Click="CancelBtn_OnClick"/>
+    </StackPanel>
+  </Grid>
+</Window>

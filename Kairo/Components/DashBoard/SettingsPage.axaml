@@ -13,19 +13,30 @@
         </Grid>
         <TextBlock Text="功能" FontSize="12"/>
         <Border  Background="{DynamicResource LayerFillColorDefaultBrush}" Padding="12" CornerRadius="8">
-          <WrapPanel>
+          <WrapPanel ScrollViewer.AllowAutoHide="True">
             <StackPanel Width="140" Spacing="8">
               <ToggleSwitch x:Name="FollowSystemSwitch" Content="跟随系统主题" IsChecked="True" IsCheckedChanged="FollowSystemSwitch_OnChanged"/>
               <ToggleSwitch x:Name="DarkThemeSwitch" Content="使用深色主题" IsEnabled="False" IsCheckedChanged="DarkThemeSwitch_OnChanged"/>
               <!-- <ToggleSwitch x:Name="AutoStartSwitch" Content="开机自动启动" IsCheckedChanged="AutoStartSwitch_OnChanged"/> -->
             </StackPanel>
             <StackPanel Width="140" Spacing="8">
-              <Button x:Name="CopyTokenBtn" Content="复制Token" Click="CopyTokenBtn_OnClick"/>
-              <Button x:Name="SignOutBtn" Content="退出登录" Click="SignOutBtn_OnClick"/>
+              <ToggleSwitch x:Name="UseMirrorSwitch" Content="国内镜像" IsChecked="True" IsCheckedChanged="UseMirrorSwitch_OnChanged"/>
+              <Button x:Name="DownloadFrpcBtn"  Content="下载FRPC" Click="DownloadFrpcBtn_OnClick"/>
             </StackPanel>
             <StackPanel Width="140" Spacing="8">
-              <Button x:Name="DownloadFrpcBtn"  Content="下载FRPC" Click="DownloadFrpcBtn_OnClick"/>
-              <ToggleSwitch x:Name="UseMirrorSwitch" Content="国内镜像" IsChecked="True" IsCheckedChanged="UseMirrorSwitch_OnChanged"/>
+              <Button x:Name="CopyTokenBtn" Content="复制Token" Click="CopyTokenBtn_OnClick"/>
+              <Button x:Name="SignOutBtn" Content="退出登录" Click="SignOutBtn_OnClick"/>
+              <Button x:Name="CheckUpdateBtn" Content="检查更新" Click="CheckUpdateBtn_OnClick"/>
+            </StackPanel>
+            <StackPanel Width="180" Spacing="8">
+              <TextBlock Text="更新分支"/>
+              <ComboBox x:Name="UpdateBranchBox" SelectionChanged="UpdateBranchBox_OnChanged">
+                <ComboBoxItem Content="Release"/>
+                <ComboBoxItem Content="ReleaseCandidate"/>
+                <ComboBoxItem Content="Beta"/>
+                <ComboBoxItem Content="Alpha"/>
+              </ComboBox>
+              <TextBlock FontSize="11" Foreground="Gray" Text="Alpha 可切换至任意分支"/>
             </StackPanel>
             <StackPanel Width="200" Spacing="8" HorizontalAlignment="Left">
               <Button x:Name="EasterEggBtn" Content="不要点击这个按钮哦" Click="EasterEggBtn_OnClick" HorizontalAlignment="Center"/>

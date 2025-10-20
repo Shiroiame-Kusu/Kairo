@@ -9,6 +9,10 @@ using Avalonia.Threading;
 using Kairo.Utils;
 using Kairo.Utils.Configuration;
 using Avalonia; // added for Design.IsDesignMode
+using System.Net.Http;
+using System.Text.Json;
+using System.Diagnostics;
+using System.Linq;
 
 namespace Kairo.Components.DashBoard
 {
@@ -23,6 +27,7 @@ namespace Kairo.Components.DashBoard
         private TextBlock? _versionText;
         private TextBlock? _developerText;
         private TextBlock? _copyrightText;
+        private ComboBox? _updateBranchBox;
 
         public SettingsPage()
         {
@@ -41,6 +46,7 @@ namespace Kairo.Components.DashBoard
             _versionText = this.FindControl<TextBlock>("VersionText");
             _developerText = this.FindControl<TextBlock>("DeveloperText");
             _copyrightText = this.FindControl<TextBlock>("CopyrightText");
+            _updateBranchBox = this.FindControl<ComboBox>("UpdateBranchBox");
         }
 
         private void OnLoaded(object? sender, RoutedEventArgs e)
@@ -73,6 +79,56 @@ namespace Kairo.Components.DashBoard
             if (_versionText != null) _versionText.Text = $"版本: {Global.Version} {Global.VersionName}";
             if (_developerText != null) _developerText.Text = $"开发者: {Global.Developer}";
             if (_copyrightText != null) _copyrightText.Text = Global.Copyright;
+
+            // Initialize update branch selector: use stored preference or current branch
+            if (_updateBranchBox != null)
+            {
+                var preferred = string.IsNullOrWhiteSpace(Global.Config.UpdateBranch) ? Global.Branch : Global.Config.UpdateBranch;
+                _updateBranchBox.SelectedIndex = BranchToIndex(preferred);
+            }
+        }
+
+        private static int BranchToIndex(string? branch)
+        {
+            var b = NormalizeBranch(branch);
+            return b switch
+            {
+                "Release" => 0,
+                "ReleaseCandidate" => 1,
+                "Beta" => 2,
+                "Alpha" => 3,
+                _ => 0
+            };
+        }
+
+        private static string IndexToBranch(int idx) => idx switch
+        {
+            0 => "Release",
+            1 => "ReleaseCandidate",
+            2 => "Beta",
+            3 => "Alpha",
+            _ => "Release"
+        };
+
+        private static string? NormalizeBranch(string? b)
+        {
+            if (string.IsNullOrWhiteSpace(b)) return null;
+            b = b.Trim();
+            if (b.Equals("alpha", StringComparison.OrdinalIgnoreCase)) return "Alpha";
+            if (b.Equals("beta", StringComparison.OrdinalIgnoreCase)) return "Beta";
+            if (b.Equals("rc", StringComparison.OrdinalIgnoreCase) || b.Equals("releasecandidate", StringComparison.OrdinalIgnoreCase)) return "ReleaseCandidate";
+            if (b.Equals("release", StringComparison.OrdinalIgnoreCase)) return "Release";
+            return null;
+        }
+
+        private void UpdateBranchBox_OnChanged(object? sender, RoutedEventArgs e)
+        {
+            if (_updateBranchBox == null) return;
+            var idx = _updateBranchBox.SelectedIndex;
+            var sel = IndexToBranch(idx);
+            Global.Config.UpdateBranch = sel;
+            ConfigManager.Save();
+            (Access.DashBoard as DashBoard)?.OpenSnackbar("分支已设置", sel);
         }
 
         private async void SelectFile_OnClick(object? sender, RoutedEventArgs e)
@@ -166,6 +222,162 @@ namespace Kairo.Components.DashBoard
             {
                 (Access.DashBoard as DashBoard)?.OpenSnackbar("???", "别点啦");
             }
+        }
+
+        private async void CheckUpdateBtn_OnClick(object? sender, RoutedEventArgs e)
+        {
+            var btn = sender as Button;
+            if (btn != null) btn.IsEnabled = false;
+            try
+            {
+                (Access.DashBoard as DashBoard)?.OpenSnackbar("检查更新", "正在从 GitHub 获取最新版本...");
+                using var http = new HttpClient();
+                http.DefaultRequestHeaders.UserAgent.ParseAdd("Kairo/UpdateCheck");
+
+                // Determine desired branch
+                var desiredPref = NormalizeBranch(Global.Config.UpdateBranch) ?? Global.Branch;
+                var desired = NormalizeBranch(desiredPref) ?? "Release";
+                bool canSwitchBranch = Global.Branch.Equals("Alpha", StringComparison.OrdinalIgnoreCase) || desired.Equals(Global.Branch, StringComparison.OrdinalIgnoreCase);
+
+                // Load releases and pick the first that matches desired branch
+                var resp = await http.GetAsync("https://api.github.com/repos/Shiroiame-Kusu/Kairo/releases");
+                resp.EnsureSuccessStatusCode();
+                await using var stream = await resp.Content.ReadAsStreamAsync();
+                using var doc = await JsonDocument.ParseAsync(stream);
+                JsonElement? chosen = null;
+                foreach (var rel in doc.RootElement.EnumerateArray())
+                {
+                    var tag = rel.GetProperty("tag_name").GetString() ?? string.Empty;
+                    if (IsBranchMatch(tag, desired)) { chosen = rel; break; }
+                }
+                if (chosen == null)
+                {
+                    (Access.DashBoard as DashBoard)?.OpenSnackbar("未找到版本", $"分支 {desired}");
+                    return;
+                }
+                var tagName = chosen.Value.GetProperty("tag_name").GetString() ?? string.Empty;
+                // Parse current and remote as version-branch.revision
+                var current = new Version(Global.Version);
+                var currentBranch = NormalizeBranch(Global.Branch) ?? "Release";
+                var currentRev = Global.Revision;
+                var (remoteVer, remoteBranch, remoteRev) = ParseTag(tagName);
+
+                bool updateAvailable;
+                if (currentBranch.Equals(remoteBranch, StringComparison.OrdinalIgnoreCase))
+                {
+                    // Same branch: update if version new or revision higher
+                    updateAvailable = remoteVer > current || (remoteVer == current && remoteRev > currentRev);
+                }
+                else
+                {
+                    // Different branch: allow only if on Alpha (override) and user selected desired branch
+                    updateAvailable = canSwitchBranch && desired.Equals(remoteBranch, StringComparison.OrdinalIgnoreCase) && !(remoteVer == current && remoteRev == currentRev && currentBranch == remoteBranch);
+                }
+
+                if (!updateAvailable)
+                {
+                    (Access.DashBoard as DashBoard)?.OpenSnackbar("已是最新", $"当前 {Global.Version}-{currentBranch}.{currentRev}");
+                    return;
+                }
+                (Access.DashBoard as DashBoard)?.OpenSnackbar("发现新版本", $"将退出并更新到 {remoteVer}-{remoteBranch}.{remoteRev}");
+
+                // Resolve updater path and launch with branch argument
+                var baseDir = AppContext.BaseDirectory;
+                var updaterDll = Path.Combine(baseDir, "Updater.dll");
+                var updaterExe = Path.Combine(baseDir, OperatingSystem.IsWindows() ? "Updater.exe" : "Updater");
+                ProcessStartInfo psi;
+                if (File.Exists(updaterExe))
+                {
+                    psi = new ProcessStartInfo(updaterExe)
+                    {
+                        UseShellExecute = false,
+                        WorkingDirectory = baseDir,
+                        Arguments = $"{Process.GetCurrentProcess().Id} Shiroiame-Kusu Kairo {remoteBranch}"
+                    };
+                }
+                else if (File.Exists(updaterDll))
+                {
+                    psi = new ProcessStartInfo("dotnet")
+                    {
+                        UseShellExecute = false,
+                        WorkingDirectory = baseDir,
+                        ArgumentList = { updaterDll, Process.GetCurrentProcess().Id.ToString(), "Shiroiame-Kusu", "Kairo", remoteBranch }
+                    };
+                }
+                else
+                {
+                    (Access.DashBoard as DashBoard)?.OpenSnackbar("更新失败", "未找到 Updater 组件");
+                    return;
+                }
+                Process.Start(psi);
+                Environment.Exit(0);
+            }
+            catch (Exception ex)
+            {
+                (Access.DashBoard as DashBoard)?.OpenSnackbar("检查失败", ex.Message);
+            }
+            finally
+            {
+                if (btn != null) btn.IsEnabled = true;
+            }
+        }
+
+        private static bool IsBranchMatch(string tag, string desired)
+        {
+            var lower = tag.ToLowerInvariant();
+            return desired switch
+            {
+                "Alpha" => lower.Contains("-alpha."),
+                "Beta" => lower.Contains("-beta."),
+                "ReleaseCandidate" => lower.Contains("-rc."),
+                "Release" => lower.Contains("-release."),
+                _ => true
+            };
+        }
+
+        private static (Version ver, string branch, int revision) ParseTag(string tag)
+        {
+            // Expect like v3.1.0-beta.1, v3.1.0-alpha.2, v3.1.0-rc.3, v3.1.0-release.1
+            var t = tag.StartsWith("v", StringComparison.OrdinalIgnoreCase) ? tag[1..] : tag;
+            string branch = "Release";
+            int rev = 0;
+            var lower = t.ToLowerInvariant();
+            string versionPart = t;
+            if (lower.Contains("-alpha."))
+            {
+                branch = "Alpha";
+                var idx = lower.IndexOf("-alpha.", StringComparison.Ordinal);
+                versionPart = t.Substring(0, idx);
+                var rstr = t.Substring(idx + "-alpha.".Length);
+                int.TryParse(new string(rstr.TakeWhile(char.IsDigit).ToArray()), out rev);
+            }
+            else if (lower.Contains("-beta."))
+            {
+                branch = "Beta";
+                var idx = lower.IndexOf("-beta.", StringComparison.Ordinal);
+                versionPart = t.Substring(0, idx);
+                var rstr = t.Substring(idx + "-beta.".Length);
+                int.TryParse(new string(rstr.TakeWhile(char.IsDigit).ToArray()), out rev);
+            }
+            else if (lower.Contains("-rc."))
+            {
+                branch = "ReleaseCandidate";
+                var idx = lower.IndexOf("-rc.", StringComparison.Ordinal);
+                versionPart = t.Substring(0, idx);
+                var rstr = t.Substring(idx + "-rc.".Length);
+                int.TryParse(new string(rstr.TakeWhile(char.IsDigit).ToArray()), out rev);
+            }
+            else if (lower.Contains("-release."))
+            {
+                branch = "Release";
+                var idx = lower.IndexOf("-release.", StringComparison.Ordinal);
+                versionPart = t.Substring(0, idx);
+                var rstr = t.Substring(idx + "-release.".Length);
+                int.TryParse(new string(rstr.TakeWhile(char.IsDigit).ToArray()), out rev);
+            }
+            Version ver;
+            if (!Version.TryParse(versionPart, out ver)) ver = new Version(0, 0, 0);
+            return (ver, branch, rev);
         }
     }
 }

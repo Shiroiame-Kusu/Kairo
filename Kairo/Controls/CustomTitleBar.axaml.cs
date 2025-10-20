@@ -43,6 +43,16 @@ public partial class CustomTitleBar : UserControl
         }
     }
 
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        if (_window != null)
+        {
+            _window.PropertyChanged -= WindowOnPropertyChanged;
+        }
+        _window = null;
+        base.OnDetachedFromVisualTree(e);
+    }
+
     private void WindowOnPropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
     {
         if (e.Property == Window.WindowStateProperty)
@@ -51,11 +61,27 @@ public partial class CustomTitleBar : UserControl
         }
     }
 
+    private static bool IsFromButton(PointerPressedEventArgs e)
+    {
+        if (e.Source is Control control)
+        {
+            // If the original source is the Button itself or inside a Button (e.g., Close/Max/Min), don't start a drag or toggle maximize.
+            return control is Button || control.FindAncestorOfType<Button>() != null;
+        }
+        return false;
+    }
+
     private void TitleBarPointerPressed(object? sender, PointerPressedEventArgs e)
     {
         if (_window == null)
             return;
-        if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
+
+        // Ignore presses that originate on interactive buttons to avoid hijacking their clicks
+        if (IsFromButton(e))
+            return;
+
+        var point = e.GetCurrentPoint(this);
+        if (point.Properties.IsLeftButtonPressed)
         {
             if (e.ClickCount == 2)
             {

@@ -125,6 +125,7 @@ public partial class MainWindow : Window
             Global.Config.AccessToken = json["data"]["access_token"]!.ToString();
             Global.Config.RefreshToken = refreshToken; // persist
             http.DefaultRequestHeaders.Add("Authorization", $"Bearer {Global.Config.AccessToken}");
+            Console.WriteLine(Global.Config.AccessToken);
             var userResp = await http.GetAsync($"{Global.APIList.GetUserInfo}?user_id={Global.Config.ID}");
             var userJson = JObject.Parse(await userResp.Content.ReadAsStringAsync());
             _userInfo = JsonConvert.DeserializeObject<UserInfo>(userJson["data"]!.ToString());
@@ -218,7 +219,7 @@ public partial class MainWindow : Window
         // OAuth authorize (v2). Must URL-encode nested redirect (dashboard relay -> local listener) so its query params aren't parsed as outer ones.
         var nested = $"https://dashboard.locyanfrp.cn/callback/auth/oauth/localhost?port={Global.OAuthPort}&ssl=false&path=/oauth/callback";
         var encoded = Uri.EscapeDataString(nested);
-        var url = $"{Global.APIList.GetTheFUCKINGRefreshToken}?app_id={Global.APPID}&scopes=User,Proxy,Sign&redirect_url={encoded}";
+        var url = $"{Global.APIList.GetTheFUCKINGRefreshToken}?app_id={Global.APPID}&scopes=User,Proxy,Sign,Node&redirect_url={encoded}";
         try
         {
             using var proc = new System.Diagnostics.Process();

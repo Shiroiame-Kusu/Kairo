@@ -15,9 +15,9 @@ namespace Kairo
         public static readonly string PATH = Path.GetDirectoryName(Environment.ProcessPath);
         public static readonly DateTime StartTime = DateTime.Now;
         public static bool LoginedByConsole = false;
-        public const string Version = "3.1.0";
+        public const string Version = "3.1.1";
         public const string VersionName = "Iris Bloom";
-        public const string Branch = "Beta";
+        public const string Branch = "Release";
         public const int Revision = 1;
         public static readonly BuildInfo BuildInfo = new();
         public const string Developer = "Shiroiame-Kusu & Daiyangcheng";
@@ -59,6 +59,7 @@ namespace Kairo
             public const string GetNotice = $"{API}/notice";
             public const string GetAllProxy = $"{API}/proxy/all?user_id="; // retained for potential future use
             public const string DeleteProxy = $"{API}/proxy?user_id="; // retained for potential future use
+            public const string GetAllNodes = $"{API}/node/all?user_id="; // list all nodes
         }
         public static int OAuthPort = 10000;
         public const int APPID = 236;
