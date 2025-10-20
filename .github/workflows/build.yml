@@ -18,11 +18,13 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - rid: win-x64
+          - rid: Win-x64
             os: ubuntu-latest
-          - rid: linux-x64
+          - rid: Linux-x64
             os: ubuntu-latest
-          - rid: osx-x64
+          - rid: MacOS-x64
+            os: macos-14
+          - rid: MacOS-arm64
             os: macos-14
     env:
       DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
