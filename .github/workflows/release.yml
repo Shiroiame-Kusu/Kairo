@@ -18,6 +18,13 @@ on:
         description: 'If base version A.B.C provided without suffix, append -Release.<iteration>'
         required: false
 
+env:
+  PROJECT_PATH: Kairo/Kairo.csproj
+  CONFIGURATION: Release
+  DOTNET_VERSION: 9.0.x
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: '1'
+  DOTNET_NOLOGO: '1'
+
 permissions:
   contents: write
 
@@ -39,7 +46,7 @@ jobs:
         run: |
           set -euo pipefail
           INPUT_VERSION="${{ github.event.inputs.version || '' }}"
-            INPUT_ITERATION="${{ github.event.inputs.iteration || '' }}"
+          INPUT_ITERATION="${{ github.event.inputs.iteration || '' }}"
           if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
             RAW_VERSION="${GITHUB_REF#refs/tags/}"
           elif [[ -n "$INPUT_VERSION" ]]; then
@@ -95,10 +102,10 @@ jobs:
           - os: ubuntu-latest
             rid: linux-arm64
             archive: tar.gz
-          - os: windows-latest
+          - os: ubuntu-latest
             rid: win-x64
             archive: zip
-          - os: windows-latest
+          - os: ubuntu-latest
             rid: win-arm64
             archive: zip
           - os: macos-latest
@@ -115,7 +122,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '9.0.x'
+          dotnet-version: ${{ env.DOTNET_VERSION }}
       - name: Display .NET info
         run: dotnet --info
       - name: Generate build info
@@ -124,11 +131,11 @@ jobs:
           chmod +x Kairo/Components/BuildInfo.sh || true
           Kairo/Components/BuildInfo.sh || echo "BuildInfo script skipped"
       - name: Restore
-        run: dotnet restore Kairo/Kairo.csproj
+        run: dotnet restore "$PROJECT_PATH"
       - name: Publish
         run: |
-          dotnet publish Kairo/Kairo.csproj \
-            -c Release \
+          dotnet publish "$PROJECT_PATH" \
+            -c "$CONFIGURATION" \
             -r ${{ matrix.rid }} \
             --self-contained true \
             /p:PublishSingleFile=true \
@@ -159,10 +166,14 @@ jobs:
       - name: List publish directory (debug)
         shell: bash
         run: |
-          echo 'Listing publish directory:'
-          ls -l publish || true
-          echo 'Find built archives:'
-            find publish -maxdepth 2 -type f \( -name '*.zip' -o -name '*.tar.gz' \) -printf '%p\n' || true
+          if [ -d publish ]; then
+            echo 'Listing publish directory:'
+            ls -l publish
+            echo 'Find built archives:'
+            find publish -type f \( -name '*.zip' -o -name '*.tar.gz' \) -print || true
+          else
+            echo 'publish directory not found'
+          fi
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
