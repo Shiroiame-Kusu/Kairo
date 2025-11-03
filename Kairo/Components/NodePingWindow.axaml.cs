@@ -99,7 +99,7 @@ public partial class NodePingWindow : Window
                 {
                     int id = (int)(item["id"] ?? 0);
                     string ip = item["ip"]?.ToString() ?? string.Empty;
-                    string host = item["hostname"]?.ToString() ?? string.Empty;
+                    string host = item["host"]?.ToString() ?? string.Empty;
                     string target = !string.IsNullOrWhiteSpace(ip) ? ip : host;
                     if (string.IsNullOrWhiteSpace(target)) continue;
                     _rows.Add(new Row { Node = id, Host = target, Status = "等待中" });

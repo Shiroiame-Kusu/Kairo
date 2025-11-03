@@ -79,7 +79,12 @@ public partial class ProxyCard : UserControl
         var routeBlock = this.FindControl<TextBlock>("RouteBlock");
         var indicator = GetIndicator();
         if (nameBlock != null) nameBlock.Text = proxy.ProxyName;
-        if (routeBlock != null) routeBlock.Text = $"{proxy.LocalIp}:{proxy.LocalPort} -> Node{proxy.Node}:{proxy.RemotePort}";
+        if (routeBlock != null)
+        {
+            var nodeLabel = proxy.NodeInfo?.Host ?? proxy.NodeInfo?.Ip ?? (proxy.Node > 0 ? $"Node{proxy.Node}" : "Node");
+            var remote = proxy.RemotePort.HasValue ? proxy.RemotePort.Value.ToString() : (proxy.Domain ?? "-");
+            routeBlock.Text = $"{proxy.LocalIp}:{proxy.LocalPort} -> {nodeLabel}:{remote}";
+        }
         if (indicator != null)
         {
             indicator.Stroke = Brushes.Gray;

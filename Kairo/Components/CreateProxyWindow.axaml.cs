@@ -116,10 +116,10 @@ public partial class CreateProxyWindow : Window
             var json = JObject.Parse(content);
             if ((int?)json["status"] != 200)
             {
-                SetStatus($"获取节点失败: {json["message"]?.ToString()}");
+                SetStatus($"获取节点失败: {json["message"]}");
                 return;
             }
-            var list = json["data"]?["list"] as JArray;
+            var list = json["data"]?["list"] as JArray; // v3: data.list
             _nodes.Clear();
             if (list != null)
             {
@@ -127,7 +127,7 @@ public partial class CreateProxyWindow : Window
                 {
                     int id = (int)(item["id"] ?? 0);
                     string ip = item["ip"]?.ToString() ?? string.Empty;
-                    string host = item["hostname"]?.ToString() ?? string.Empty;
+                    string host = item["host"]?.ToString() ?? string.Empty; // v3 field is host
                     string label = !string.IsNullOrWhiteSpace(ip) ? ip : host;
                     if (id > 0 && !string.IsNullOrWhiteSpace(label))
                         _nodes.Add(new NodeItem(id, label));
@@ -200,13 +200,13 @@ public partial class CreateProxyWindow : Window
             var form = new List<KeyValuePair<string, string>>
             {
                 new("user_id", Global.Config.ID.ToString()),
-                new("name", name),
-                new("local_ip", localIp),
-                new("type", t),
+                new("name", name!),
+                new("local_ip", localIp!),
+                new("type", t.ToUpperInvariant()),
                 new("local_port", localPort.ToString()),
                 new("node_id", nodeItem.Id.ToString()),
-                new("use_encryption", useEnc ? "true" : "false"),
-                new("use_compression", useComp ? "true" : "false"),
+                new("use_encryption", (useEnc ? "true" : "false")),
+                new("use_compression", (useComp ? "true" : "false")),
             };
             if (needRemote)
                 form.Add(new("remote_port", remotePort.ToString()));
@@ -215,15 +215,15 @@ public partial class CreateProxyWindow : Window
             if (needDomain)
                 form.Add(new("domain", domain ?? string.Empty));
 
-            var resp = await http.PostAsync("https://api.locyanfrp.cn/v2/proxy", new FormUrlEncodedContent(form));
+            var resp = await http.PutAsync(Global.APIList.Tunnel, new FormUrlEncodedContent(form));
             var content = await resp.Content.ReadAsStringAsync();
             JObject json;
             try { json = JObject.Parse(content); }
             catch { SetStatus("服务器返回异常"); return; }
             if ((int?)json["status"] == 200)
             {
-                int proxyId = (int)(json["data"]?["proxy_id"] ?? 0);
-                string proxyName = json["data"]?["proxy_name"]?.ToString() ?? name;
+                int proxyId = json["data"]?["tunnel_id"]?.Value<int>() ?? 0;
+                string proxyName = name!;
                 Created?.Invoke(proxyId, proxyName);
                 try { Close(); } catch { }
             }
@@ -243,6 +243,11 @@ public partial class CreateProxyWindow : Window
         }
     }
 
+    private void CancelBtn_OnClick(object? sender, RoutedEventArgs e)
+    {
+        try { Close(); } catch { }
+    }
+
     private void PingBtn_OnClick(object? sender, RoutedEventArgs e)
     {
         try
@@ -257,11 +262,6 @@ public partial class CreateProxyWindow : Window
         {
             SetStatus($"无法打开延迟测试: {ex.Message}");
         }
-    }
-
-    private void CancelBtn_OnClick(object? sender, RoutedEventArgs e)
-    {
-        try { Close(); } catch { }
     }
 
     private sealed class NodeItem

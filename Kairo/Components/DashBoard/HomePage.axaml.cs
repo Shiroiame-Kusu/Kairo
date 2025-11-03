@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Avalonia.Controls;
@@ -117,7 +118,7 @@ public partial class HomePage : UserControl
         {
             using HttpClient hc = new();
             hc.DefaultRequestHeaders.Add("Authorization", $"Bearer {Global.Config.AccessToken}");
-            var resp = await hc.GetAsync($"{Global.APIList.GetSign}{Global.Config.ID}");
+            var resp = await hc.GetAsync($"{Global.APIList.GetSign}?user_id={Global.Config.ID}");
             var body = await resp.Content.ReadAsStringAsync();
             if (string.IsNullOrWhiteSpace(body)) return;
             JObject json; try { json = JObject.Parse(body); } catch { return; }
@@ -161,7 +162,7 @@ public partial class HomePage : UserControl
             _signButton.IsEnabled = false;
             using HttpClient hc = new();
             hc.DefaultRequestHeaders.Add("Authorization", $"Bearer {Global.Config.AccessToken}");
-            var resp = await hc.PostAsync($"{Global.APIList.GetSign}{Global.Config.ID}", null);
+            var resp = await hc.PostAsync($"{Global.APIList.GetSign}", new FormUrlEncodedContent(new[] { new KeyValuePair<string,string>("user_id", Global.Config.ID.ToString()) }));
             var body = await resp.Content.ReadAsStringAsync();
             if (string.IsNullOrWhiteSpace(body)) { (Access.DashBoard as DashBoard)?.OpenSnackbar("签到失败", "空响应", FluentAvalonia.UI.Controls.InfoBarSeverity.Error); return; }
             JObject json; try { json = JObject.Parse(body); } catch { (Access.DashBoard as DashBoard)?.OpenSnackbar("签到失败", "响应格式错误", FluentAvalonia.UI.Controls.InfoBarSeverity.Error); return; }

@@ -34,4 +34,11 @@
       <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
     </Style>
   </Application.Styles>
+
+  <Application.Resources>
+    <!-- Shared window rounding & shadow parameters -->
+    <CornerRadius x:Key="WindowCornerRadius">12</CornerRadius>
+    <!-- Subtle elevation-like shadow for rounded host border -->
+    <BoxShadows x:Key="WindowShadow">0 10 30 0 #50000000</BoxShadows>
+  </Application.Resources>
 </Application>

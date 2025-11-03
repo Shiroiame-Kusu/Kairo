@@ -15,16 +15,15 @@ namespace Kairo
         public static readonly string PATH = Path.GetDirectoryName(Environment.ProcessPath);
         public static readonly DateTime StartTime = DateTime.Now;
         public static bool LoginedByConsole = false;
-        public const string Version = "3.1.1";
-        public const string VersionName = "Iris Bloom";
-        public const string Branch = "Release";
+        public const string Version = "3.2.0";
+        public const string VersionName = "Sonetto";
+        public const string Branch = "Beta";
         public const int Revision = 1;
         public static readonly BuildInfo BuildInfo = new();
         public const string Developer = "Shiroiame-Kusu & Daiyangcheng";
         public const string Copyright = "Copyright © Shiroiame-Kusu All Rights Reserved";
         public static Config Config = new();
         public static bool isDarkThemeEnabled;
-        public static SecureString Password = new();
         public static List<string> Tips = new() {
             "Tips:他们说下载的时候把电脑抱起来摇匀, 下载速度会更快哦",
             "Tips:LocyanFrp永远不会跑路, 就像你家楼下清仓甩卖的店一样",
@@ -42,24 +41,26 @@ namespace Kairo
             "Sayings:你这个人，满脑子都只想着自己呢。"
 
         };
-        // Switched to stable v2 API base
-        public const string API = "https://api.locyanfrp.cn/v2";
+        // API v3 base
+        public const string API = "https://api.locyanfrp.cn/v3";
         //public const string UpdateCheckerAPI = "http://localhost:5043/api";
         public const string UpdateCheckerAPI = "https://kairo.nyat.icu/api";
         public const string GithubMirror = "https://proxy-gh.1l1.icu/";
         public class APIList
         {   
-            public const string GetUserInfo = $"{API}/user/info";
-            // v2 OAuth authorize base (scopes parameter used instead of request_permission_ids/user_id)
+            // User & OAuth
+            public const string GetUserInfo = $"{API}/user";
             public const string GetTheFUCKINGRefreshToken = "https://dashboard.locyanfrp.cn/auth/oauth/authorize";
             public const string GetAccessToken = $"{API}/auth/oauth/access-token";
             public const string GetFrpToken = $"{API}/user/frp/token";
-            // Keep sign/notice endpoints for forward compatibility; may be unsupported in v2 but referenced in UI
-            public const string GetSign = $"{API}/sign?user_id=";
-            public const string GetNotice = $"{API}/notice";
-            public const string GetAllProxy = $"{API}/proxy/all?user_id="; // retained for potential future use
-            public const string DeleteProxy = $"{API}/proxy?user_id="; // retained for potential future use
-            public const string GetAllNodes = $"{API}/node/all?user_id="; // list all nodes
+            // Site & sign
+            public const string GetSign = $"{API}/sign"; // GET for status with ?user_id=, POST with form user_id for sign
+            public const string GetNotice = $"{API}/site/notice";
+            // Tunnels & nodes
+            public const string GetAllProxy = $"{API}/tunnels?user_id=";
+            public const string DeleteProxy = $"{API}/tunnel?user_id="; // append user_id and use &tunnel_id=
+            public const string Tunnel = $"{API}/tunnel"; // base for PUT(create)/PATCH(update)
+            public const string GetAllNodes = $"{API}/nodes?user_id=";
         }
         public static int OAuthPort = 10000;
         public const int APPID = 236;

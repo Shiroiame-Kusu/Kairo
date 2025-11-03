@@ -52,15 +52,14 @@ public partial class ProxyListPage : UserControl
                 {
                     Id = 0,
                     ProxyName = "示例隧道",
-                    ProxyType = "tcp",
+                    ProxyType = "TCP",
                     LocalIp = "127.0.0.1",
                     LocalPort = 7000,
-                    RemotePort = "6000",
-                    UseCompression = "false",
-                    UseEncryption = "false",
+                    RemotePort = 6000,
+                    UseCompression = false,
+                    UseEncryption = false,
                     Domain = "example.local",
-                    Node = 1,
-                    Icp = string.Empty
+                    NodeInfo = new ProxyNode { Id = 1, Host = "node1.locyanfrp.cn" }
                 };
                 _listPanel.Children.Add(BuildCard(placeholder, 0));
                 return;
@@ -110,7 +109,7 @@ public partial class ProxyListPage : UserControl
                 (Access.DashBoard as DashBoard)?.OpenSnackbar("获取隧道失败", json["message"]?.ToString(), FluentAvalonia.UI.Controls.InfoBarSeverity.Error);
                 return;
             }
-            var arrToken = json["data"]?["proxies"] ?? json["data"]?["list"]; // fallback to legacy key 'list'
+            var arrToken = json["data"]?["list"]; // v3 uses data.list
             if (arrToken == null)
             {
                 _listPanel?.Children.Clear();
@@ -212,7 +211,7 @@ public partial class ProxyListPage : UserControl
         {
             using HttpClient hc = new();
             hc.DefaultRequestHeaders.Add("Authorization", $"Bearer {Global.Config.AccessToken}");
-            var resp = await hc.DeleteAsync($"{Global.APIList.DeleteProxy}{Global.Config.ID}&proxy_id={proxy.Id}");
+            var resp = await hc.DeleteAsync($"{Global.APIList.DeleteProxy}{Global.Config.ID}&tunnel_id={proxy.Id}");
             var json = JObject.Parse(await resp.Content.ReadAsStringAsync());
             if ((int)json["status"] == 200)
             {

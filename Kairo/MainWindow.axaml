@@ -28,10 +28,10 @@
     <controls:CustomTitleBar Title="Kairo - Another LocyanFrp Client" />
     <Grid Grid.Row="1" ColumnDefinitions="*,300,*">
       <Grid Grid.Column="1" Margin="0" >
-        <Grid Height="420" VerticalAlignment="Center" RowDefinitions="20,120,20,*">
+        <Grid VerticalAlignment="Center" RowDefinitions="0,120,20,*">
           <!-- Banner region -->
-          <Grid Grid.Row="1" RowDefinitions="*,120,*">
-            <Border Grid.Row="1" CornerRadius="8" Background="Transparent" >
+          <Grid Grid.Row="1">
+            <Border CornerRadius="8" Background="Transparent" >
               <Image x:Name="Banner" Source="avares://Kairo/Assets/banner.png" Stretch="Uniform" />
             </Border>
           </Grid>
@@ -43,18 +43,18 @@
             </StackPanel>
           </Grid>
           <!-- Login Form -->
-          <Border x:Name="LoginForm" Grid.Row="3" Margin="0" Padding="16" CornerRadius="8" Background="{DynamicResource LayerFillColorAltBrush}" Classes="fade" Opacity="0" IsVisible="False">
+          <Border x:Name="LoginForm" Grid.Row="3" Margin="12" Padding="0" CornerRadius="8" Background="{DynamicResource LayerFillColorAltBrush}" Classes="fade" Opacity="0" IsVisible="False">
             <Grid RowDefinitions="220,*">
               <Grid>
                 <Grid RowDefinitions="*,*">
-                  <TextBlock Margin="0,10" HorizontalAlignment="Center" VerticalAlignment="Bottom" Text="使用OAuth进行登录" FontSize="18" />
-                  <Button x:Name="LoginButton" Grid.Row="1" Margin="0,16,0,0" Content="登录" Height="36" HorizontalAlignment="Stretch" Click="LoginButton_Click" />
+                  <TextBlock Margin="0,10" HorizontalAlignment="Center" VerticalAlignment="Bottom" Text="使用OAuth进行登录" FontSize="16" />
+                  <Button x:Name="LoginButton" Grid.Row="1" Margin="50,16,50,0" Content="登录" Height="36" HorizontalAlignment="Stretch" Click="LoginButton_Click" />
                 </Grid>
               </Grid>
-              <Grid Grid.Row="1" ColumnDefinitions="*,*" Margin="0,8,0,0">
-                <HyperlinkButton HorizontalAlignment="Center" VerticalAlignment="Center" Content="没有账号? 前往注册" Tag="https://dashboard.locyanfrp.cn/auth/register" Click="HyperlinkButton_Click" />
-                <HyperlinkButton Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center" Content="忘记密码?" Tag="https://dashboard.locyanfrp.cn/reset_password" Click="HyperlinkButton_Click" />
-              </Grid>
+              <!-- <Grid Grid.Row="1" ColumnDefinitions="*,*" Margin="0,8,0,0"> -->
+              <!--   <HyperlinkButton HorizontalAlignment="Center" VerticalAlignment="Center" Content="没有账号? 前往注册" Tag="https://dashboard.locyanfrp.cn/auth/register" Click="HyperlinkButton_Click" /> -->
+              <!--   <HyperlinkButton Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center" Content="忘记密码?" Tag="https://dashboard.locyanfrp.cn/reset_password" Click="HyperlinkButton_Click" /> -->
+              <!-- </Grid> -->
             </Grid>
           </Border>
         </Grid>
