@@ -105,9 +105,6 @@ jobs:
           - os: ubuntu-latest
             rid: win-x64
             archive: zip
-          - os: ubuntu-latest
-            rid: win-arm64
-            archive: zip
           - os: macos-latest
             rid: osx-x64
             archive: tar.gz
