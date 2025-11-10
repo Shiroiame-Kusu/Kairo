@@ -12,19 +12,20 @@ namespace Kairo
 {
     internal static class Global
     {
-        public static readonly string PATH = Path.GetDirectoryName(Environment.ProcessPath);
         public static readonly DateTime StartTime = DateTime.Now;
         public static bool LoginedByConsole = false;
         public const string Version = "3.2.0";
         public const string VersionName = "Sonetto";
         public const string Branch = "Beta";
-        public const int Revision = 1;
+        public const int Revision = 2;
         public static readonly BuildInfo BuildInfo = new();
         public const string Developer = "Shiroiame-Kusu & Daiyangcheng";
         public const string Copyright = "Copyright © Shiroiame-Kusu All Rights Reserved";
         public static Config Config = new();
         public static bool isDarkThemeEnabled;
-        public static List<string> Tips = new() {
+
+        public static List<string> Tips = new()
+        {
             "Tips:他们说下载的时候把电脑抱起来摇匀, 下载速度会更快哦",
             "Tips:LocyanFrp永远不会跑路, 就像你家楼下清仓甩卖的店一样",
             "Tips:有的时候其实都不算是bug, 其实是我们特意写的特性 (确信",
@@ -39,32 +40,38 @@ namespace Kairo
             "Sayings:只要是我能做的，我什么都愿意做!",
             "Sayings:你是抱着多大的觉悟说出这种话的?",
             "Sayings:你这个人，满脑子都只想着自己呢。"
-
         };
+
         // API v3 base
         public const string API = "https://api.locyanfrp.cn/v3";
+
         //public const string UpdateCheckerAPI = "http://localhost:5043/api";
         public const string UpdateCheckerAPI = "https://kairo.nyat.icu/api";
-        public const string GithubMirror = "https://proxy-gh.1l1.icu/";
+        public const string GithubMirror = "https://hub.locyan.cloud/";
+
         public class APIList
-        {   
+        {
             // User & OAuth
             public const string GetUserInfo = $"{API}/user";
-            public const string GetTheFUCKINGRefreshToken = "https://dashboard.locyanfrp.cn/auth/oauth/authorize";
+            public const string GetTheFUCKINGRefreshToken = "https://preview.locyanfrp.cn/auth/oauth/authorize";
             public const string GetAccessToken = $"{API}/auth/oauth/access-token";
+
             public const string GetFrpToken = $"{API}/user/frp/token";
+
             // Site & sign
             public const string GetSign = $"{API}/sign"; // GET for status with ?user_id=, POST with form user_id for sign
+
             public const string GetNotice = $"{API}/site/notice";
+
             // Tunnels & nodes
             public const string GetAllProxy = $"{API}/tunnels?user_id=";
             public const string DeleteProxy = $"{API}/tunnel?user_id="; // append user_id and use &tunnel_id=
             public const string Tunnel = $"{API}/tunnel"; // base for PUT(create)/PATCH(update)
             public const string GetAllNodes = $"{API}/nodes?user_id=";
         }
-        public static int OAuthPort = 10000;
-        public const int APPID = 236;
-        public static bool DebugMode = false;
 
+        public static int OAuthPort = 10000;
+        public const int APPID = 1;
+        public static bool DebugMode = false;
     }
 }

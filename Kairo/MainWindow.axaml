@@ -12,55 +12,67 @@
         WindowStartupLocation="CenterScreen"
         Icon="avares://Kairo/Assets/kairo.ico"
         KeyDown="Window_KeyDown"
-        SystemDecorations="None">
-  <Window.Styles>
-    <!-- Style for fade transitions on controls -->
-    <Style Selector="Control.fade">
-      <Setter Property="Transitions">
-        <Transitions>
-          <DoubleTransition Property="Opacity" Duration="0:0:0.3" Easing="CircularEaseOut" />
-        </Transitions>
-      </Setter>
-    </Style>
-  </Window.Styles>
-  <Grid RowDefinitions="Auto,*">
-    <!-- Custom Title Bar -->
-    <controls:CustomTitleBar Title="Kairo - Another LocyanFrp Client" />
-    <Grid Grid.Row="1" ColumnDefinitions="*,300,*">
-      <Grid Grid.Column="1" Margin="0" >
-        <Grid VerticalAlignment="Center" RowDefinitions="0,120,20,*">
-          <!-- Banner region -->
-          <Grid Grid.Row="1">
-            <Border CornerRadius="8" Background="Transparent" >
-              <Image x:Name="Banner" Source="avares://Kairo/Assets/banner.png" Stretch="Uniform" />
-            </Border>
-          </Grid>
-          <!-- Login Status -->
-          <Grid Grid.Row="3">
-            <StackPanel x:Name="LoginStatusPanel" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Classes="fade" Opacity="0" IsVisible="False">
-              <fa:ProgressRing Width="28" Height="28" IsActive="True" />
-              <TextBlock Margin="15,0" FontSize="16" VerticalAlignment="Center" Text="正在登录" />
-            </StackPanel>
-          </Grid>
-          <!-- Login Form -->
-          <Border x:Name="LoginForm" Grid.Row="3" Margin="12" Padding="0" CornerRadius="8" Background="{DynamicResource LayerFillColorAltBrush}" Classes="fade" Opacity="0" IsVisible="False">
-            <Grid RowDefinitions="220,*">
-              <Grid>
-                <Grid RowDefinitions="*,*">
-                  <TextBlock Margin="0,10" HorizontalAlignment="Center" VerticalAlignment="Bottom" Text="使用OAuth进行登录" FontSize="16" />
-                  <Button x:Name="LoginButton" Grid.Row="1" Margin="50,16,50,0" Content="登录" Height="36" HorizontalAlignment="Stretch" Click="LoginButton_Click" />
+        SystemDecorations="None"
+        TransparencyLevelHint="Mica, AcrylicBlur, Blur"
+        Background="Transparent">
+    <Window.Styles>
+        <!-- Style for fade transitions on controls -->
+        <Style Selector="Control.fade">
+            <Setter Property="Transitions">
+                <Transitions>
+                    <DoubleTransition Property="Opacity" Duration="0:0:0.3" Easing="CircularEaseOut" />
+                </Transitions>
+            </Setter>
+        </Style>
+    </Window.Styles>
+    <Border CornerRadius="12" Background="{DynamicResource SolidBackgroundFillColorBaseBrush}"
+            BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" BorderThickness="0" ClipToBounds="True">
+        <Grid RowDefinitions="Auto,*">
+            <!-- Custom Title Bar -->
+            <controls:CustomTitleBar Title="Kairo - Another LocyanFrp Client" />
+            <Grid Grid.Row="1" ColumnDefinitions="*,300,*">
+                <Grid Grid.Column="1" Margin="0">
+                    <Grid VerticalAlignment="Center" RowDefinitions="0,120,20,*">
+                        <!-- Banner region -->
+                        <Grid Grid.Row="1">
+                            <Border CornerRadius="8" Background="Transparent">
+                                <Image x:Name="Banner" Source="avares://Kairo/Assets/banner.png" Stretch="Uniform" />
+                            </Border>
+                        </Grid>
+                        <!-- Login Status -->
+                        <Grid Grid.Row="3">
+                            <StackPanel x:Name="LoginStatusPanel" Orientation="Horizontal" HorizontalAlignment="Center"
+                                        VerticalAlignment="Center" Classes="fade" Opacity="0" IsVisible="False">
+                                <fa:ProgressRing Width="28" Height="28" IsActive="True" />
+                                <TextBlock Margin="15,0" FontSize="16" VerticalAlignment="Center" Text="正在登录" />
+                            </StackPanel>
+                        </Grid>
+                        <!-- Login Form -->
+                        <Border x:Name="LoginForm" Grid.Row="3" Margin="12" Padding="0" CornerRadius="8"
+                                Background="{DynamicResource LayerFillColorAltBrush}" Classes="fade" Opacity="0"
+                                IsVisible="False">
+                            <Grid RowDefinitions="220,*">
+                                <Grid>
+                                    <Grid RowDefinitions="*,*">
+                                        <TextBlock Margin="0,10" HorizontalAlignment="Center"
+                                                   VerticalAlignment="Bottom" Text="使用OAuth进行登录" FontSize="16" />
+                                        <Button x:Name="LoginButton" Grid.Row="1" Margin="50,16,50,0" Content="登录"
+                                                Height="36" HorizontalAlignment="Stretch" Click="LoginButton_Click" />
+                                    </Grid>
+                                </Grid>
+                                <!-- <Grid Grid.Row="1" ColumnDefinitions="*,*" Margin="0,8,0,0"> -->
+                                <!--   <HyperlinkButton HorizontalAlignment="Center" VerticalAlignment="Center" Content="没有账号? 前往注册" Tag="https://dashboard.locyanfrp.cn/auth/register" Click="HyperlinkButton_Click" /> -->
+                                <!--   <HyperlinkButton Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center" Content="忘记密码?" Tag="https://dashboard.locyanfrp.cn/reset_password" Click="HyperlinkButton_Click" /> -->
+                                <!-- </Grid> -->
+                            </Grid>
+                        </Border>
+                    </Grid>
+                    <TextBlock x:Name="Tips" Text="" HorizontalAlignment="Center" VerticalAlignment="Bottom"
+                               Foreground="Gray" FontSize="11" Margin="0,4" />
+                    <fa:InfoBar x:Name="Snackbar" IsOpen="False" Title="" Message="" Margin="0,8,0,0"
+                                HorizontalAlignment="Stretch" VerticalAlignment="Top" />
                 </Grid>
-              </Grid>
-              <!-- <Grid Grid.Row="1" ColumnDefinitions="*,*" Margin="0,8,0,0"> -->
-              <!--   <HyperlinkButton HorizontalAlignment="Center" VerticalAlignment="Center" Content="没有账号? 前往注册" Tag="https://dashboard.locyanfrp.cn/auth/register" Click="HyperlinkButton_Click" /> -->
-              <!--   <HyperlinkButton Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center" Content="忘记密码?" Tag="https://dashboard.locyanfrp.cn/reset_password" Click="HyperlinkButton_Click" /> -->
-              <!-- </Grid> -->
             </Grid>
-          </Border>
         </Grid>
-        <TextBlock x:Name="Tips" Text="" HorizontalAlignment="Center" VerticalAlignment="Bottom" Foreground="Gray" FontSize="11" Margin="0,4" />
-        <fa:InfoBar x:Name="Snackbar" IsOpen="False" Title="" Message="" Margin="0,8,0,0" HorizontalAlignment="Stretch" VerticalAlignment="Top" />
-      </Grid>
-    </Grid>
-  </Grid>
+    </Border>
 </Window>
