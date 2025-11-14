@@ -11,9 +11,8 @@ using Avalonia.Threading;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;
 using Kairo.Utils;
-using System.Diagnostics;
-using System.Linq;
 using Kairo.Components;
+using Kairo.Utils.Logger; // add
 
 namespace Kairo.Components.DashBoard;
 
@@ -102,8 +101,10 @@ public partial class ProxyListPage : UserControl
             if (Design.IsDesignMode) return; // extra guard
             _http.DefaultRequestHeaders.Remove("Authorization");
             _http.DefaultRequestHeaders.Add("Authorization", $"Bearer {Global.Config.AccessToken}");
-            var resp = await _http.GetAsync($"{Global.APIList.GetAllProxy}{Global.Config.ID}");
-            var json = JObject.Parse(await resp.Content.ReadAsStringAsync());
+            var url = $"{Global.APIList.GetAllProxy}{Global.Config.ID}";
+            var resp = await _http.GetAsyncLogged(url);
+            var body = await resp.Content.ReadAsStringAsync();
+            var json = JObject.Parse(body);
             if ((int?)json["status"] != 200)
             {
                 (Access.DashBoard as DashBoard)?.OpenSnackbar("获取隧道失败", json["message"]?.ToString(), FluentAvalonia.UI.Controls.InfoBarSeverity.Error);
@@ -211,8 +212,10 @@ public partial class ProxyListPage : UserControl
         {
             using HttpClient hc = new();
             hc.DefaultRequestHeaders.Add("Authorization", $"Bearer {Global.Config.AccessToken}");
-            var resp = await hc.DeleteAsync($"{Global.APIList.DeleteProxy}{Global.Config.ID}&tunnel_id={proxy.Id}");
-            var json = JObject.Parse(await resp.Content.ReadAsStringAsync());
+            var url = $"{Global.APIList.DeleteProxy}{Global.Config.ID}&tunnel_id={proxy.Id}";
+            var resp = await hc.DeleteAsyncLogged(url);
+            var body = await resp.Content.ReadAsStringAsync();
+            var json = JObject.Parse(body);
             if ((int)json["status"] == 200)
             {
                 (Access.DashBoard as DashBoard)?.OpenSnackbar("已删除", proxy.ProxyName, FluentAvalonia.UI.Controls.InfoBarSeverity.Success);

@@ -16,6 +16,7 @@ using FluentAvalonia.UI.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Threading; // added for DispatcherTimer
 using Kairo.Components.DashBoard; // added for new namespace
+using Kairo.Utils.Logger; // added for HTTP logging
 
 namespace Kairo;
 
@@ -35,6 +36,8 @@ public partial class MainWindow : Window
     private NativeMenuItem? _showHideMenuItem;
     private NativeMenuItem? _exitMenuItem;
     private DispatcherTimer? _snackbarTimer; // auto-dismiss timer
+    private DispatcherTimer? _loginTimeoutTimer;
+    private static readonly TimeSpan LoginTimeout = TimeSpan.FromSeconds(30);
 
     public MainWindow()
     {
@@ -113,11 +116,15 @@ public partial class MainWindow : Window
             using HttpClient http = new();
             http.DefaultRequestHeaders.Add("User-Agent", $"Kairo-{Global.Version}");
             var accessUrl = $"{Global.APIList.GetAccessToken}?app_id={Global.APPID}&refresh_token={refreshToken}";
-            var response = await http.PostAsync(accessUrl, null);
-            var json = JObject.Parse(await response.Content.ReadAsStringAsync());
+            var response = await http.PostAsyncLogged(accessUrl, null);
+            var accessBody = await response.Content.ReadAsStringAsync();
+            var json = JObject.Parse(accessBody);
             if ((int)json["status"] != 200)
             {
                 OpenSnackbar("登录失败", $"API状态: {json["status"]} {json["message"]}", InfoBarSeverity.Error);
+                Global.Config.RefreshToken = "";
+                Global.Config.AccessToken = "";
+                Global.Config.ID = 0;
                 ToggleLoggingIn(false);
                 return false;
             }
@@ -125,9 +132,10 @@ public partial class MainWindow : Window
             Global.Config.AccessToken = json["data"]["access_token"]!.ToString();
             Global.Config.RefreshToken = refreshToken; // persist
             http.DefaultRequestHeaders.Add("Authorization", $"Bearer {Global.Config.AccessToken}");
-            Console.WriteLine(Global.Config.AccessToken);
-            var userResp = await http.GetAsync($"{Global.APIList.GetUserInfo}?user_id={Global.Config.ID}");
-            var userJson = JObject.Parse(await userResp.Content.ReadAsStringAsync());
+            var userUrl = $"{Global.APIList.GetUserInfo}?user_id={Global.Config.ID}";
+            var userResp = await http.GetAsyncLogged(userUrl);
+            var userBody = await userResp.Content.ReadAsStringAsync();
+            var userJson = JObject.Parse(userBody);
             _userInfo = JsonConvert.DeserializeObject<UserInfo>(userJson["data"]!.ToString());
             if (_userInfo == null)
             {
@@ -135,9 +143,10 @@ public partial class MainWindow : Window
                 ToggleLoggingIn(false);
                 return false;
             }
-            // Frp token
-            var frpResp = await http.GetAsync($"{Global.APIList.GetFrpToken}?user_id={Global.Config.ID}");
-            var frpJson = JObject.Parse(await frpResp.Content.ReadAsStringAsync());
+            var frpUrl = $"{Global.APIList.GetFrpToken}?user_id={Global.Config.ID}";
+            var frpResp = await http.GetAsyncLogged(frpUrl);
+            var frpBody = await frpResp.Content.ReadAsStringAsync();
+            var frpJson = JObject.Parse(frpBody);
             _userInfo.FrpToken = frpJson["data"]["frp_token"]?.ToString();
             Global.Config.Username = _userInfo.Username;
             Global.Config.FrpToken = _userInfo.FrpToken ?? string.Empty;
@@ -145,7 +154,6 @@ public partial class MainWindow : Window
             _isLoggedIn = true;
             Kairo.Utils.Configuration.ConfigManager.Save(); // persist new tokens/user info
             OpenSnackbar("登录成功", $"欢迎 {_userInfo.Username}", InfoBarSeverity.Success);
-            // Open dashboard window
             if (Utils.Access.DashBoard is not DashBoard db)
             {
                 db = new DashBoard();
@@ -166,11 +174,13 @@ public partial class MainWindow : Window
         finally
         {
             _isLoggingIn = false;
+            StopLoginTimeout();
         }
     }
 
     public async Task AcceptOAuthRefreshToken(string refreshToken)
     {
+        StopLoginTimeout();
         if (string.IsNullOrWhiteSpace(refreshToken))
         {
             OpenSnackbar("无效令牌", "提供的刷新令牌为空", InfoBarSeverity.Warning);
@@ -182,7 +192,8 @@ public partial class MainWindow : Window
 
     private void InitializeInfoForDashboard()
     {
-        if (_userInfo == null) return;
+        if (_userInfo == null || string.IsNullOrEmpty(_userInfo.Email)) return;
+        Console.WriteLine(_userInfo.Email);
         StringBuilder sb = new();
         foreach (byte b in MD5.HashData(Encoding.UTF8.GetBytes(_userInfo.Email.ToLower())))
             sb.Append(b.ToString("x2"));
@@ -214,21 +225,45 @@ public partial class MainWindow : Window
             Snackbar.IsOpen = false;
     }
 
+    private void StartLoginTimeout()
+    {
+        _loginTimeoutTimer ??= new DispatcherTimer { Interval = LoginTimeout };
+        _loginTimeoutTimer.Stop();
+        _loginTimeoutTimer.Tick -= LoginTimeoutTimer_Tick;
+        _loginTimeoutTimer.Tick += LoginTimeoutTimer_Tick;
+        _loginTimeoutTimer.Start();
+    }
+
+    private void StopLoginTimeout()
+    {
+        if (_loginTimeoutTimer == null) return;
+        _loginTimeoutTimer.Stop();
+        _loginTimeoutTimer.Tick -= LoginTimeoutTimer_Tick;
+    }
+
+    private void LoginTimeoutTimer_Tick(object? sender, EventArgs e)
+    {
+        StopLoginTimeout();
+        ToggleLoggingIn(false);
+        OpenSnackbar("登录超时", "OAuth 验证未完成，请重试", InfoBarSeverity.Warning);
+    }
+
     private async void LoginButton_Click(object? sender, RoutedEventArgs e)
     {
-        // OAuth authorize (v2). Must URL-encode nested redirect (dashboard relay -> local listener) so its query params aren't parsed as outer ones.
-        var nested = $"https://dashboard.locyanfrp.cn/callback/auth/oauth/localhost?port={Global.OAuthPort}&ssl=false&path=/oauth/callback";
-        var encoded = Uri.EscapeDataString(nested);
-        var url = $"{Global.APIList.GetTheFUCKINGRefreshToken}?app_id={Global.APPID}&scopes=User.Read,User.Read.FrpToken,Node.Read,Tunnel.Read,Tunnel.Write.Create,Tunnel.Write.Delete,Sign.Read,Sign.Action.Sign&redirect_url={encoded}";
+        //var url = $"{Global.APIList.GetTheFUCKINGRefreshToken}?client_id={Global.APPID}&scopes=User.Read,User.Read.FrpToken,Node.Read,Tunnel.Read,Tunnel.Write.Create,Tunnel.Write.Delete,Sign.Read,Sign.Action.Sign&redirect_uri={Uri.EscapeDataString($"{Global.Dashboard}/auth/oauth/redirect-localhost?port={Global.OAuthPort}&ssl=false&path=/oauth/callback")}&mode=callback";
+        var url = $"{Global.APIList.GetTheFUCKINGRefreshToken}?client_id={Global.APPID}&scopes=User,Node,Tunnel,Sign&redirect_uri={Uri.EscapeDataString($"{Global.Dashboard}/auth/oauth/redirect-localhost?port={Global.OAuthPort}&ssl=false&path=/oauth/callback")}&mode=callback";
+
         try
         {
             using var proc = new System.Diagnostics.Process();
             proc.StartInfo = new System.Diagnostics.ProcessStartInfo(url) { UseShellExecute = true };
             proc.Start();
             ToggleLoggingIn(true);
+            StartLoginTimeout();
         }
         catch (Exception ex)
         {
+            StopLoginTimeout();
             OpenSnackbar("启动浏览器失败", ex.Message, InfoBarSeverity.Error);
             ToggleLoggingIn(false);
         }
@@ -381,12 +416,12 @@ public partial class MainWindow : Window
     public static void LogoutCleanup()
     {
         _isLoggedIn = false;
-        if (Utils.Access.DashBoard is Window db)
+        if (Access.DashBoard is Window db)
         {
             try { db.Close(); } catch { }
-            Utils.Access.DashBoard = null;
+            Access.DashBoard = null;
         }
-        if (Utils.Access.MainWindow is MainWindow mw)
+        if (Access.MainWindow is MainWindow mw)
             mw.OnLoggedOut();
     }
 }

@@ -1,15 +1,14 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
-using Avalonia.Threading;
 using Newtonsoft.Json.Linq;
 using Kairo; // Global
+using Kairo.Utils.Logger; // add
 
 namespace Kairo.Components;
 
@@ -111,7 +110,7 @@ public partial class CreateProxyWindow : Window
             using var http = new HttpClient();
             http.DefaultRequestHeaders.Add("Authorization", $"Bearer {Global.Config.AccessToken}");
             var url = $"{Global.APIList.GetAllNodes}{Global.Config.ID}";
-            var resp = await http.GetAsync(url);
+            var resp = await http.GetAsyncLogged(url);
             var content = await resp.Content.ReadAsStringAsync();
             var json = JObject.Parse(content);
             if ((int?)json["status"] != 200)
@@ -215,7 +214,7 @@ public partial class CreateProxyWindow : Window
             if (needDomain)
                 form.Add(new("domain", domain ?? string.Empty));
 
-            var resp = await http.PutAsync(Global.APIList.Tunnel, new FormUrlEncodedContent(form));
+            var resp = await http.PutAsyncLogged(Global.APIList.Tunnel, new FormUrlEncodedContent(form));
             var content = await resp.Content.ReadAsStringAsync();
             JObject json;
             try { json = JObject.Parse(content); }
@@ -260,15 +259,12 @@ public partial class CreateProxyWindow : Window
         }
         catch (Exception ex)
         {
-            SetStatus($"无法打开延迟测试: {ex.Message}");
+            SetStatus("打开 Ping 窗口失败: " + ex.Message);
         }
     }
 
-    private sealed class NodeItem
+    public record NodeItem(int Id, string Label)
     {
-        public int Id { get; }
-        public string Label { get; }
-        public NodeItem(int id, string label) { Id = id; Label = label; }
-        public override string ToString() => $"{Id} - {Label}";
+        public override string ToString() => $"[{Id}] {Label}";
     }
 }

@@ -12,6 +12,17 @@ using Kairo.Components.DashBoard; // for DashBoard cast
 
 namespace Kairo.Utils.Logger
 {
+    [System.Flags]
+    internal enum LogDestination
+    {
+        None = 0,
+        Console = 1 << 0,
+        Cache = 1 << 1,
+        File = 1 << 2,
+        Event = 1 << 3,
+        All = Console | Cache | File | Event
+    }
+
     internal static class Logger
     {
         private static readonly object _cacheLock = new();
@@ -25,6 +36,9 @@ namespace Kairo.Utils.Logger
         public static string LogDirectory { get; set; } = Path.Combine("logs", "app");
         public static int MaxCacheSize { get; set; } = 500;
         public static int CacheTrimTo { get; set; } = 400;
+
+        private const LogDestination DefaultDestinations = LogDestination.All;
+        private const LogDestination NetworkDestinations = LogDestination.Console | LogDestination.File;
 
         // New: expose a snapshot of cached lines for late subscribers / page reloads
         public static System.Collections.Generic.List<(LogType, string)> GetCacheSnapshot()
@@ -45,23 +59,39 @@ namespace Kairo.Utils.Logger
             }
         }
 
-        public static void Output(LogType type, params object?[] objects)
+        public static void Output(LogType type, params object?[] objects) => OutputInternal(type, DefaultDestinations, objects);
+
+        public static void Output(LogType type, LogDestination destinations, params object?[] objects) => OutputInternal(type, destinations, objects);
+
+        public static void OutputNetwork(LogType type, params object?[] objects) => OutputInternal(type, NetworkDestinations, objects);
+
+        private static void OutputInternal(LogType type, LogDestination destinations, object?[] objects)
         {
+            if (destinations == LogDestination.None)
+                return;
             string line = BuildLine(type, objects);
-            WriteConsole(type, line);
-            lock (_cacheLock)
+            if (destinations.HasFlag(LogDestination.Console))
+                WriteConsole(type, line);
+            if (destinations.HasFlag(LogDestination.Cache))
             {
-                LogPreProcess.Process.Cache.Add(new(type, line));
-                _totalLines++;
-                if (LogPreProcess.Process.Cache.Count > MaxCacheSize)
+                lock (_cacheLock)
                 {
-                    int remove = LogPreProcess.Process.Cache.Count - CacheTrimTo;
-                    if (remove > 0)
-                        LogPreProcess.Process.Cache.RemoveRange(0, remove);
+                    LogPreProcess.Process.Cache.Add(new(type, line));
+                    _totalLines++;
+                    if (LogPreProcess.Process.Cache.Count > MaxCacheSize)
+                    {
+                        int remove = LogPreProcess.Process.Cache.Count - CacheTrimTo;
+                        if (remove > 0)
+                            LogPreProcess.Process.Cache.RemoveRange(0, remove);
+                    }
                 }
             }
-            if (EnableFileLogging) TryWriteFile(type, line);
-            try { LineWritten?.Invoke(type, line); } catch { }
+            if (destinations.HasFlag(LogDestination.File) && EnableFileLogging)
+                TryWriteFile(type, line);
+            if (destinations.HasFlag(LogDestination.Event))
+            {
+                try { LineWritten?.Invoke(type, line); } catch { }
+            }
         }
 
         private static string BuildLine(LogType type, object?[] objects)

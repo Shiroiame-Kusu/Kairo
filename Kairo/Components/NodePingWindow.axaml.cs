@@ -8,13 +8,11 @@ using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
-using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
 using Newtonsoft.Json.Linq;
-using Kairo;
-using Kairo.Utils; // for Global
+using Kairo.Utils.Logger; // add
 
 namespace Kairo.Components;
 
@@ -78,12 +76,12 @@ public partial class NodePingWindow : Window
             using var http = new HttpClient();
             http.DefaultRequestHeaders.Add("Authorization", $"Bearer {Global.Config.AccessToken}");
             var url = $"{Global.APIList.GetAllNodes}{Global.Config.ID}";
-            var resp = await http.GetAsync(url);
+            var resp = await http.GetAsyncLogged(url);
             var content = await resp.Content.ReadAsStringAsync();
             var json = JObject.Parse(content);
             if ((int?)json["status"] != 200)
             {
-                SetStatusText($"获取节点失败: {json["message"]?.ToString()}");
+                SetStatusText($"获取节点失败: {json["message"]}");
                 return;
             }
             var list = json["data"]?["list"] as JArray;
@@ -203,22 +201,15 @@ public partial class NodePingWindow : Window
         private int _node;
         private string _host = string.Empty;
         private long? _latencyMs;
-        private string _status = "等待中";
+        private string _status = string.Empty;
 
-        public int Node { get => _node; set => SetField(ref _node, value); }
-        public string Host { get => _host; set => SetField(ref _host, value); }
-        public long? LatencyMs { get => _latencyMs; set { if (SetField(ref _latencyMs, value)) OnPropertyChanged(nameof(LatencyDisplay)); } }
-        public string Status { get => _status; set => SetField(ref _status, value); }
-        public string LatencyDisplay => LatencyMs.HasValue ? LatencyMs.Value.ToString() : "-";
+        public int Node { get => _node; set { _node = value; OnPropertyChanged(); } }
+        public string Host { get => _host; set { _host = value; OnPropertyChanged(); } }
+        public long? LatencyMs { get => _latencyMs; set { _latencyMs = value; OnPropertyChanged(); } }
+        public string Status { get => _status; set { _status = value; OnPropertyChanged(); } }
 
         public event PropertyChangedEventHandler? PropertyChanged;
-        protected void OnPropertyChanged([CallerMemberName] string? name = null) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
-        protected bool SetField<T>(ref T field, T value, [CallerMemberName] string? name = null)
-        {
-            if (Equals(field, value)) return false;
-            field = value;
-            OnPropertyChanged(name);
-            return true;
-        }
+        protected void OnPropertyChanged([CallerMemberName] string? name = null) =>
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
     }
 }

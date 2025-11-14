@@ -1,18 +1,17 @@
 using System;
 using System.IO;
-using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
 using Avalonia.Platform.Storage;
-using Avalonia.Threading;
 using Kairo.Utils;
 using Kairo.Utils.Configuration;
 using Avalonia; // added for Design.IsDesignMode
 using System.Net.Http;
 using System.Text.Json;
 using System.Diagnostics;
-using System.Linq;
+using Kairo.Utils.Logger; // add
+using System.Linq; // needed for TakeWhile
 
 namespace Kairo.Components.DashBoard
 {
@@ -239,8 +238,8 @@ namespace Kairo.Components.DashBoard
                 var desired = NormalizeBranch(desiredPref) ?? "Release";
                 bool canSwitchBranch = Global.Branch.Equals("Alpha", StringComparison.OrdinalIgnoreCase) || desired.Equals(Global.Branch, StringComparison.OrdinalIgnoreCase);
 
-                // Load releases and pick the first that matches desired branch
-                var resp = await http.GetAsync("https://api.github.com/repos/Shiroiame-Kusu/Kairo/releases");
+                var releasesUrl = "https://api.github.com/repos/Shiroiame-Kusu/Kairo/releases";
+                var resp = await http.GetAsyncLogged(releasesUrl);
                 resp.EnsureSuccessStatusCode();
                 await using var stream = await resp.Content.ReadAsStreamAsync();
                 using var doc = await JsonDocument.ParseAsync(stream);
@@ -301,7 +300,7 @@ namespace Kairo.Components.DashBoard
                     {
                         UseShellExecute = false,
                         WorkingDirectory = baseDir,
-                        ArgumentList = { updaterDll, Process.GetCurrentProcess().Id.ToString(), "Shiroiame-Kusu", "Kairo", remoteBranch }
+                        Arguments = $"\"{updaterDll}\" {Process.GetCurrentProcess().Id} Shiroiame-Kusu Kairo {remoteBranch}"
                     };
                 }
                 else
@@ -309,8 +308,17 @@ namespace Kairo.Components.DashBoard
                     (Access.DashBoard as DashBoard)?.OpenSnackbar("更新失败", "未找到 Updater 组件");
                     return;
                 }
-                Process.Start(psi);
-                Environment.Exit(0);
+
+                try
+                {
+                    Process.Start(psi);
+                    (Access.DashBoard as DashBoard)?.OpenSnackbar("正在更新", "程序即将退出并更新");
+                    Environment.Exit(0);
+                }
+                catch (Exception exLaunch)
+                {
+                    (Access.DashBoard as DashBoard)?.OpenSnackbar("启动更新失败", exLaunch.Message);
+                }
             }
             catch (Exception ex)
             {

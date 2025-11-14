@@ -17,9 +17,7 @@ using Newtonsoft.Json.Linq;
 using System.Security.Cryptography;
 using System.Formats.Tar;
 using System.Net;
-using System.Reflection;
 using Kairo.Utils.Logger;
-using Microsoft.Extensions.Logging;
 
 namespace Kairo.Components
 {
@@ -193,9 +191,9 @@ namespace Kairo.Components
             try
             {
                 using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(8));
-                var resp = await _http.GetAsync(url, cts.Token);
-                if (!resp.IsSuccessStatusCode) return null;
-                return JObject.Parse(await resp.Content.ReadAsStringAsync(cts.Token));
+                using var resp = await _http.GetAsyncLogged(url, cts.Token);
+                var text = await resp.Content.ReadAsStringAsync(cts.Token);
+                return JObject.Parse(text);
             }
             catch
             {
@@ -426,7 +424,7 @@ namespace Kairo.Components
                               Uri.EscapeDataString(releaseName) + "/" + Uri.EscapeDataString(checksumFileName);
             }
 
-            string checksumContent = await _http.GetStringAsync(checksumUrl, token);
+            string checksumContent = await _http.GetStringAsyncLogged(checksumUrl, token);
             // Parse first valid hash line
             string? expectedHash = null;
             bool sha256 = false;

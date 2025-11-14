@@ -92,7 +92,9 @@ namespace Updater
             http.DefaultRequestHeaders.UserAgent.ParseAdd("Kairo-Updater/1.0");
             // list releases to select by branch
             var url = $"https://api.github.com/repos/{owner}/{repo}/releases";
+            Console.WriteLine($"[HTTP] GET {url}");
             var resp = await http.GetAsync(url);
+            Console.WriteLine($"[HTTP] <- {(int)resp.StatusCode} {resp.ReasonPhrase}");
             resp.EnsureSuccessStatusCode();
             using var stream = await resp.Content.ReadAsStreamAsync();
             using var doc = await JsonDocument.ParseAsync(stream);
@@ -162,7 +164,9 @@ namespace Updater
         {
             using var http = new HttpClient();
             http.DefaultRequestHeaders.UserAgent.ParseAdd("Kairo-Updater/1.0");
+            Console.WriteLine($"[HTTP] GET {url}");
             using var resp = await http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
+            Console.WriteLine($"[HTTP] <- {(int)resp.StatusCode} {resp.ReasonPhrase}");
             resp.EnsureSuccessStatusCode();
             await using var fs = File.Create(dest);
             await using var stream = await resp.Content.ReadAsStreamAsync();

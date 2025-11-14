@@ -8,6 +8,7 @@ using Avalonia.Threading;
 using Newtonsoft.Json.Linq;
 using Kairo.Utils;
 using Avalonia; // for Design.IsDesignMode
+using Kairo.Utils.Logger; // add
 
 namespace Kairo.Components.DashBoard;
 
@@ -76,7 +77,7 @@ public partial class HomePage : UserControl
         try
         {
             using HttpClient hc = new();
-            var resp = await hc.GetAsync(Global.APIList.GetNotice);
+            var resp = await hc.GetAsyncLogged(Global.APIList.GetNotice);
             if (!resp.IsSuccessStatusCode)
             {
                 PostAnnouncement($"获取公告失败: HTTP {(int)resp.StatusCode}");
@@ -118,7 +119,8 @@ public partial class HomePage : UserControl
         {
             using HttpClient hc = new();
             hc.DefaultRequestHeaders.Add("Authorization", $"Bearer {Global.Config.AccessToken}");
-            var resp = await hc.GetAsync($"{Global.APIList.GetSign}?user_id={Global.Config.ID}");
+            var url = $"{Global.APIList.GetSign}?user_id={Global.Config.ID}";
+            var resp = await hc.GetAsyncLogged(url);
             var body = await resp.Content.ReadAsStringAsync();
             if (string.IsNullOrWhiteSpace(body)) return;
             JObject json; try { json = JObject.Parse(body); } catch { return; }
@@ -142,7 +144,7 @@ public partial class HomePage : UserControl
         {
             if (string.IsNullOrWhiteSpace(MainWindow.Avatar) || _avatarImage == null) return;
             using HttpClient hc = new();
-            byte[] bytes; try { bytes = await hc.GetByteArrayAsync(MainWindow.Avatar); } catch { return; }
+            var bytes = await hc.GetByteArrayAsyncLogged(MainWindow.Avatar);
             using var ms = new System.IO.MemoryStream(bytes);
             var bmp = new Avalonia.Media.Imaging.Bitmap(ms);
             Dispatcher.UIThread.Post(() =>
@@ -162,7 +164,7 @@ public partial class HomePage : UserControl
             _signButton.IsEnabled = false;
             using HttpClient hc = new();
             hc.DefaultRequestHeaders.Add("Authorization", $"Bearer {Global.Config.AccessToken}");
-            var resp = await hc.PostAsync($"{Global.APIList.GetSign}", new FormUrlEncodedContent(new[] { new KeyValuePair<string,string>("user_id", Global.Config.ID.ToString()) }));
+            var resp = await hc.PostAsyncLogged($"{Global.APIList.GetSign}", new FormUrlEncodedContent(new[] { new KeyValuePair<string,string>("user_id", Global.Config.ID.ToString()) }));
             var body = await resp.Content.ReadAsStringAsync();
             if (string.IsNullOrWhiteSpace(body)) { (Access.DashBoard as DashBoard)?.OpenSnackbar("签到失败", "空响应", FluentAvalonia.UI.Controls.InfoBarSeverity.Error); return; }
             JObject json; try { json = JObject.Parse(body); } catch { (Access.DashBoard as DashBoard)?.OpenSnackbar("签到失败", "响应格式错误", FluentAvalonia.UI.Controls.InfoBarSeverity.Error); return; }

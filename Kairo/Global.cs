@@ -17,7 +17,7 @@ namespace Kairo
         public const string Version = "3.2.0";
         public const string VersionName = "Sonetto";
         public const string Branch = "Beta";
-        public const int Revision = 2;
+        public const int Revision = 3;
         public static readonly BuildInfo BuildInfo = new();
         public const string Developer = "Shiroiame-Kusu & Daiyangcheng";
         public const string Copyright = "Copyright © Shiroiame-Kusu All Rights Reserved";
@@ -44,7 +44,7 @@ namespace Kairo
 
         // API v3 base
         public const string API = "https://api.locyanfrp.cn/v3";
-
+        public const string Dashboard = "https://preview.locyanfrp.cn";
         //public const string UpdateCheckerAPI = "http://localhost:5043/api";
         public const string UpdateCheckerAPI = "https://kairo.nyat.icu/api";
         public const string GithubMirror = "https://hub.locyan.cloud/";
@@ -53,7 +53,7 @@ namespace Kairo
         {
             // User & OAuth
             public const string GetUserInfo = $"{API}/user";
-            public const string GetTheFUCKINGRefreshToken = "https://preview.locyanfrp.cn/auth/oauth/authorize";
+            public const string GetTheFUCKINGRefreshToken = $"{Dashboard}/auth/oauth/authorize";
             public const string GetAccessToken = $"{API}/auth/oauth/access-token";
 
             public const string GetFrpToken = $"{API}/user/frp/token";
