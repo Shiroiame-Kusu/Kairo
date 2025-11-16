@@ -17,7 +17,7 @@ namespace Kairo
         public const string Version = "3.2.0";
         public const string VersionName = "Sonetto";
         public const string Branch = "Beta";
-        public const int Revision = 3;
+        public const int Revision = 4;
         public static readonly BuildInfo BuildInfo = new();
         public const string Developer = "Shiroiame-Kusu & Daiyangcheng";
         public const string Copyright = "Copyright © Shiroiame-Kusu All Rights Reserved";
@@ -68,6 +68,8 @@ namespace Kairo
             public const string DeleteProxy = $"{API}/tunnel?user_id="; // append user_id and use &tunnel_id=
             public const string Tunnel = $"{API}/tunnel"; // base for PUT(create)/PATCH(update)
             public const string GetAllNodes = $"{API}/nodes?user_id=";
+            // Random port for a node
+            public const string GetRandomPort = $"{API}/node/port"; // GET with ?user_id=&node_id=
         }
 
         public static int OAuthPort = 10000;

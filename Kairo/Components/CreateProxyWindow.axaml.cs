@@ -56,12 +56,12 @@ public partial class CreateProxyWindow : Window
         _pingBtn = this.FindControl<Button>("PingButton");
 
         if (_type != null)
-            _type.SelectionChanged += (_, __) => UpdateVisibilityByType();
+            _type.SelectionChanged += (_, _) => UpdateVisibilityByType();
 
         if (_pingBtn != null)
             _pingBtn.IsEnabled = false; // enable after nodes loaded
 
-        Opened += async (_, __) =>
+        Opened += async (_, _) =>
         {
             UpdateVisibilityByType();
             await LoadNodesAsync();
@@ -97,8 +97,18 @@ public partial class CreateProxyWindow : Window
             if (Design.IsDesignMode)
             {
                 _nodes.Clear();
-                _nodes.Add(new NodeItem(1, "node1.locyanfrp.cn"));
-                _nodes.Add(new NodeItem(2, "node2.locyanfrp.cn"));
+                _nodes.Add(new NodeItem(1, "node1.locyanfrp.cn")
+                {
+                    DisplayName = "示例节点 1",
+                    PortRangeDisplay = "10000-10100",
+                    DescriptionDisplay = "本地演示节点",
+                });
+                _nodes.Add(new NodeItem(2, "node2.locyanfrp.cn")
+                {
+                    DisplayName = "示例节点 2",
+                    PortRangeDisplay = "20000-20100",
+                    DescriptionDisplay = "备用演示节点",
+                });
                 ApplyNodesToCombo();
                 return;
             }
@@ -128,8 +138,35 @@ public partial class CreateProxyWindow : Window
                     string ip = item["ip"]?.ToString() ?? string.Empty;
                     string host = item["host"]?.ToString() ?? string.Empty; // v3 field is host
                     string label = !string.IsNullOrWhiteSpace(ip) ? ip : host;
+                    var additional = item["additional"] as JObject;
+                    string name = item["name"]?.ToString() ?? label;
+                    string? description = additional?.Value<string>("description");
+                    if (string.IsNullOrWhiteSpace(description))
+                        description = item["description"]?.ToString();
+                    var portRangeArray = item["port_range"] as JArray;
+                    var portRanges = new List<string>();
+                    if (portRangeArray != null)
+                    {
+                        foreach (var token in portRangeArray)
+                        {
+                            if (token is { } tk)
+                            {
+                                var range = tk.ToString();
+                                if (!string.IsNullOrWhiteSpace(range))
+                                    portRanges.Add(range);
+                            }
+                        }
+                    }
+                    var portRangeDisplay = portRanges.Count > 0
+                        ? string.Join(", ", portRanges)
+                        : string.Empty;
                     if (id > 0 && !string.IsNullOrWhiteSpace(label))
-                        _nodes.Add(new NodeItem(id, label));
+                        _nodes.Add(new NodeItem(id, label)
+                        {
+                            DisplayName = string.IsNullOrWhiteSpace(name) ? label : name,
+                            PortRangeDisplay = string.IsNullOrWhiteSpace(portRangeDisplay) ? "—" : portRangeDisplay,
+                            DescriptionDisplay = string.IsNullOrWhiteSpace(description) ? "暂无" : description!,
+                        });
                 }
             }
             ApplyNodesToCombo();
@@ -182,7 +219,20 @@ public partial class CreateProxyWindow : Window
             int remotePort = 0;
             if (needRemote)
             {
-                if (!int.TryParse(remotePortStr, out remotePort) || remotePort <= 0 || remotePort > 65535)
+                // If remote port box is empty, request a random port from API
+                if (string.IsNullOrWhiteSpace(remotePortStr))
+                {
+                    SetStatus("正在请求随机远端端口…");
+                    var port = await TryGetRandomPortAsync(nodeItem.Id);
+                    if (port <= 0)
+                    {
+                        SetStatus("获取随机端口失败，请手动输入远端端口");
+                        return;
+                    }
+                    remotePort = port;
+                    if (_remotePort != null) _remotePort.Text = port.ToString();
+                }
+                else if (!int.TryParse(remotePortStr, out remotePort) || remotePort <= 0 || remotePort > 65535)
                 { SetStatus("远端端口非法"); return; }
             }
             if (needSecret && string.IsNullOrWhiteSpace(secret)) { SetStatus("请输入访问密钥"); return; }
@@ -199,8 +249,8 @@ public partial class CreateProxyWindow : Window
             var form = new List<KeyValuePair<string, string>>
             {
                 new("user_id", Global.Config.ID.ToString()),
-                new("name", name!),
-                new("local_ip", localIp!),
+                new("name", name),
+                new("local_ip", localIp),
                 new("type", t.ToUpperInvariant()),
                 new("local_port", localPort.ToString()),
                 new("node_id", nodeItem.Id.ToString()),
@@ -222,7 +272,7 @@ public partial class CreateProxyWindow : Window
             if ((int?)json["status"] == 200)
             {
                 int proxyId = json["data"]?["tunnel_id"]?.Value<int>() ?? 0;
-                string proxyName = name!;
+                string proxyName = name;
                 Created?.Invoke(proxyId, proxyName);
                 try { Close(); } catch { }
             }
@@ -239,6 +289,29 @@ public partial class CreateProxyWindow : Window
         finally
         {
             if (_createBtn != null) _createBtn.IsEnabled = true;
+        }
+    }
+
+    private async Task<int> TryGetRandomPortAsync(int nodeId)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(Global.Config.AccessToken) || Global.Config.ID == 0)
+                return 0;
+            using var http = new HttpClient();
+            http.DefaultRequestHeaders.Add("Authorization", $"Bearer {Global.Config.AccessToken}");
+            var url = $"{Global.APIList.GetRandomPort}?user_id={Global.Config.ID}&node_id={nodeId}";
+            var resp = await http.GetAsyncLogged(url);
+            var content = await resp.Content.ReadAsStringAsync();
+            var json = JObject.Parse(content);
+            if ((int?)json["status"] != 200)
+                return 0;
+            var port = json["data"]?["port"]?.Value<int>() ?? 0;
+            return port;
+        }
+        catch
+        {
+            return 0;
         }
     }
 
@@ -265,6 +338,9 @@ public partial class CreateProxyWindow : Window
 
     public record NodeItem(int Id, string Label)
     {
+        public string DisplayName { get; init; } = string.Empty;
+        public string PortRangeDisplay { get; init; } = string.Empty;
+        public string DescriptionDisplay { get; init; } = string.Empty;
         public override string ToString() => $"[{Id}] {Label}";
     }
 }

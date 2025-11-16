@@ -1,8 +1,9 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:components="clr-namespace:Kairo.Components"
         x:Class="Kairo.Components.CreateProxyWindow"
         x:CompileBindings="False"
-        Title="创建隧道" Width="520" Height="640" WindowStartupLocation="CenterOwner">
+        Title="创建隧道" Width="520" Height="750" WindowStartupLocation="CenterOwner">
   <Grid RowDefinitions="Auto,* ,Auto" Margin="16" RowSpacing="12">
     <TextBlock Text="填写信息以创建新隧道"/>
     <ScrollViewer Grid.Row="1">
@@ -36,6 +37,26 @@
         <StackPanel Orientation="Horizontal" Spacing="8">
           <ComboBox x:Name="NodeBox" MinWidth="260"/>
           <Button x:Name="PingButton" Content="测试延迟" Click="PingBtn_OnClick"/>
+        </StackPanel>
+
+        <StackPanel Spacing="4" DataContext="{Binding SelectedItem, ElementName=NodeBox}">
+          <TextBlock Text="节点信息"/>
+          <Border Padding="10" CornerRadius="6" Background="#0F000000">
+            <StackPanel Spacing="4" x:DataType="components:CreateProxyWindow+NodeItem">
+              <TextBlock TextWrapping="Wrap">
+                <Run Text="名称："/>
+                <Run Text="{Binding DisplayName, TargetNullValue=—}"/>
+              </TextBlock>
+              <TextBlock TextWrapping="Wrap">
+                <Run Text="端口范围："/>
+                <Run Text="{Binding PortRangeDisplay, TargetNullValue=—}"/>
+              </TextBlock>
+              <TextBlock TextWrapping="Wrap">
+                <Run Text="描述："/>
+                <Run Text="{Binding DescriptionDisplay, TargetNullValue=暂无}"/>
+              </TextBlock>
+            </StackPanel>
+          </Border>
         </StackPanel>
 
         <StackPanel Orientation="Horizontal" Spacing="20">

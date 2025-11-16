@@ -14,7 +14,8 @@ using System.Numerics;
 using Newtonsoft.Json;
 using FluentAvalonia.UI.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
-using Avalonia.Threading; // added for DispatcherTimer
+using Avalonia.Threading;
+using ExtendedNumerics; // added for DispatcherTimer
 using Kairo.Components.DashBoard; // added for new namespace
 using Kairo.Utils.Logger; // added for HTTP logging
 
@@ -29,7 +30,7 @@ public partial class MainWindow : Window
     public static string? Avatar { get; private set; }
     public static int Inbound { get; private set; }
     public static int Outbound { get; private set; }
-    public static BigInteger Traffic { get; private set; }
+    public static BigDecimal Traffic { get; private set; }
     public static bool IsLoggedIn => _isLoggedIn;
 
     private TrayIcon? _trayIcon;
@@ -143,6 +144,7 @@ public partial class MainWindow : Window
                 ToggleLoggingIn(false);
                 return false;
             }
+
             var frpUrl = $"{Global.APIList.GetFrpToken}?user_id={Global.Config.ID}";
             var frpResp = await http.GetAsyncLogged(frpUrl);
             var frpBody = await frpResp.Content.ReadAsStringAsync();
@@ -198,8 +200,8 @@ public partial class MainWindow : Window
         foreach (byte b in MD5.HashData(Encoding.UTF8.GetBytes(_userInfo.Email.ToLower())))
             sb.Append(b.ToString("x2"));
         Avatar = $"https://cravatar.cn/avatar/{sb}";
-        Inbound = _userInfo.Inbound;
-        Outbound = _userInfo.Outbound;
+        Inbound = _userInfo.Limit.Inbound;
+        Outbound = _userInfo.Limit.Inbound;
         Traffic = _userInfo.Traffic;
     }
 
@@ -388,12 +390,20 @@ public partial class MainWindow : Window
         [JsonProperty("inbound")] public int Inbound { get; set; }
         [JsonProperty("outbound")] public int Outbound { get; set; }
         [JsonProperty("email")] public string Email { get; set; } = string.Empty;
-        [JsonProperty("traffic")] public BigInteger Traffic { get; set; }
+        [JsonProperty("traffic")] public BigDecimal Traffic { get; set; }
         [JsonProperty("avatar")] public string? Avatar { get; set; }
         [JsonProperty("username")] public string Username { get; set; } = string.Empty;
         [JsonProperty("status")] public int Status { get; set; }
         [JsonProperty("frp_token")] public string? FrpToken { get; set; }
+        [JsonProperty("limit")] public LimitInfo? Limit { get; set; }
         public string? Token { get; set; }
+        
+        public class LimitInfo
+        {
+            [JsonProperty("inbound")] public int Inbound { get; set; }
+            [JsonProperty("outbound")] public int Outbound { get; set; }
+            [JsonProperty("tunnel")] public int? Tunnel { get; set; }
+        }
     }
 
     public void PrepareForLogin()

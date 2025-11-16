@@ -24,7 +24,7 @@ public partial class ProxyListPage : UserControl
     private readonly Dictionary<int, ProxyCard> _cardByProxyId = new();
     private WrapPanel? _listPanel; // cached reference
     private int? _selectedProxyId;
-
+    private Image? _avatarImage;
     public ProxyListPage()
     {
         InitializeComponent();
@@ -32,8 +32,12 @@ public partial class ProxyListPage : UserControl
         Loaded += OnLoaded;
         Unloaded += (_, __) => { FrpcProcessManager.ProxyExited -= OnProxyExited; CloseAllTransientUI(); };
     }
-    private void InitializeComponent() => AvaloniaXamlLoader.Load(this);
-
+    private void InitializeComponent()
+    {
+        AvaloniaXamlLoader.Load(this);
+        _avatarImage = this.FindControl<Image>("AvatarImage");
+    }
+    
     private async void OnLoaded(object? sender, RoutedEventArgs e)
     {
         // Always (re)subscribe when page becomes visible again
@@ -63,7 +67,10 @@ public partial class ProxyListPage : UserControl
                 _listPanel.Children.Add(BuildCard(placeholder, 0));
                 return;
             }
+
+            
             await LoadProxies();
+            await RefreshAvatar();
         }
         else
         {
@@ -71,7 +78,19 @@ public partial class ProxyListPage : UserControl
             Dispatcher.UIThread.Post(UpdateAllCardVisuals);
         }
     }
-
+    
+    private async Task RefreshAvatar()
+    {
+        try
+        {
+            Dispatcher.UIThread.Post(() =>
+            {
+                if (_avatarImage != null && DashBoard.Avatar != null)
+                    _avatarImage.Source = DashBoard.Avatar;
+            });
+        }
+        catch { }
+    }
     private void UpdateAllCardVisuals()
     {
         foreach (var kv in _cardByProxyId)

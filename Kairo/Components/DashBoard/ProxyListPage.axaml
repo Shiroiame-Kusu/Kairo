@@ -43,8 +43,8 @@
   </UserControl.Styles>
   <Grid RowDefinitions="60,*,70" Margin="12">
     <DockPanel Height="60">
-      <Border Height="40" Width="40" CornerRadius="20" BorderBrush="LightBlue" BorderThickness="1" Margin="0,10,10,10">
-        <Image Source="avares://Kairo/Assets/kairo.ico" Stretch="UniformToFill"/>
+      <Border Height="40" Width="40" CornerRadius="20" BorderBrush="LightBlue" BorderThickness="1" Margin="0,10,10,10" ClipToBounds="True">
+        <Image x:Name="AvatarImage" Source="avares://Kairo/Assets/kairo.ico" Stretch="UniformToFill"/>
       </Border>
       <TextBlock VerticalAlignment="Center" FontSize="24" Text="隧道列表"/>
     </DockPanel>

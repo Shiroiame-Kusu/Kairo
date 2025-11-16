@@ -53,7 +53,21 @@ public partial class HomePage : UserControl
                 if (_bandwidthText != null)
                     _bandwidthText.Text = $"上行/下行带宽: {MainWindow.Inbound * 8 / 1024}/{MainWindow.Outbound * 8 / 1024}Mbps";
                 if (_trafficText != null)
-                    _trafficText.Text = $"剩余流量: {MainWindow.Traffic / 1024}GB";
+                {
+                    String temp = (MainWindow.Traffic / 1024).ToString();
+                    String temp2 = "";
+                    for (int i = 0; i < temp.Length; i++)
+                    {
+                        temp2 += temp[i];
+                        if (temp[i] == '.')
+                        {
+                            temp2 += temp[i + 1];
+                            temp2 += temp[i + 2];
+                            break;
+                        }
+                    }
+                    _trafficText.Text = $"剩余流量: {temp2}GB";
+                }
                 _ = RefreshAnnouncement();
                 _ = CheckSigned();
                 _ = RefreshAvatar();
@@ -146,11 +160,11 @@ public partial class HomePage : UserControl
             using HttpClient hc = new();
             var bytes = await hc.GetByteArrayAsyncLogged(MainWindow.Avatar);
             using var ms = new System.IO.MemoryStream(bytes);
-            var bmp = new Avalonia.Media.Imaging.Bitmap(ms);
+            DashBoard.Avatar = new Avalonia.Media.Imaging.Bitmap(ms);
             Dispatcher.UIThread.Post(() =>
             {
                 if (_avatarImage != null)
-                    _avatarImage.Source = bmp;
+                    _avatarImage.Source = DashBoard.Avatar;
             });
         }
         catch { }

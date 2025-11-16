@@ -4,6 +4,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
+using Avalonia.Media.Imaging;
 using FluentAvalonia.UI.Controls;
 using Kairo.Utils;
 using Avalonia.Threading; // added for DispatcherTimer
@@ -12,6 +13,7 @@ namespace Kairo.Components.DashBoard
 {
     public partial class DashBoard : Window
     {
+        public static Bitmap? Avatar = null;
         private HomePage? _homePage;
         private ProxyListPage? _proxyListPage;
         private StatusPage? _statusPage;
