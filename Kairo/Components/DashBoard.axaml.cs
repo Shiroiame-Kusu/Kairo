@@ -22,6 +22,7 @@ namespace Kairo.Components.DashBoard
         private bool _frpcChecked;
 
         private DispatcherTimer? _snackbarTimer; // auto-dismiss timer
+        private InfoBar? _snackbar;
 
         public DashBoard()
         {
@@ -30,6 +31,7 @@ namespace Kairo.Components.DashBoard
             NavView.SelectedItem = HomeNavItem;
             this.Opened += OnDashBoardOpened;
             this.Deactivated += OnDashBoardDeactivated;
+            _snackbar = this.FindControl<InfoBar>("Snackbar");
         }
 
         private void OnDashBoardOpened(object? sender, EventArgs e)
@@ -100,11 +102,11 @@ namespace Kairo.Components.DashBoard
 
         public void OpenSnackbar(string title, string? message, InfoBarSeverity severity = InfoBarSeverity.Informational)
         {
-            if (Snackbar == null) return;
-            Snackbar.Title = title;
-            Snackbar.Message = message ?? string.Empty;
-            Snackbar.Severity = severity;
-            Snackbar.IsOpen = true;
+            if (_snackbar == null) return;
+            _snackbar.Title = title;
+            _snackbar.Message = message ?? string.Empty;
+            _snackbar.Severity = severity;
+            _snackbar.IsOpen = true;
 
             // Setup / restart auto-dismiss timer (5s)
             _snackbarTimer ??= new DispatcherTimer { Interval = TimeSpan.FromSeconds(5) };
@@ -117,8 +119,8 @@ namespace Kairo.Components.DashBoard
         private void SnackbarTimer_Tick(object? sender, EventArgs e)
         {
             _snackbarTimer?.Stop();
-            if (Snackbar != null)
-                Snackbar.IsOpen = false;
+            if (_snackbar != null)
+                _snackbar.IsOpen = false;
         }
 
         public void DashBoard_OnClosing(object? sender, WindowClosingEventArgs e)

@@ -1,8 +1,6 @@
 using Newtonsoft.Json;
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -36,7 +34,7 @@ namespace Kairo.Utils.Configuration
             {
                 try
                 {
-                    envDir = Path.GetFullPath(envDir!);
+                    envDir = Path.GetFullPath(envDir);
                 }
                 catch
                 {
@@ -208,6 +206,7 @@ namespace Kairo.Utils.Configuration
                 lock (_syncRoot)
                 {
                     Global.Config = cfg;
+                    Global.RefreshRuntimeFlags();
                     if (save) SaveInternal(force: true);
                 }
                 return true;
@@ -251,6 +250,7 @@ namespace Kairo.Utils.Configuration
                         else
                         {
                             Global.Config = cfg;
+                            Global.RefreshRuntimeFlags();
                             _oldSettings = JsonConvert.SerializeObject(Global.Config);
                         }
                     }
@@ -259,12 +259,14 @@ namespace Kairo.Utils.Configuration
                         BackupCorruptFile();
                         AppLogger.Output(LogType.Warn, "Config file corrupt. Replacing with defaults:", jex);
                         Global.Config = new();
+                        Global.RefreshRuntimeFlags();
                         SaveInternal(force: true);
                     }
                 }
                 else
                 {
                     Global.Config ??= new();
+                    Global.RefreshRuntimeFlags();
                     SaveInternal(force: true);
                 }
             }
@@ -354,8 +356,6 @@ namespace Kairo.Utils.Configuration
 
         private static bool Validate(Config cfg, out string? error)
         {
-            // Placeholder for future schema/version validation.
-            // Example checks (add as needed):
             if (cfg.OAuthPort <= 0 || cfg.OAuthPort > 65535)
             {
                 error = "OAuthPort out of range";

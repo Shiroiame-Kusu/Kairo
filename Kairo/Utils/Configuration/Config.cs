@@ -17,7 +17,7 @@ namespace Kairo.Utils.Configuration
         //public string Password = "";
         public string FrpToken = "";
         public string FrpcPath = "";
-        public bool DebugMode = true;
+        public bool DebugMode = false;
         public bool AutoStartUp = false;
         public int AppliedTheme = 0;
         public bool UsingDownloadMirror = true;

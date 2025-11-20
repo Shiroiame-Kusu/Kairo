@@ -39,6 +39,7 @@ namespace Kairo.Utils.Logger
 
         private const LogDestination DefaultDestinations = LogDestination.All;
         private const LogDestination NetworkDestinations = LogDestination.Console | LogDestination.File;
+        private static bool ShouldEmitToConsole(LogType type) => Global.DebugMode || type is LogType.Warn or LogType.Error;
 
         // New: expose a snapshot of cached lines for late subscribers / page reloads
         public static System.Collections.Generic.List<(LogType, string)> GetCacheSnapshot()
@@ -63,14 +64,14 @@ namespace Kairo.Utils.Logger
 
         public static void Output(LogType type, LogDestination destinations, params object?[] objects) => OutputInternal(type, destinations, objects);
 
-        public static void OutputNetwork(LogType type, params object?[] objects) => OutputInternal(type, NetworkDestinations, objects);
+        public static void OutputNetwork(LogType type, params object?[] objects) => OutputInternal(type, GetNetworkDestinations(type), objects);
 
         private static void OutputInternal(LogType type, LogDestination destinations, object?[] objects)
         {
             if (destinations == LogDestination.None)
                 return;
             string line = BuildLine(type, objects);
-            if (destinations.HasFlag(LogDestination.Console))
+            if (destinations.HasFlag(LogDestination.Console) && ShouldEmitToConsole(type))
                 WriteConsole(type, line);
             if (destinations.HasFlag(LogDestination.Cache))
             {
@@ -262,6 +263,13 @@ namespace Kairo.Utils.Logger
         {
             if (control.GetVisualRoot() is Window w)
                 w.Close();
+        }
+
+        private static LogDestination GetNetworkDestinations(LogType type)
+        {
+            if (type == LogType.DetailDebug && !Global.DebugMode)
+                return LogDestination.File | LogDestination.Cache;
+            return NetworkDestinations;
         }
     }
 }

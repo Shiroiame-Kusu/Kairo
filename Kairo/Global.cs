@@ -1,12 +1,8 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Security;
-using System.Text;
-using System.Threading.Tasks;
 using Kairo.Components;
 using Kairo.Utils.Configuration;
+using Kairo.Utils;
 
 namespace Kairo
 {
@@ -17,12 +13,23 @@ namespace Kairo
         public const string Version = "3.2.0";
         public const string VersionName = "Sonetto";
         public const string Branch = "Beta";
-        public const int Revision = 4;
+        public const int Revision = 5;
         public static readonly BuildInfo BuildInfo = new();
         public const string Developer = "Shiroiame-Kusu & Daiyangcheng";
         public const string Copyright = "Copyright © Shiroiame-Kusu All Rights Reserved";
         public static Config Config = new();
         public static bool isDarkThemeEnabled;
+        public static bool DebugMode { get; private set; }
+        public static bool DebugModeEnabled => DebugMode;
+
+        public static void SetDebugMode(bool enabled, bool persist)
+        {
+            DebugMode = enabled;
+            Config.DebugMode = enabled;
+            DebugConsoleManager.Sync(enabled);
+            if (persist)
+                ConfigManager.Save();
+        }
 
         public static List<string> Tips = new()
         {
@@ -74,6 +81,11 @@ namespace Kairo
 
         public static int OAuthPort = 10000;
         public const int APPID = 1;
-        public static bool DebugMode = false;
+
+        public static void RefreshRuntimeFlags()
+        {
+            DebugMode = Config?.DebugMode ?? false;
+            DebugConsoleManager.Sync(DebugMode);
+        }
     }
 }

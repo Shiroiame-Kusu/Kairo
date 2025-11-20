@@ -106,6 +106,8 @@ namespace Kairo.Components
                                   Uri.EscapeDataString(releaseName) + "/" + Uri.EscapeDataString(assetName);
                 }
 
+                Logger.Output(LogType.Info, "[FRPC] Using download URL:", downloadUrl);
+
                 if (_progressRef != null) _progressRef.IsIndeterminate = false;
                 Exception? lastError = null;
                 for (int attempt = 1; attempt <= MaxAttempts; attempt++)

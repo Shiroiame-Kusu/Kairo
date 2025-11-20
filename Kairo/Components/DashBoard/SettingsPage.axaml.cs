@@ -22,6 +22,7 @@ namespace Kairo.Components.DashBoard
         private ToggleSwitch? _followSystemSwitch;
         private ToggleSwitch? _darkThemeSwitch;
         private ToggleSwitch? _useMirrorSwitch;
+        private ToggleSwitch? _debugModeSwitch;
         private TextBlock? _buildInfoText;
         private TextBlock? _versionText;
         private TextBlock? _developerText;
@@ -41,6 +42,7 @@ namespace Kairo.Components.DashBoard
             _followSystemSwitch = this.FindControl<ToggleSwitch>("FollowSystemSwitch");
             _darkThemeSwitch = this.FindControl<ToggleSwitch>("DarkThemeSwitch");
             _useMirrorSwitch = this.FindControl<ToggleSwitch>("UseMirrorSwitch");
+            _debugModeSwitch = this.FindControl<ToggleSwitch>("DebugModeSwitch");
             _buildInfoText = this.FindControl<TextBlock>("BuildInfoText");
             _versionText = this.FindControl<TextBlock>("VersionText");
             _developerText = this.FindControl<TextBlock>("DeveloperText");
@@ -58,6 +60,7 @@ namespace Kairo.Components.DashBoard
                 // if (AutoStartSwitch != null) AutoStartSwitch.IsChecked = false;
                 if (_followSystemSwitch != null) _followSystemSwitch.IsChecked = true;
                 if (_darkThemeSwitch != null) { _darkThemeSwitch.IsChecked = false; _darkThemeSwitch.IsEnabled = false; }
+                if (_debugModeSwitch != null) _debugModeSwitch.IsChecked = false;
                 if (_buildInfoText != null) _buildInfoText.Text = "(设计时) BuildInfo 占位";
                 if (_versionText != null) _versionText.Text = "版本: 0.0.0 Design";
                 if (_developerText != null) _developerText.Text = "开发者: ---";
@@ -74,6 +77,8 @@ namespace Kairo.Components.DashBoard
                 _darkThemeSwitch.IsChecked = Global.Config.DarkTheme;
                 _darkThemeSwitch.IsEnabled = !Global.Config.FollowSystemTheme;
             }
+            if (_debugModeSwitch != null)
+                _debugModeSwitch.IsChecked = Global.Config.DebugMode;
             if (_buildInfoText != null) _buildInfoText.Text = Global.BuildInfo?.ToString() ?? string.Empty;
             if (_versionText != null) _versionText.Text = $"版本: {Global.Version} {Global.VersionName}";
             if (_developerText != null) _developerText.Text = $"开发者: {Global.Developer}";
@@ -166,6 +171,14 @@ namespace Kairo.Components.DashBoard
             Global.Config.DarkTheme = toggle?.IsChecked == true;
             ThemeManager.Apply(false, Global.Config.DarkTheme);
             ConfigManager.Save();
+        }
+
+        private void DebugModeSwitch_OnChanged(object? sender, RoutedEventArgs e)
+        {
+            var toggle = sender as ToggleSwitch;
+            bool enabled = toggle?.IsChecked == true;
+            Global.SetDebugMode(enabled, persist: true);
+            (Access.DashBoard as DashBoard)?.OpenSnackbar("调试模式", enabled ? "已开启" : "已关闭");
         }
 
         private void AutoStartSwitch_OnChanged(object? sender, RoutedEventArgs e)
