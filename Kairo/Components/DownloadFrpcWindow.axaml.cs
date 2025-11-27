@@ -218,7 +218,8 @@ namespace Kairo.Components
                 _ => "amd64"
             };
             string platform = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "windows" :
-                RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "linux" : "windows";
+                RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "linux" :
+                RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? "darwin" : "windows";
             string basePattern = $"frp_LoCyanFrp-{version}_{platform}_{arch}";
             var candidates = assets.Where(a =>
                 (a["name"]?.ToString() ?? "").StartsWith(basePattern, StringComparison.OrdinalIgnoreCase)).ToList();
@@ -241,7 +242,7 @@ namespace Kairo.Components
             {
                 pick = candidates.FirstOrDefault(a => (a["name"]?.ToString() ?? "").EndsWith(".zip"));
             }
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
                 pick = candidates.FirstOrDefault(a => (a["name"]?.ToString() ?? "").EndsWith(".tar.gz")) ??
                        candidates.FirstOrDefault(a => (a["name"]?.ToString() ?? "").EndsWith(".zip"));
