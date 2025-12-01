@@ -109,7 +109,7 @@ jobs:
             archive: tar.gz
             display: Linux x64
           - rid: linux-arm64
-            os: ubuntu-22.04-arm64
+            os: ubuntu-latest
             archive: tar.gz
             display: Linux arm64
           - rid: osx-x64
@@ -129,6 +129,11 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt install -y clang llvm binutils-aarch64-linux-gnu gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
       - name: Cache NuGet
         uses: actions/cache@v4
         with:
