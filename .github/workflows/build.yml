@@ -71,7 +71,6 @@ jobs:
         run: |
           chmod +x Kairo/Components/BuildInfo.sh || true
           Kairo/Components/BuildInfo.sh || echo "BuildInfo script skipped"
-c
       - name: Restore
         run: dotnet restore "${{ env.PROJECT_PATH }}"
 
