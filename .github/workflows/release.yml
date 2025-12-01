@@ -100,6 +100,10 @@ jobs:
             os: windows-latest
             archive: zip
             display: Windows x64
+          - rid: win-arm64
+            os: windows-11-arm
+            archive: zip
+            display: Windows arm64
           - rid: linux-x64
             os: ubuntu-latest
             archive: tar.gz
