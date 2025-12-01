@@ -7,14 +7,14 @@
         <ApplicationManifest>app.manifest</ApplicationManifest>
         <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
         <GenerateAssemblyInfo>false</GenerateAssemblyInfo> <!-- custom assembly info -->
-        <PublishAot>true</PublishAot>
     </PropertyGroup>
 
     <PropertyGroup>
+        <PublishAot>true</PublishAot>
+        <PublishTrimmed>true</PublishTrimmed>
+        <TrimMode>partial</TrimMode>
         <PublishSingleFile>true</PublishSingleFile>
         <SelfContained>true</SelfContained>
-        <RuntimeIdentifiers>linux-x64</RuntimeIdentifiers>
-        <StripSymbols>true</StripSymbols>
     </PropertyGroup>
 
     <!-- Ensure full globalization support (FluentAvalonia requires real cultures like en-US) -->

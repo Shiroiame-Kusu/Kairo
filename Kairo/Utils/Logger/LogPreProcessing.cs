@@ -5,7 +5,6 @@ using System.Text.RegularExpressions;
 using Avalonia.Controls; // for TextBlock
 using Avalonia.Controls.Documents; // for Run, LineBreak
 using Avalonia.Media;    // for Brushes
-using Kairo; // for Global
 
 namespace Kairo.Utils.Logger
 {
@@ -34,18 +33,18 @@ namespace Kairo.Utils.Logger
         private record Span(int Start, int Length, IBrush Brush);
 
         // Pre-created brushes (light & dark aware where needed)
-        private static IBrush BrushTimestamp => Global.isDarkThemeEnabled ? new SolidColorBrush(global::Avalonia.Media.Color.FromRgb(140, 140, 148)) : new SolidColorBrush(global::Avalonia.Media.Color.FromRgb(96, 96, 96));
-        private static IBrush BrushIp => new SolidColorBrush(global::Avalonia.Media.Color.FromRgb(79, 193, 255));        // light blue
-        private static IBrush BrushFile => new SolidColorBrush(global::Avalonia.Media.Color.FromRgb(116, 198, 157));     // green
-        private static IBrush BrushDuration => new SolidColorBrush(global::Avalonia.Media.Color.FromRgb(156, 204, 101)); // lime-ish
-        private static IBrush BrushTrue => new SolidColorBrush(global::Avalonia.Media.Color.FromRgb(139, 195, 74));
-        private static IBrush BrushFalse => new SolidColorBrush(global::Avalonia.Media.Color.FromRgb(239, 83, 80));
-        private static IBrush BrushWarn => new SolidColorBrush(global::Avalonia.Media.Color.FromRgb(255, 193, 7));
-        private static IBrush BrushError => new SolidColorBrush(global::Avalonia.Media.Color.FromRgb(244, 67, 54));
-        private static IBrush BrushInfo => new SolidColorBrush(global::Avalonia.Media.Color.FromRgb(3, 169, 244));
-        private static IBrush BrushDebug => new SolidColorBrush(global::Avalonia.Media.Color.FromRgb(171, 71, 188));
-        private static IBrush BrushSuccess => new SolidColorBrush(global::Avalonia.Media.Color.FromRgb(102, 187, 106));
-        private static IBrush BrushNumber => new SolidColorBrush(global::Avalonia.Media.Color.FromRgb(176, 190, 197));
+        private static IBrush BrushTimestamp => Global.isDarkThemeEnabled ? new SolidColorBrush(Color.FromRgb(140, 140, 148)) : new SolidColorBrush(Color.FromRgb(96, 96, 96));
+        private static IBrush BrushIp => new SolidColorBrush(Color.FromRgb(79, 193, 255));        // light blue
+        private static IBrush BrushFile => new SolidColorBrush(Color.FromRgb(116, 198, 157));     // green
+        private static IBrush BrushDuration => new SolidColorBrush(Color.FromRgb(156, 204, 101)); // lime-ish
+        private static IBrush BrushTrue => new SolidColorBrush(Color.FromRgb(139, 195, 74));
+        private static IBrush BrushFalse => new SolidColorBrush(Color.FromRgb(239, 83, 80));
+        private static IBrush BrushWarn => new SolidColorBrush(Color.FromRgb(255, 193, 7));
+        private static IBrush BrushError => new SolidColorBrush(Color.FromRgb(244, 67, 54));
+        private static IBrush BrushInfo => new SolidColorBrush(Color.FromRgb(3, 169, 244));
+        private static IBrush BrushDebug => new SolidColorBrush(Color.FromRgb(171, 71, 188));
+        private static IBrush BrushSuccess => new SolidColorBrush(Color.FromRgb(102, 187, 106));
+        private static IBrush BrushNumber => new SolidColorBrush(Color.FromRgb(176, 190, 197));
         private static IBrush BrushDefault => Global.isDarkThemeEnabled ? Brushes.White : Brushes.Black;
 
         private static readonly List<TokenRule> Rules = new()
@@ -100,9 +99,13 @@ namespace Kairo.Utils.Logger
                 TextWrapping = TextWrapping.Wrap
             };
 
+            var inlines = tb.Inlines;
+            if (inlines == null)
+                return tb;
+
             if (string.IsNullOrEmpty(line))
             {
-                tb.Inlines.Add(new Run());
+                inlines.Add(new Run());
                 return tb;
             }
 
@@ -110,18 +113,19 @@ namespace Kairo.Utils.Logger
             string[] physicalLines = filtered.Replace("\r", string.Empty).Split('\n');
             for (int i = 0; i < physicalLines.Length; i++)
             {
-                BuildLineRuns(tb, physicalLines[i], type);
+                BuildLineRuns(inlines, physicalLines[i], type);
                 if (i < physicalLines.Length - 1)
-                    tb.Inlines.Add(new LineBreak());
+                    inlines.Add(new LineBreak());
             }
             return tb;
         }
 
-        private static void BuildLineRuns(TextBlock tb, string logical, LogType type)
-        {
+        private static void BuildLineRuns(InlineCollection inlines, string logical, LogType type)
+        {   
+            
             if (string.IsNullOrEmpty(logical))
             {
-                tb.Inlines.Add(new Run());
+                inlines.Add(new Run());
                 return;
             }
 
@@ -133,14 +137,14 @@ namespace Kairo.Utils.Logger
             {
                 if (s.Start > pos)
                 {
-                    tb.Inlines.Add(new Run(logical[pos..s.Start]) { Foreground = BaseBrush(type) });
+                    inlines.Add(new Run(logical[pos..s.Start]) { Foreground = BaseBrush(type) });
                 }
-                tb.Inlines.Add(new Run(logical.Substring(s.Start, s.Length)) { Foreground = s.Brush });
+                inlines.Add(new Run(logical.Substring(s.Start, s.Length)) { Foreground = s.Brush });
                 pos = s.Start + s.Length;
             }
             if (pos < logical.Length)
             {
-                tb.Inlines.Add(new Run(logical[pos..]) { Foreground = BaseBrush(type) });
+                inlines.Add(new Run(logical[pos..]) { Foreground = BaseBrush(type) });
             }
         }
 

@@ -1,12 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
-using Newtonsoft.Json.Linq;
 using Kairo; // Global
 using Kairo.Utils.Logger; // add
 
@@ -122,44 +123,42 @@ public partial class CreateProxyWindow : Window
             var url = $"{Global.APIList.GetAllNodes}{Global.Config.ID}";
             var resp = await http.GetAsyncLogged(url);
             var content = await resp.Content.ReadAsStringAsync();
-            var json = JObject.Parse(content);
-            if ((int?)json["status"] != 200)
+            var json = JsonNode.Parse(content);
+            if (json?["status"]?.GetValue<int>() != 200)
             {
-                SetStatus($"获取节点失败: {json["message"]}");
+                SetStatus($"获取节点失败: {json?["message"]?.GetValue<string>()}");
                 return;
             }
-            var list = json["data"]?["list"] as JArray; // v3: data.list
+            var list = json?["data"]?["list"] as JsonArray; // v3: data.list
             _nodes.Clear();
             if (list != null)
             {
                 foreach (var item in list)
                 {
-                    int id = (int)(item["id"] ?? 0);
-                    string ip = item["ip"]?.ToString() ?? string.Empty;
-                    string host = item["host"]?.ToString() ?? string.Empty; // v3 field is host
+                    int id = item?["id"]?.GetValue<int>() ?? 0;
+                    string ip = item?["ip"]?.GetValue<string>() ?? string.Empty;
+                    string host = item?["host"]?.GetValue<string>() ?? string.Empty; // v3 field is host
                     string label = !string.IsNullOrWhiteSpace(ip) ? ip : host;
-                    var additional = item["additional"] as JObject;
-                    string name = item["name"]?.ToString() ?? label;
-                    string? description = additional?.Value<string>("description");
+                    var additional = item?["additional"] as JsonObject;
+                    string name = item?["name"]?.GetValue<string>() ?? label;
+                    string? description = additional?["description"]?.GetValue<string>();
                     if (string.IsNullOrWhiteSpace(description))
-                        description = item["description"]?.ToString();
-                    var portRangeArray = item["port_range"] as JArray;
+                        description = item?["description"]?.GetValue<string>();
+                    var portRangeArray = item?["port_range"] as JsonArray;
                     var portRanges = new List<string>();
                     if (portRangeArray != null)
                     {
                         foreach (var token in portRangeArray)
                         {
-                            if (token is { } tk)
+                            if (token is JsonNode tk)
                             {
-                                var range = tk.ToString();
+                                var range = tk.GetValue<string>();
                                 if (!string.IsNullOrWhiteSpace(range))
                                     portRanges.Add(range);
                             }
                         }
                     }
-                    var portRangeDisplay = portRanges.Count > 0
-                        ? string.Join(", ", portRanges)
-                        : string.Empty;
+                    string portRangeDisplay = portRanges.Count > 0 ? string.Join(", ", portRanges) : string.Empty;
                     if (id > 0 && !string.IsNullOrWhiteSpace(label))
                         _nodes.Add(new NodeItem(id, label)
                         {
@@ -266,19 +265,19 @@ public partial class CreateProxyWindow : Window
 
             var resp = await http.PutAsyncLogged(Global.APIList.Tunnel, new FormUrlEncodedContent(form));
             var content = await resp.Content.ReadAsStringAsync();
-            JObject json;
-            try { json = JObject.Parse(content); }
+            JsonNode? json;
+            try { json = JsonNode.Parse(content); }
             catch { SetStatus("服务器返回异常"); return; }
-            if ((int?)json["status"] == 200)
+            if (json?["status"]?.GetValue<int>() == 200)
             {
-                int proxyId = json["data"]?["tunnel_id"]?.Value<int>() ?? 0;
+                int proxyId = json?["data"]?["tunnel_id"]?.GetValue<int>() ?? 0;
                 string proxyName = name;
                 Created?.Invoke(proxyId, proxyName);
                 try { Close(); } catch { }
             }
             else
             {
-                var msg = json["message"]?.ToString() ?? "创建失败";
+                var msg = json?["message"]?.GetValue<string>() ?? "创建失败";
                 SetStatus(msg);
             }
         }
@@ -303,10 +302,10 @@ public partial class CreateProxyWindow : Window
             var url = $"{Global.APIList.GetRandomPort}?user_id={Global.Config.ID}&node_id={nodeId}";
             var resp = await http.GetAsyncLogged(url);
             var content = await resp.Content.ReadAsStringAsync();
-            var json = JObject.Parse(content);
-            if ((int?)json["status"] != 200)
+            var json = JsonNode.Parse(content);
+            if (json?["status"]?.GetValue<int>() != 200)
                 return 0;
-            var port = json["data"]?["port"]?.Value<int>() ?? 0;
+            var port = json?["data"]?["port"]?.GetValue<int>() ?? 0;
             return port;
         }
         catch

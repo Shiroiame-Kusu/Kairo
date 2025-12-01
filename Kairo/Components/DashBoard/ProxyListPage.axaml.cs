@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
@@ -8,11 +10,10 @@ using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
 using Avalonia.Media;
 using Avalonia.Threading;
-using Newtonsoft.Json.Linq;
-using Newtonsoft.Json;
 using Kairo.Utils;
 using Kairo.Components;
 using Kairo.Utils.Logger; // add
+using Kairo.Utils.Serialization;
 
 namespace Kairo.Components.DashBoard;
 
@@ -123,20 +124,21 @@ public partial class ProxyListPage : UserControl
             var url = $"{Global.APIList.GetAllProxy}{Global.Config.ID}";
             var resp = await _http.GetAsyncLogged(url);
             var body = await resp.Content.ReadAsStringAsync();
-            var json = JObject.Parse(body);
-            if ((int?)json["status"] != 200)
+            var json = JsonNode.Parse(body);
+            var status = json?["status"]?.GetValue<int>() ?? 0;
+            if (status != 200)
             {
-                (Access.DashBoard as DashBoard)?.OpenSnackbar("获取隧道失败", json["message"]?.ToString(), FluentAvalonia.UI.Controls.InfoBarSeverity.Error);
+                (Access.DashBoard as DashBoard)?.OpenSnackbar("获取隧道失败", json?["message"]?.GetValue<string>(), FluentAvalonia.UI.Controls.InfoBarSeverity.Error);
                 return;
             }
-            var arrToken = json["data"]?["list"]; // v3 uses data.list
+            var arrToken = json?["data"]?["list"]; // v3 uses data.list
             if (arrToken == null)
             {
                 _listPanel?.Children.Clear();
                 _cardByProxyId.Clear();
                 return;
             }
-            var proxies = JsonConvert.DeserializeObject<List<Proxy>>(arrToken.ToString()) ?? new();
+            var proxies = arrToken.Deserialize(AppJsonContext.Default.ListProxy) ?? new();
             Dispatcher.UIThread.Post(() =>
             {
                 if (_listPanel == null) return;
@@ -234,15 +236,15 @@ public partial class ProxyListPage : UserControl
             var url = $"{Global.APIList.DeleteProxy}{Global.Config.ID}&tunnel_id={proxy.Id}";
             var resp = await hc.DeleteAsyncLogged(url);
             var body = await resp.Content.ReadAsStringAsync();
-            var json = JObject.Parse(body);
-            if ((int)json["status"] == 200)
+            var json = JsonNode.Parse(body);
+            if (json?["status"]?.GetValue<int>() == 200)
             {
                 (Access.DashBoard as DashBoard)?.OpenSnackbar("已删除", proxy.ProxyName, FluentAvalonia.UI.Controls.InfoBarSeverity.Success);
                 await LoadProxies();
             }
             else
             {
-                (Access.DashBoard as DashBoard)?.OpenSnackbar("删除失败", json["message"]?.ToString(), FluentAvalonia.UI.Controls.InfoBarSeverity.Error);
+                (Access.DashBoard as DashBoard)?.OpenSnackbar("删除失败", json?["message"]?.GetValue<string>(), FluentAvalonia.UI.Controls.InfoBarSeverity.Error);
             }
         }
         catch (Exception ex)

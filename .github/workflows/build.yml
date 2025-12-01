@@ -59,14 +59,6 @@ jobs:
           dotnet publish $PROJECT_PATH
           -c $Configuration
           -r ${{ matrix.rid }}
-          -f $FRAMEWORK
-          --self-contained true
-          /p:PublishSingleFile=true
-          /p:IncludeAllContentForSelfExtract=true
-          /p:EnableCompressionInSingleFile=true
-          /p:PublishTrimmed=false
-          /p:DebugType=none
-          /p:GenerateDocumentationFile=false
           /p:InvariantGlobalization=false
 
       - name: Prepare Artifact

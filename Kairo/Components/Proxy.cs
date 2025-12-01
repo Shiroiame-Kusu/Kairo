@@ -1,4 +1,4 @@
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 using System;
 
 namespace Kairo.Components
@@ -7,47 +7,47 @@ namespace Kairo.Components
     {
         public int Id { get; set; }
 
-        [JsonProperty("name")]
+        [JsonPropertyName("name")]
         public string ProxyName { get; set; } = string.Empty;
 
-        [JsonProperty("type")]
+        [JsonPropertyName("type")]
         public string ProxyType { get; set; } = string.Empty;
 
-        [JsonProperty("local_ip")]
+        [JsonPropertyName("local_ip")]
         public string LocalIp { get; set; } = string.Empty;
 
-        [JsonProperty("local_port")]
+        [JsonPropertyName("local_port")]
         public int LocalPort { get; set; }
 
-        [JsonProperty("remote_port")]
+        [JsonPropertyName("remote_port")]
         public int? RemotePort { get; set; }
 
-        [JsonProperty("use_compression")]
+        [JsonPropertyName("use_compression")]
         public bool UseCompression { get; set; }
 
-        [JsonProperty("use_encryption")]
+        [JsonPropertyName("use_encryption")]
         public bool UseEncryption { get; set; }
 
-        [JsonProperty("domain")]
+        [JsonPropertyName("domain")]
         public string? Domain { get; set; }
 
         // v3: node is object
-        [JsonProperty("node")]
+        [JsonPropertyName("node")]
         public ProxyNode? NodeInfo { get; set; }
 
         // Compatibility helpers
         [JsonIgnore]
         public int Node => NodeInfo?.Id ?? 0;
 
-        [JsonProperty("secret_key")]
+        [JsonPropertyName("secret_key")]
         public string? SecretKey { get; set; }
     }
 
     public class ProxyNode
     {
-        [JsonProperty("id")] public int Id { get; set; }
-        [JsonProperty("name")] public string? Name { get; set; }
-        [JsonProperty("host")] public string? Host { get; set; }
-        [JsonProperty("ip")] public string? Ip { get; set; }
+        [JsonPropertyName("id")] public int Id { get; set; }
+        [JsonPropertyName("name")] public string? Name { get; set; }
+        [JsonPropertyName("host")] public string? Host { get; set; }
+        [JsonPropertyName("ip")] public string? Ip { get; set; }
     }
 }

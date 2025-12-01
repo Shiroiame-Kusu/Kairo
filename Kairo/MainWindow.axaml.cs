@@ -1,7 +1,9 @@
 using System;
 using System.Net.Http;
 using System.Threading.Tasks;
-using Newtonsoft.Json.Linq;
+using System.Text.Json;
+using System.Text.Json.Nodes;
+using System.Text.Json.Serialization;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -11,13 +13,13 @@ using Kairo.Utils;
 using System.Security.Cryptography;
 using System.Text;
 using System.Numerics;
-using Newtonsoft.Json;
 using FluentAvalonia.UI.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Threading;
 using ExtendedNumerics; // added for DispatcherTimer
 using Kairo.Components.DashBoard; // added for new namespace
 using Kairo.Utils.Logger; // added for HTTP logging
+using Kairo.Utils.Serialization;
 
 namespace Kairo;
 
@@ -119,25 +121,31 @@ public partial class MainWindow : Window
             var accessUrl = $"{Global.APIList.GetAccessToken}?app_id={Global.APPID}&refresh_token={refreshToken}";
             var response = await http.PostAsyncLogged(accessUrl, null);
             var accessBody = await response.Content.ReadAsStringAsync();
-            var json = JObject.Parse(accessBody);
-            if ((int)json["status"] != 200)
+            var json = JsonNode.Parse(accessBody);
+            var accessStatus = json?["status"]?.GetValue<int>() ?? 0;
+            if (accessStatus != 200)
             {
-                OpenSnackbar("登录失败", $"API状态: {json["status"]} {json["message"]}", InfoBarSeverity.Error);
+                var message = json?["message"]?.GetValue<string>() ?? "未知错误";
+                OpenSnackbar("登录失败", $"API状态: {accessStatus} {message}", InfoBarSeverity.Error);
                 Global.Config.RefreshToken = "";
                 Global.Config.AccessToken = "";
                 Global.Config.ID = 0;
                 ToggleLoggingIn(false);
                 return false;
             }
-            Global.Config.ID = (int)json["data"]["user_id"];
-            Global.Config.AccessToken = json["data"]["access_token"]!.ToString();
+            var dataNode = json?["data"];
+            Global.Config.ID = dataNode?["user_id"]?.GetValue<int>() ?? 0;
+            Global.Config.AccessToken = dataNode?["access_token"]?.GetValue<string>() ?? string.Empty;
             Global.Config.RefreshToken = refreshToken; // persist
             http.DefaultRequestHeaders.Add("Authorization", $"Bearer {Global.Config.AccessToken}");
             var userUrl = $"{Global.APIList.GetUserInfo}?user_id={Global.Config.ID}";
             var userResp = await http.GetAsyncLogged(userUrl);
             var userBody = await userResp.Content.ReadAsStringAsync();
-            var userJson = JObject.Parse(userBody);
-            _userInfo = JsonConvert.DeserializeObject<UserInfo>(userJson["data"]!.ToString());
+            var userJson = JsonNode.Parse(userBody);
+            var userNode = userJson?["data"];
+            _userInfo = userNode == null
+                ? null
+                : JsonSerializer.Deserialize(userNode.ToJsonString(), AppJsonContext.Default.UserInfo);
             if (_userInfo == null)
             {
                 OpenSnackbar("错误", "解析用户信息失败", InfoBarSeverity.Error);
@@ -148,8 +156,8 @@ public partial class MainWindow : Window
             var frpUrl = $"{Global.APIList.GetFrpToken}?user_id={Global.Config.ID}";
             var frpResp = await http.GetAsyncLogged(frpUrl);
             var frpBody = await frpResp.Content.ReadAsStringAsync();
-            var frpJson = JObject.Parse(frpBody);
-            _userInfo.FrpToken = frpJson["data"]["frp_token"]?.ToString();
+            var frpJson = JsonNode.Parse(frpBody);
+            _userInfo.FrpToken = frpJson?["data"]?["frp_token"]?.GetValue<string>();
             Global.Config.Username = _userInfo.Username;
             Global.Config.FrpToken = _userInfo.FrpToken ?? string.Empty;
             InitializeInfoForDashboard();
@@ -200,8 +208,9 @@ public partial class MainWindow : Window
         foreach (byte b in MD5.HashData(Encoding.UTF8.GetBytes(_userInfo.Email.ToLower())))
             sb.Append(b.ToString("x2"));
         Avatar = $"https://cravatar.cn/avatar/{sb}";
-        Inbound = _userInfo.Limit.Inbound;
-        Outbound = _userInfo.Limit.Inbound;
+        var limit = _userInfo.Limit;
+        Inbound = limit?.Inbound ?? _userInfo.Inbound;
+        Outbound = limit?.Outbound ?? _userInfo.Outbound;
         Traffic = _userInfo.Traffic;
     }
 
@@ -383,26 +392,26 @@ public partial class MainWindow : Window
     // Represents the user info JSON contract
     public class UserInfo
     {
-        [JsonProperty("qq")] public long QQ { get; set; }
-        [JsonProperty("qq_social_id")] public string? QQSocialID { get; set; }
-        [JsonProperty("reg_time")] public string? RegTime { get; set; }
-        [JsonProperty("id")] public int ID { get; set; }
-        [JsonProperty("inbound")] public int Inbound { get; set; }
-        [JsonProperty("outbound")] public int Outbound { get; set; }
-        [JsonProperty("email")] public string Email { get; set; } = string.Empty;
-        [JsonProperty("traffic")] public BigDecimal Traffic { get; set; }
-        [JsonProperty("avatar")] public string? Avatar { get; set; }
-        [JsonProperty("username")] public string Username { get; set; } = string.Empty;
-        [JsonProperty("status")] public int Status { get; set; }
-        [JsonProperty("frp_token")] public string? FrpToken { get; set; }
-        [JsonProperty("limit")] public LimitInfo? Limit { get; set; }
+        [JsonPropertyName("qq")] public long QQ { get; set; }
+        [JsonPropertyName("qq_social_id")] public string? QQSocialID { get; set; }
+        [JsonPropertyName("reg_time")] public string? RegTime { get; set; }
+        [JsonPropertyName("id")] public int ID { get; set; }
+        [JsonPropertyName("inbound")] public int Inbound { get; set; }
+        [JsonPropertyName("outbound")] public int Outbound { get; set; }
+        [JsonPropertyName("email")] public string Email { get; set; } = string.Empty;
+        [JsonPropertyName("traffic")] public BigDecimal Traffic { get; set; }
+        [JsonPropertyName("avatar")] public string? Avatar { get; set; }
+        [JsonPropertyName("username")] public string Username { get; set; } = string.Empty;
+        [JsonPropertyName("status")] public int Status { get; set; }
+        [JsonPropertyName("frp_token")] public string? FrpToken { get; set; }
+        [JsonPropertyName("limit")] public LimitInfo? Limit { get; set; }
         public string? Token { get; set; }
         
         public class LimitInfo
         {
-            [JsonProperty("inbound")] public int Inbound { get; set; }
-            [JsonProperty("outbound")] public int Outbound { get; set; }
-            [JsonProperty("tunnel")] public int? Tunnel { get; set; }
+            [JsonPropertyName("inbound")] public int Inbound { get; set; }
+            [JsonPropertyName("outbound")] public int Outbound { get; set; }
+            [JsonPropertyName("tunnel")] public int? Tunnel { get; set; }
         }
     }
 

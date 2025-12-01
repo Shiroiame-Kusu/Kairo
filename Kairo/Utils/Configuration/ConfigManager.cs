@@ -1,10 +1,12 @@
-using Newtonsoft.Json;
 using System;
+using System.Buffers;
 using System.IO;
 using System.Text;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Kairo.Utils.Logger;
+using Kairo.Utils.Serialization;
 using AppLogger = Kairo.Utils.Logger.Logger; // alias added
 
 namespace Kairo.Utils.Configuration
@@ -172,9 +174,9 @@ namespace Kairo.Utils.Configuration
             if (mutator == null) throw new ArgumentNullException(nameof(mutator));
             lock (_syncRoot)
             {
-                string before = JsonConvert.SerializeObject(Global.Config, Formatting.None);
+                string before = SerializeConfig();
                 bool reportedChanged = mutator(Global.Config);
-                string after = JsonConvert.SerializeObject(Global.Config, Formatting.None);
+                string after = SerializeConfig();
                 bool actualChanged = reportedChanged || !string.Equals(before, after, StringComparison.Ordinal);
                 if (actualChanged && save)
                 {
@@ -191,7 +193,7 @@ namespace Kairo.Utils.Configuration
         {
             lock (_syncRoot)
             {
-                return JsonConvert.SerializeObject(Global.Config, indented ? Formatting.Indented : Formatting.None);
+                return SerializeConfig(indented);
             }
         }
 
@@ -200,7 +202,7 @@ namespace Kairo.Utils.Configuration
             if (string.IsNullOrWhiteSpace(json)) return false;
             try
             {
-                var cfg = JsonConvert.DeserializeObject<Config>(json);
+                var cfg = JsonSerializer.Deserialize(json, AppJsonContext.Default.Config);
                 if (cfg == null) return false;
                 if (!Validate(cfg, out var _)) return false;
                 lock (_syncRoot)
@@ -240,7 +242,7 @@ namespace Kairo.Utils.Configuration
                     string json = File.ReadAllText(SettingsFilePath, Encoding.UTF8);
                     try
                     {
-                        var cfg = JsonConvert.DeserializeObject<Config>(json) ?? new();
+                        var cfg = JsonSerializer.Deserialize(json, AppJsonContext.Default.Config) ?? new();
                         if (!Validate(cfg, out var _))
                         {
                             BackupCorruptFile();
@@ -251,7 +253,7 @@ namespace Kairo.Utils.Configuration
                         {
                             Global.Config = cfg;
                             Global.RefreshRuntimeFlags();
-                            _oldSettings = JsonConvert.SerializeObject(Global.Config);
+                            _oldSettings = SerializeConfig();
                         }
                     }
                     catch (JsonException jex)
@@ -282,14 +284,14 @@ namespace Kairo.Utils.Configuration
         {
             try
             {
-                string newSettings = JsonConvert.SerializeObject(Global.Config, Formatting.None);
+                string newSettings = SerializeConfig();
                 if (!force && newSettings == _oldSettings)
                 {
                     return; // no changes
                 }
 
                 // Atomic write: write to temp then move
-                File.WriteAllText(TempSettingsFilePath, JsonConvert.SerializeObject(Global.Config, Formatting.Indented), Encoding.UTF8);
+                File.WriteAllText(TempSettingsFilePath, SerializeConfig(indented: true), Encoding.UTF8);
 #if NET6_0_OR_GREATER
                 try
                 {
@@ -373,6 +375,21 @@ namespace Kairo.Utils.Configuration
             {
                 Interlocked.Exchange(ref _dispose, null)?.Invoke();
             }
+        }
+
+        private static string SerializeConfig(bool indented = false)
+        {
+            if (!indented)
+            {
+                return JsonSerializer.Serialize(Global.Config, AppJsonContext.Default.Config);
+            }
+
+            var buffer = new ArrayBufferWriter<byte>();
+            using (var writer = new Utf8JsonWriter(buffer, new JsonWriterOptions { Indented = true }))
+            {
+                JsonSerializer.Serialize(writer, Global.Config, AppJsonContext.Default.Config);
+            }
+            return Encoding.UTF8.GetString(buffer.WrittenSpan);
         }
     }
 }

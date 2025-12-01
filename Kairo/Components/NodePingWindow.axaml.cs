@@ -7,11 +7,12 @@ using System.Net.Http;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
-using Newtonsoft.Json.Linq;
 using Kairo.Utils.Logger; // add
 
 namespace Kairo.Components;
@@ -78,13 +79,13 @@ public partial class NodePingWindow : Window
             var url = $"{Global.APIList.GetAllNodes}{Global.Config.ID}";
             var resp = await http.GetAsyncLogged(url);
             var content = await resp.Content.ReadAsStringAsync();
-            var json = JObject.Parse(content);
-            if ((int?)json["status"] != 200)
+            var json = JsonNode.Parse(content);
+            if (json?["status"]?.GetValue<int>() != 200)
             {
-                SetStatusText($"获取节点失败: {json["message"]}");
+                SetStatusText($"获取节点失败: {json?["message"]?.GetValue<string>()}");
                 return;
             }
-            var list = json["data"]?["list"] as JArray;
+            var list = json?["data"]?["list"] as JsonArray;
             if (list == null || list.Count == 0)
             {
                 SetStatusText("没有可用节点");
@@ -95,9 +96,9 @@ public partial class NodePingWindow : Window
                 _rows.Clear();
                 foreach (var item in list)
                 {
-                    int id = (int)(item["id"] ?? 0);
-                    string ip = item["ip"]?.ToString() ?? string.Empty;
-                    string host = item["host"]?.ToString() ?? string.Empty;
+                    int id = item?["id"]?.GetValue<int>() ?? 0;
+                    string ip = item?["ip"]?.GetValue<string>() ?? string.Empty;
+                    string host = item?["host"]?.GetValue<string>() ?? string.Empty;
                     string target = !string.IsNullOrWhiteSpace(ip) ? ip : host;
                     if (string.IsNullOrWhiteSpace(target)) continue;
                     _rows.Add(new Row { Node = id, Host = target, Status = "等待中" });
@@ -205,8 +206,29 @@ public partial class NodePingWindow : Window
 
         public int Node { get => _node; set { _node = value; OnPropertyChanged(); } }
         public string Host { get => _host; set { _host = value; OnPropertyChanged(); } }
-        public long? LatencyMs { get => _latencyMs; set { _latencyMs = value; OnPropertyChanged(); } }
-        public string Status { get => _status; set { _status = value; OnPropertyChanged(); } }
+        public long? LatencyMs
+        {
+            get => _latencyMs;
+            set
+            {
+                _latencyMs = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(LatencyDisplay));
+            }
+        }
+
+        public string Status
+        {
+            get => _status;
+            set
+            {
+                _status = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(LatencyDisplay));
+            }
+        }
+
+        public string LatencyDisplay => LatencyMs.HasValue ? LatencyMs.Value.ToString() : Status;
 
         public event PropertyChangedEventHandler? PropertyChanged;
         protected void OnPropertyChanged([CallerMemberName] string? name = null) =>

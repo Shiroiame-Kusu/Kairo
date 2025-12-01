@@ -70,8 +70,8 @@ namespace Kairo.Utils.Logger
             await LogRequestAsync(client, req, null, ct);
             using var resp = await client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, ct);
             await resp.Content.LoadIntoBufferAsync();
-            var bytes = await resp.Content.ReadAsByteArrayAsync(ct);
-            Logger.OutputNetwork(LogType.DetailDebug, "[HTTP] <=", (int)resp.StatusCode, resp.ReasonPhrase, "; bytes=", bytes?.Length ?? 0);
+            var bytes = await resp.Content.ReadAsByteArrayAsync(ct) ?? Array.Empty<byte>();
+            Logger.OutputNetwork(LogType.DetailDebug, "[HTTP] <=", (int)resp.StatusCode, resp.ReasonPhrase, "; bytes=", bytes.Length);
             return bytes;
         }
 
@@ -136,8 +136,8 @@ namespace Kairo.Utils.Logger
                 else
                 {
                     // non-text: don't dump raw bytes, just length
-                    var bytes = await resp.Content.ReadAsByteArrayAsync(ct);
-                    Logger.OutputNetwork(LogType.DetailDebug, "Body(bytes)=", bytes?.Length ?? 0);
+                    var bytes = await resp.Content.ReadAsByteArrayAsync(ct) ?? Array.Empty<byte>();
+                    Logger.OutputNetwork(LogType.DetailDebug, "Body(bytes)=", bytes.Length);
                 }
             }
             catch (Exception ex)

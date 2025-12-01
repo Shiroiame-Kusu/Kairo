@@ -1,11 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
-using Newtonsoft.Json.Linq;
 using Kairo.Utils;
 using Avalonia; // for Design.IsDesignMode
 using Kairo.Utils.Logger; // add
@@ -99,17 +100,17 @@ public partial class HomePage : UserControl
             }
             var content = await resp.Content.ReadAsStringAsync();
             if (string.IsNullOrWhiteSpace(content)) { PostAnnouncement("暂无公告"); return; }
-            JObject json;
-            try { json = JObject.Parse(content); } catch { PostAnnouncement("公告格式错误"); return; }
-            if ((int?)json["status"] == 200)
+            JsonNode? json;
+            try { json = JsonNode.Parse(content); } catch { PostAnnouncement("公告格式错误"); return; }
+            if (json?["status"]?.GetValue<int>() == 200)
             {
-                var raw = json["data"]?["broadcast"]?.ToString();
+                var raw = json?["data"]?["broadcast"]?.GetValue<string>();
                 if (string.IsNullOrWhiteSpace(raw)) raw = "暂无公告";
                 PostAnnouncement(raw);
             }
             else
             {
-                PostAnnouncement(json["message"]?.ToString() ?? "获取公告失败");
+                PostAnnouncement(json?["message"]?.GetValue<string>() ?? "获取公告失败");
             }
         }
         catch (Exception ex)
@@ -137,9 +138,9 @@ public partial class HomePage : UserControl
             var resp = await hc.GetAsyncLogged(url);
             var body = await resp.Content.ReadAsStringAsync();
             if (string.IsNullOrWhiteSpace(body)) return;
-            JObject json; try { json = JObject.Parse(body); } catch { return; }
-            int? status = json["status"]?.Value<int?>();
-            bool signed = json["data"]?["status"]?.Value<bool?>() ?? false;
+            JsonNode? json; try { json = JsonNode.Parse(body); } catch { return; }
+            int status = json?["status"]?.GetValue<int>() ?? 0;
+            bool signed = json?["data"]?["status"]?.GetValue<bool>() ?? false;
             if (status == 200 && signed)
             {
                 Dispatcher.UIThread.Post(() =>
@@ -181,10 +182,10 @@ public partial class HomePage : UserControl
             var resp = await hc.PostAsyncLogged($"{Global.APIList.GetSign}", new FormUrlEncodedContent(new[] { new KeyValuePair<string,string>("user_id", Global.Config.ID.ToString()) }));
             var body = await resp.Content.ReadAsStringAsync();
             if (string.IsNullOrWhiteSpace(body)) { (Access.DashBoard as DashBoard)?.OpenSnackbar("签到失败", "空响应", FluentAvalonia.UI.Controls.InfoBarSeverity.Error); return; }
-            JObject json; try { json = JObject.Parse(body); } catch { (Access.DashBoard as DashBoard)?.OpenSnackbar("签到失败", "响应格式错误", FluentAvalonia.UI.Controls.InfoBarSeverity.Error); return; }
-            int? status = json["status"]?.Value<int?>();
-            string? message = json["message"]?.ToString();
-            int gained = json["data"]?["get_traffic"]?.Value<int?>() ?? 0;
+            JsonNode? json; try { json = JsonNode.Parse(body); } catch { (Access.DashBoard as DashBoard)?.OpenSnackbar("签到失败", "响应格式错误", FluentAvalonia.UI.Controls.InfoBarSeverity.Error); return; }
+            int status = json?["status"]?.GetValue<int>() ?? 0;
+            string? message = json?["message"]?.GetValue<string>();
+            int gained = json?["data"]?["get_traffic"]?.GetValue<int>() ?? 0;
             if (status == 200)
             {
                 Dispatcher.UIThread.Post(() =>

@@ -16,8 +16,8 @@ namespace Kairo.Components.OAuth
     {
         private static bool _started;
         private static readonly object _lock = new();
-        private static WebApplication _application;
-        private static Task _runTask; // store host task
+        private static WebApplication? _application;
+        private static Task? _runTask; // store host task
         public static void Init()
         {
             lock (_lock)

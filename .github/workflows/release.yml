@@ -134,9 +134,6 @@ jobs:
           dotnet publish "$PROJECT_PATH" \
             -c "$CONFIGURATION" \
             -r ${{ matrix.rid }} \
-            --self-contained true \
-            /p:PublishSingleFile=true \
-            /p:IncludeNativeLibrariesForSelfExtract=true \
             /p:Version=${{ needs.prepare.outputs.version }} \
             /p:AssemblyVersion=${{ needs.prepare.outputs.assembly_version }} \
             /p:FileVersion=${{ needs.prepare.outputs.assembly_version }} \

@@ -1,12 +1,8 @@
-using Newtonsoft.Json.Serialization;
-using Newtonsoft.Json;
 using System.Collections.Generic;
 using Kairo.Components;
 
 namespace Kairo.Utils.Configuration
 {
-    
-    [JsonObject(NamingStrategyType = typeof(CamelCaseNamingStrategy))]
     internal class Config
     {
         public string AccessToken = "";

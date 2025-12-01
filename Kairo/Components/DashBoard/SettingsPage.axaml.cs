@@ -356,48 +356,71 @@ namespace Kairo.Components.DashBoard
             };
         }
 
-        private static (Version ver, string branch, int revision) ParseTag(string tag)
+        private static (Version ver, string branch, int revision) ParseTag(string? tag)
         {
             // Expect like v3.1.0-beta.1, v3.1.0-alpha.2, v3.1.0-rc.3, v3.1.0-release.1
-            var t = tag.StartsWith("v", StringComparison.OrdinalIgnoreCase) ? tag[1..] : tag;
+            tag ??= string.Empty;
+            var nonNullTag = tag ?? string.Empty;
+            string t = nonNullTag.StartsWith("v", StringComparison.OrdinalIgnoreCase)
+                ? (nonNullTag.Length > 1 ? nonNullTag[1..] : string.Empty)
+                : nonNullTag;
+            var safeT = t ?? string.Empty;
             string branch = "Release";
             int rev = 0;
-            var lower = t.ToLowerInvariant();
-            string versionPart = t;
+            var lower = safeT.ToLowerInvariant();
+            string versionPart = safeT;
             if (lower.Contains("-alpha."))
             {
                 branch = "Alpha";
                 var idx = lower.IndexOf("-alpha.", StringComparison.Ordinal);
-                versionPart = t.Substring(0, idx);
-                var rstr = t.Substring(idx + "-alpha.".Length);
-                int.TryParse(new string(rstr.TakeWhile(char.IsDigit).ToArray()), out rev);
+                if (idx >= 0 && idx <= safeT.Length)
+                {
+                    versionPart = idx == 0 ? string.Empty : safeT[..idx];
+                    var suffixIndex = idx + "-alpha.".Length;
+                    var rstr = suffixIndex < safeT.Length ? safeT[suffixIndex..] : string.Empty;
+                    int.TryParse(new string(rstr.TakeWhile(char.IsDigit).ToArray()), out rev);
+                }
             }
             else if (lower.Contains("-beta."))
             {
                 branch = "Beta";
                 var idx = lower.IndexOf("-beta.", StringComparison.Ordinal);
-                versionPart = t.Substring(0, idx);
-                var rstr = t.Substring(idx + "-beta.".Length);
-                int.TryParse(new string(rstr.TakeWhile(char.IsDigit).ToArray()), out rev);
+                if (idx >= 0 && idx <= safeT.Length)
+                {
+                    versionPart = idx == 0 ? string.Empty : safeT[..idx];
+                    var suffixIndex = idx + "-beta.".Length;
+                    var rstr = suffixIndex < safeT.Length ? safeT[suffixIndex..] : string.Empty;
+                    int.TryParse(new string(rstr.TakeWhile(char.IsDigit).ToArray()), out rev);
+                }
             }
             else if (lower.Contains("-rc."))
             {
                 branch = "ReleaseCandidate";
                 var idx = lower.IndexOf("-rc.", StringComparison.Ordinal);
-                versionPart = t.Substring(0, idx);
-                var rstr = t.Substring(idx + "-rc.".Length);
-                int.TryParse(new string(rstr.TakeWhile(char.IsDigit).ToArray()), out rev);
+                if (idx >= 0 && idx <= safeT.Length)
+                {
+                    versionPart = idx == 0 ? string.Empty : safeT[..idx];
+                    var suffixIndex = idx + "-rc.".Length;
+                    var rstr = suffixIndex < safeT.Length ? safeT[suffixIndex..] : string.Empty;
+                    int.TryParse(new string(rstr.TakeWhile(char.IsDigit).ToArray()), out rev);
+                }
             }
             else if (lower.Contains("-release."))
             {
                 branch = "Release";
                 var idx = lower.IndexOf("-release.", StringComparison.Ordinal);
-                versionPart = t.Substring(0, idx);
-                var rstr = t.Substring(idx + "-release.".Length);
-                int.TryParse(new string(rstr.TakeWhile(char.IsDigit).ToArray()), out rev);
+                if (idx >= 0 && idx <= safeT.Length)
+                {
+                    versionPart = idx == 0 ? string.Empty : safeT[..idx];
+                    var suffixIndex = idx + "-release.".Length;
+                    var rstr = suffixIndex < safeT.Length ? safeT[suffixIndex..] : string.Empty;
+                    int.TryParse(new string(rstr.TakeWhile(char.IsDigit).ToArray()), out rev);
+                }
             }
-            Version ver;
-            if (!Version.TryParse(versionPart, out ver)) ver = new Version(0, 0, 0);
+            if (!Version.TryParse(versionPart, out var ver))
+            {
+                ver = new Version(0, 0, 0);
+            }
             return (ver, branch, rev);
         }
     }
