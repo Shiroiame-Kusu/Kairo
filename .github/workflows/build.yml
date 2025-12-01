@@ -72,12 +72,9 @@ jobs:
         run: dotnet restore "$PROJECT_PATH"
 
       - name: Publish
-        run: |
-          dotnet publish "$PROJECT_PATH" \
-            -c "$CONFIGURATION" \
-            -r ${{ matrix.rid }} \
-            -o publish/${{ matrix.rid }} \
-            /p:InvariantGlobalization=false
+        run: >-
+          dotnet publish "$PROJECT_PATH" -c "$CONFIGURATION" -r ${{ matrix.rid }}
+          -o publish/${{ matrix.rid }} /p:InvariantGlobalization=false
 
       - name: Ensure execute bit
         if: runner.os != 'Windows'
