@@ -143,7 +143,7 @@ jobs:
         run: dotnet restore "$PROJECT_PATH"
       - name: Publish
         run: >-
-          dotnet publish "$PROJECT_PATH" -c "$CONFIGURATION" -r ${{ matrix.rid }}
+          dotnet publish "${{ env.PROJECT_PATH }}" -c "${{ env.CONFIGURATION }}" -r ${{ matrix.rid }}
           /p:Version=${{ needs.prepare.outputs.version }}
           /p:AssemblyVersion=${{ needs.prepare.outputs.assembly_version }}
           /p:FileVersion=${{ needs.prepare.outputs.assembly_version }}
