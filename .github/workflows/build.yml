@@ -91,34 +91,9 @@ jobs:
         run: |
           chmod +x publish/${{ matrix.rid }}/Kairo || true
 
-      - name: Package artifact (non-Windows)
-        if: runner.os != 'Windows'
-        id: package_posix
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p artifacts
-          ARCHIVE_NAME=Kairo-${{ matrix.rid }}.${{ matrix.archive }}
-          if [ "${{ matrix.archive }}" = "tar.gz" ]; then
-            tar -czf artifacts/${ARCHIVE_NAME} -C publish/${{ matrix.rid }} .
-          else
-            zip -r artifacts/${ARCHIVE_NAME} publish/${{ matrix.rid }}
-          fi
-          echo "archive=artifacts/${ARCHIVE_NAME}" >> "$GITHUB_OUTPUT"
-
-      - name: Package artifact (Windows)
-        if: runner.os == 'Windows'
-        id: package_windows
-        shell: pwsh
-        run: |
-          New-Item -ItemType Directory -Force -Path artifacts | Out-Null
-          $archive = "Kairo-${{ matrix.rid }}.zip"
-          Compress-Archive -Path "publish/${{ matrix.rid }}/*" -DestinationPath "artifacts/$archive" -Force
-          "archive=artifacts/$archive" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
-
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: Kairo-${{ matrix.rid }}
-          path: ${{ steps.package_posix.outputs.archive || steps.package_windows.outputs.archive }}
+          path: publish/${{ matrix.rid }}
           if-no-files-found: error

@@ -41,6 +41,12 @@ jobs:
       assembly_version: ${{ steps.version.outputs.assembly_version }}
       prerelease: ${{ steps.prerelease.outputs.flag }}
     steps:
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt install -y clang llvm binutils-aarch64-linux-gnu gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
+
       - name: Derive version
         id: version
         run: |
@@ -90,7 +96,7 @@ jobs:
           fi
 
   build:
-    name: Build (${{ matrix.display }})
+    name: Build (${{ matrix.rid }})
     needs: prepare
     strategy:
       fail-fast: false
@@ -129,18 +135,6 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
-      - name: Install Linux dependencies
-        if: runner.os == 'Linux'
-        run: |
-          sudo apt-get update
-          sudo apt install -y clang llvm binutils-aarch64-linux-gnu gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
-      - name: Cache NuGet
-        uses: actions/cache@v4
-        with:
-          path: ~/.nuget/packages
-          key: nuget-${{ runner.os }}-${{ hashFiles('**/packages.lock.json', '**/*.csproj') }}
-          restore-keys: |
-            nuget-${{ runner.os }}-
       - name: Display .NET info
         run: dotnet --info
       - name: Generate build info
@@ -151,45 +145,51 @@ jobs:
       - name: Restore
         run: dotnet restore "$PROJECT_PATH"
       - name: Publish
-        run: >-
-          dotnet publish "${{ env.PROJECT_PATH }}" -c "${{ env.CONFIGURATION }}" -r ${{ matrix.rid }}
-          /p:Version=${{ needs.prepare.outputs.version }}
-          /p:AssemblyVersion=${{ needs.prepare.outputs.assembly_version }}
-          /p:FileVersion=${{ needs.prepare.outputs.assembly_version }}
-          -o publish/${{ matrix.rid }}
-      - name: Ensure execute bit
-        if: runner.os != 'Windows'
+        run: |
+          dotnet publish "$PROJECT_PATH" \
+            -c "$CONFIGURATION" \
+            -r ${{ matrix.rid }} \
+            /p:Version=${{ needs.prepare.outputs.version }} \
+            /p:AssemblyVersion=${{ needs.prepare.outputs.assembly_version }} \
+            /p:FileVersion=${{ needs.prepare.outputs.assembly_version }} \
+            -o publish/${{ matrix.rid }}
+      - name: Archive
         shell: bash
         run: |
-          chmod +x publish/${{ matrix.rid }}/Kairo || true
-      - name: Package artifact (non-Windows)
-        if: runner.os != 'Windows'
-        id: package_posix
+          set -e
+          cd publish/${{ matrix.rid }}
+          APP_NAME=Kairo-${{ needs.prepare.outputs.version }}-${{ matrix.rid }}
+          case "${{ matrix.archive }}" in
+            zip)
+              if [[ "${{ runner.os }}" == 'Windows' ]]; then
+                powershell -Command "Compress-Archive -Path * -DestinationPath ../$APP_NAME.zip"
+              else
+                zip -r ../$APP_NAME.zip .
+              fi
+              ;;
+            tar.gz)
+              tar -czf ../$APP_NAME.tar.gz .
+              ;;
+          esac
+          echo "Created archive(s):"; ls -1 ../
+      - name: List publish directory (debug)
         shell: bash
         run: |
-          set -euo pipefail
-          mkdir -p artifacts
-          ARCHIVE_NAME=Kairo-${{ needs.prepare.outputs.version }}-${{ matrix.rid }}.${{ matrix.archive }}
-          if [ "${{ matrix.archive }}" = "tar.gz" ]; then
-            tar -czf artifacts/${ARCHIVE_NAME} -C publish/${{ matrix.rid }} .
+          if [ -d publish ]; then
+            echo 'Listing publish directory:'
+            ls -l publish
+            echo 'Find built archives:'
+            find publish -type f \( -name '*.zip' -o -name '*.tar.gz' \) -print || true
           else
-            zip -r artifacts/${ARCHIVE_NAME} publish/${{ matrix.rid }}
+            echo 'publish directory not found'
           fi
-          echo "archive=artifacts/${ARCHIVE_NAME}" >> "$GITHUB_OUTPUT"
-      - name: Package artifact (Windows)
-        if: runner.os == 'Windows'
-        id: package_windows
-        shell: pwsh
-        run: |
-          New-Item -ItemType Directory -Force -Path artifacts | Out-Null
-          $archive = "Kairo-${{ needs.prepare.outputs.version }}-${{ matrix.rid }}.zip"
-          Compress-Archive -Path "publish/${{ matrix.rid }}/*" -DestinationPath "artifacts/$archive" -Force
-          "archive=artifacts/$archive" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: release-${{ matrix.rid }}
-          path: ${{ steps.package_posix.outputs.archive || steps.package_windows.outputs.archive }}
+          path: |
+            publish/*.zip
+            publish/*.tar.gz
           if-no-files-found: error
 
   release:
