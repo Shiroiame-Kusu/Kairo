@@ -129,7 +129,7 @@ namespace Kairo.Components.DashBoard
             if (MainWindow.IsLoggedIn)
             {
                 e.Cancel = true;
-                this.Hide();
+                Hide();
             }
             else
             {
