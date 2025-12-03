@@ -12,57 +12,66 @@
     <PropertyGroup>
         <PublishAot>true</PublishAot>
         <PublishTrimmed>true</PublishTrimmed>
-        <TrimMode>partial</TrimMode>
         <PublishSingleFile>true</PublishSingleFile>
-        <SelfContained>true</SelfContained>
+        <OptimizationPreference>Speed</OptimizationPreference>
+        <StripSymbols>true</StripSymbols>
+        
     </PropertyGroup>
 
     <!-- Ensure full globalization support (FluentAvalonia requires real cultures like en-US) -->
     <PropertyGroup Condition="'$(Configuration)' == 'Release'">
         <InvariantGlobalization>false</InvariantGlobalization>
     </PropertyGroup>
-    
+
     <ItemGroup>
-        <PackageReference Include="Avalonia" Version="11.3.9" />
-        <PackageReference Include="Avalonia.Controls.DataGrid" Version="11.3.9" />
-        <PackageReference Include="Avalonia.Desktop" Version="11.3.9" />
-        <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.9" />
-        <PackageReference Include="Avalonia.Fonts.Inter" Version="11.3.9" />
+        <PackageReference Include="Avalonia" Version="11.3.9"/>
+        <PackageReference Include="Avalonia.Controls.DataGrid" Version="11.3.9"/>
+        <PackageReference Include="Avalonia.Desktop" Version="11.3.9"/>
+        <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.9"/>
+        <PackageReference Include="Avalonia.Fonts.Inter" Version="11.3.9"/>
         <!--Condition below is needed to remove Avalonia.Diagnostics package from build output in Release configuration.-->
         <PackageReference Include="Avalonia.Diagnostics" Version="11.3.9">
             <IncludeAssets Condition="'$(Configuration)' != 'Debug'">None</IncludeAssets>
             <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
         </PackageReference>
-        <PackageReference Include="ExtendedNumerics.BigDecimal" Version="3001.1.0.233" />
-        <PackageReference Include="FluentAvaloniaUI" Version="2.4.1" />
-        <PackageReference Include="MessageBox.Avalonia" Version="3.3.0" />
-        <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
-        <PackageReference Include="Downloader" Version="4.0.3" />
+        <PackageReference Include="ExtendedNumerics.BigDecimal" Version="3001.1.0.233"/>
+        <PackageReference Include="FluentAvaloniaUI" Version="2.4.1"/>
+        <PackageReference Include="MessageBox.Avalonia" Version="3.3.0"/>
+        <PackageReference Include="Newtonsoft.Json" Version="13.0.4"/>
+        <PackageReference Include="Downloader" Version="4.0.3"/>
+    </ItemGroup>
+
+    <PropertyGroup>
+        <ApplicationIcon>Assets/kairo.ico</ApplicationIcon>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <Resource Include="Assets/kairo.ico"/>
+    </ItemGroup>
+    
+    <ItemGroup>
+        <!-- Embed Avalonia assets (icon, images) -->
+        <AvaloniaResource Include="Assets/**"/>
     </ItemGroup>
 
     <ItemGroup>
-      <!-- Embed Avalonia assets (icon, images) -->
-      <AvaloniaResource Include="Assets/**" />
+        <EmbeddedResource Update="Properties\Resources.resx">
+            <Generator>ResXFileCodeGenerator</Generator>
+            <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+        </EmbeddedResource>
     </ItemGroup>
 
     <ItemGroup>
-      <EmbeddedResource Update="Properties\Resources.resx">
-        <Generator>ResXFileCodeGenerator</Generator>
-        <LastGenOutput>Resources.Designer.cs</LastGenOutput>
-      </EmbeddedResource>
-    </ItemGroup>
-
-    <ItemGroup>
-      <Compile Update="Properties\Resources.Designer.cs">
-        <DesignTime>True</DesignTime>
-        <AutoGen>True</AutoGen>
-        <DependentUpon>Resources.resx</DependentUpon>
-      </Compile>
+        <Compile Update="Properties\Resources.Designer.cs">
+            <DesignTime>True</DesignTime>
+            <AutoGen>True</AutoGen>
+            <DependentUpon>Resources.resx</DependentUpon>
+        </Compile>
     </ItemGroup>
     <ItemGroup>
-        <FrameworkReference Include="Microsoft.AspNetCore.App" />
+        <FrameworkReference Include="Microsoft.AspNetCore.App"/>
     </ItemGroup>
     <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
-      <Exec Command="bash ./Components/BuildInfo.sh" />
+        <Exec Command="bash ./Components/BuildInfo.sh"/>
     </Target>
 </Project>
