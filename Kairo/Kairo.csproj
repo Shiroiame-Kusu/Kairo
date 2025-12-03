@@ -7,6 +7,7 @@
         <ApplicationManifest>app.manifest</ApplicationManifest>
         <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
         <GenerateAssemblyInfo>false</GenerateAssemblyInfo> <!-- custom assembly info -->
+        <ApplicationIcon>Assets/kairo.ico</ApplicationIcon>
     </PropertyGroup>
 
     <PropertyGroup>
@@ -40,10 +41,6 @@
         <PackageReference Include="Newtonsoft.Json" Version="13.0.4"/>
         <PackageReference Include="Downloader" Version="4.0.3"/>
     </ItemGroup>
-
-    <PropertyGroup>
-        <ApplicationIcon>Assets/kairo.ico</ApplicationIcon>
-    </PropertyGroup>
 
     <ItemGroup>
         <Resource Include="Assets/kairo.ico"/>
