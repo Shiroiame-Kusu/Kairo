@@ -10,13 +10,13 @@
         <ApplicationIcon>Assets/kairo.ico</ApplicationIcon>
     </PropertyGroup>
 
-    <PropertyGroup>
+    <!-- AOT/Trimming only for Release builds to allow Designer to work in Debug -->
+    <PropertyGroup Condition="'$(Configuration)' == 'Release'">
         <PublishAot>true</PublishAot>
         <PublishTrimmed>true</PublishTrimmed>
         <PublishSingleFile>true</PublishSingleFile>
         <OptimizationPreference>Speed</OptimizationPreference>
         <StripSymbols>true</StripSymbols>
-        
     </PropertyGroup>
 
     <!-- Ensure full globalization support (FluentAvalonia requires real cultures like en-US) -->

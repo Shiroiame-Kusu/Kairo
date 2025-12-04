@@ -20,7 +20,6 @@ public partial class HomePage : UserControl
     private TextBlock? _bandwidthText;
     private TextBlock? _trafficText;
     private TextBlock? _announcementPlain;
-    private Image? _avatarImage;
     private Button? _signButton;
     private Border? _signedBorder;
 
@@ -37,7 +36,6 @@ public partial class HomePage : UserControl
         _bandwidthText = this.FindControl<TextBlock>("BandwidthText");
         _trafficText = this.FindControl<TextBlock>("TrafficText");
         _announcementPlain = this.FindControl<TextBlock>("AnnouncementPlain");
-        _avatarImage = this.FindControl<Image>("AvatarImage");
         _signButton = this.FindControl<Button>("SignButton");
         _signedBorder = this.FindControl<Border>("SignedBorder");
     }
@@ -71,7 +69,6 @@ public partial class HomePage : UserControl
                 }
                 _ = RefreshAnnouncement();
                 _ = CheckSigned();
-                _ = RefreshAvatar();
             },
             designFallback: () =>
             {
@@ -149,24 +146,6 @@ public partial class HomePage : UserControl
                     if (_signedBorder != null) _signedBorder.IsVisible = true;
                 });
             }
-        }
-        catch { }
-    }
-
-    private async Task RefreshAvatar()
-    {
-        try
-        {
-            if (string.IsNullOrWhiteSpace(MainWindow.Avatar) || _avatarImage == null) return;
-            using HttpClient hc = new();
-            var bytes = await hc.GetByteArrayAsyncLogged(MainWindow.Avatar);
-            using var ms = new System.IO.MemoryStream(bytes);
-            DashBoard.Avatar = new Avalonia.Media.Imaging.Bitmap(ms);
-            Dispatcher.UIThread.Post(() =>
-            {
-                if (_avatarImage != null)
-                    _avatarImage.Source = DashBoard.Avatar;
-            });
         }
         catch { }
     }

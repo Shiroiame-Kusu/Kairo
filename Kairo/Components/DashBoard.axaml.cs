@@ -1,13 +1,17 @@
 using System;
 using System.IO; // added for File.Exists
+using System.Net.Http;
+using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
 using Avalonia.Media.Imaging;
 using FluentAvalonia.UI.Controls;
+using Kairo.Controls;
 using Kairo.Utils;
 using Avalonia.Threading; // added for DispatcherTimer
+using Kairo.Utils.Logger;
 
 namespace Kairo.Components.DashBoard
 {
@@ -23,15 +27,18 @@ namespace Kairo.Components.DashBoard
 
         private DispatcherTimer? _snackbarTimer; // auto-dismiss timer
         private InfoBar? _snackbar;
+        private CustomTitleBar? _titleBar;
 
         public DashBoard()
         {
             InitializeComponent();
             Access.DashBoard = this;
             NavView.SelectedItem = HomeNavItem;
+            _titleBar = this.FindControl<CustomTitleBar>("TitleBar");
             this.Opened += OnDashBoardOpened;
             this.Deactivated += OnDashBoardDeactivated;
             _snackbar = this.FindControl<InfoBar>("Snackbar");
+            _ = LoadAvatar();
         }
 
         private void OnDashBoardOpened(object? sender, EventArgs e)
@@ -62,6 +69,23 @@ namespace Kairo.Components.DashBoard
         private void OnDashBoardDeactivated(object? sender, EventArgs e)
         {
             CloseTransientUI();
+        }
+
+        private async Task LoadAvatar()
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(MainWindow.Avatar)) return;
+                using HttpClient hc = new();
+                var bytes = await hc.GetByteArrayAsyncLogged(MainWindow.Avatar);
+                using var ms = new System.IO.MemoryStream(bytes);
+                Avatar = new Bitmap(ms);
+                Dispatcher.UIThread.Post(() =>
+                {
+                    _titleBar?.RefreshAvatar();
+                });
+            }
+            catch { }
         }
 
         private void NavView_OnSelectionChanged(object? sender, NavigationViewSelectionChangedEventArgs e)

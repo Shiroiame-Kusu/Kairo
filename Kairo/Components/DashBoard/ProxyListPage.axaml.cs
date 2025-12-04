@@ -25,7 +25,6 @@ public partial class ProxyListPage : UserControl
     private readonly Dictionary<int, ProxyCard> _cardByProxyId = new();
     private WrapPanel? _listPanel; // cached reference
     private int? _selectedProxyId;
-    private Image? _avatarImage;
     public ProxyListPage()
     {
         InitializeComponent();
@@ -36,7 +35,6 @@ public partial class ProxyListPage : UserControl
     private void InitializeComponent()
     {
         AvaloniaXamlLoader.Load(this);
-        _avatarImage = this.FindControl<Image>("AvatarImage");
     }
     
     private async void OnLoaded(object? sender, RoutedEventArgs e)
@@ -71,7 +69,6 @@ public partial class ProxyListPage : UserControl
 
             
             await LoadProxies();
-            await RefreshAvatar();
         }
         else
         {
@@ -80,18 +77,6 @@ public partial class ProxyListPage : UserControl
         }
     }
     
-    private async Task RefreshAvatar()
-    {
-        try
-        {
-            Dispatcher.UIThread.Post(() =>
-            {
-                if (_avatarImage != null && DashBoard.Avatar != null)
-                    _avatarImage.Source = DashBoard.Avatar;
-            });
-        }
-        catch { }
-    }
     private void UpdateAllCardVisuals()
     {
         foreach (var kv in _cardByProxyId)

@@ -4,12 +4,14 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
 using Avalonia.VisualTree;
+using Kairo.Components.DashBoard;
 
 namespace Kairo.Controls;
 
 public partial class CustomTitleBar : UserControl
 {
     public static readonly StyledProperty<string?> TitleProperty = AvaloniaProperty.Register<CustomTitleBar, string?>(nameof(Title));
+    public static readonly StyledProperty<bool> ShowUserInfoProperty = AvaloniaProperty.Register<CustomTitleBar, bool>(nameof(ShowUserInfo), false);
 
     public string? Title
     {
@@ -17,8 +19,17 @@ public partial class CustomTitleBar : UserControl
         set => SetValue(TitleProperty, value);
     }
 
+    public bool ShowUserInfo
+    {
+        get => GetValue(ShowUserInfoProperty);
+        set => SetValue(ShowUserInfoProperty, value);
+    }
+
     private Window? _window;
     private ContentControl? _maxIcon;
+    private StackPanel? _userInfoPanel;
+    private Image? _userAvatar;
+    private TextBlock? _userNameText;
 
     public CustomTitleBar()
     {
@@ -30,6 +41,9 @@ public partial class CustomTitleBar : UserControl
     {
         AvaloniaXamlLoader.Load(this);
         _maxIcon = this.FindControl<ContentControl>("MaxIcon");
+        _userInfoPanel = this.FindControl<StackPanel>("UserInfoPanel");
+        _userAvatar = this.FindControl<Image>("UserAvatar");
+        _userNameText = this.FindControl<TextBlock>("UserNameText");
     }
 
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
@@ -40,6 +54,50 @@ public partial class CustomTitleBar : UserControl
         {
             _window.PropertyChanged += WindowOnPropertyChanged;
             UpdateMaxIcon();
+            if (ShowUserInfo)
+            {
+                UpdateUserInfo();
+            }
+        }
+    }
+
+    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
+    {
+        base.OnPropertyChanged(change);
+        if (change.Property == ShowUserInfoProperty)
+        {
+            if (_userInfoPanel != null)
+            {
+                _userInfoPanel.IsVisible = ShowUserInfo;
+            }
+            if (ShowUserInfo)
+            {
+                UpdateUserInfo();
+            }
+        }
+    }
+
+    private void UpdateUserInfo()
+    {
+        if (_userInfoPanel != null)
+        {
+            _userInfoPanel.IsVisible = true;
+        }
+        if (_userNameText != null)
+        {
+            _userNameText.Text = Global.Config.Username ?? string.Empty;
+        }
+        if (_userAvatar != null && DashBoard.Avatar != null)
+        {
+            _userAvatar.Source = DashBoard.Avatar;
+        }
+    }
+
+    public void RefreshAvatar()
+    {
+        if (_userAvatar != null && DashBoard.Avatar != null)
+        {
+            _userAvatar.Source = DashBoard.Avatar;
         }
     }
 

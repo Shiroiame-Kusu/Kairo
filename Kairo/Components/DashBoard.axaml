@@ -18,7 +18,7 @@
     <Border CornerRadius="12" Background="{DynamicResource SolidBackgroundFillColorBaseBrush}"
             BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" BorderThickness="0" ClipToBounds="True">
         <Grid RowDefinitions="Auto,*">
-            <controls:CustomTitleBar Title="Kairo - DashBoard" />
+            <controls:CustomTitleBar x:Name="TitleBar" Title="Kairo - DashBoard" ShowUserInfo="True" />
             <Grid Grid.Row="1">
                 <Border CornerRadius="{DynamicResource WindowCornerRadius}"
                         Background="{DynamicResource LayerFillColorDefaultBrush}"

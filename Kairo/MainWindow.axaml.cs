@@ -435,6 +435,14 @@ public partial class MainWindow : Window
     public static void LogoutCleanup()
     {
         _isLoggedIn = false;
+        // 清理静态用户数据
+        Avatar = null;
+        Inbound = 0;
+        Outbound = 0;
+        Traffic = 0;
+        // 清理 DashBoard 的静态头像
+        Components.DashBoard.DashBoard.Avatar = null;
+        
         if (Access.DashBoard is Window db)
         {
             try { db.Close(); } catch { }

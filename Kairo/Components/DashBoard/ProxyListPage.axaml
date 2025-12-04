@@ -1,66 +1,64 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="Kairo.Components.DashBoard.ProxyListPage">
-  <UserControl.Styles>
-    <!-- Base proxy card style -->
-    <Style Selector="Border.proxy-card">
-      <!-- Use a subtle stroke so edges (especially left) are always visible; was Transparent -->
-      <Setter Property="BorderBrush" Value="{DynamicResource ControlStrokeColorDefaultBrush}"/>
-      <!-- Keep constant thickness to avoid layout shifts hiding left edge -->
-      <Setter Property="BorderThickness" Value="2"/>
-      <Setter Property="CornerRadius" Value="8"/>
-      <Setter Property="Padding" Value="10"/>
-      <Setter Property="Margin" Value="6,0,6,10"/>
-      <Setter Property="Background" Value="{DynamicResource LayerFillColorDefaultBrush}" />
-      <Setter Property="MinWidth" Value="220"/>
-      <Setter Property="UseLayoutRounding" Value="True"/>
-      <Setter Property="Transitions">
-        <Transitions>
-          <BrushTransition Property="BorderBrush" Duration="0:0:0.18" />
-          <BrushTransition Property="Background" Duration="0:0:0.18" />
-        </Transitions>
-      </Setter>
-    </Style>
-    <!-- Hover state -->
-    <Style Selector="Border.proxy-card:pointerover">
-      <Setter Property="BorderBrush" Value="{DynamicResource AccentStrokeColorDefaultBrush}"/>
-      <Setter Property="Background" Value="{DynamicResource LayerFillColorAltBrush}" />
-    </Style>
-    <!-- Selected state: accent outline (thickness unchanged to prevent clipping) -->
-    <Style Selector="Border.proxy-card.selected">
-      <Setter Property="BorderBrush" Value="{DynamicResource AccentFillColorDefaultBrush}"/>
-    </Style>
-    <!-- Running state (applied in code by adding class 'running') -->
-    <Style Selector="Border.proxy-card.running">
-      <!-- Subtle green tint overlay while preserving readable foreground -->
-      <Setter Property="Background" Value="#2040A060" />
-      <Setter Property="BorderBrush" Value="#4080C090" />
-    </Style>
-    <!-- Running + Selected (ensure selection outline shows) -->
-    <Style Selector="Border.proxy-card.running.selected">
-      <Setter Property="BorderBrush" Value="{DynamicResource AccentFillColorSecondaryBrush}" />
-    </Style>
-  </UserControl.Styles>
-  <Grid RowDefinitions="60,*,70" Margin="12">
-    <DockPanel Height="60">
-      <Border Height="40" Width="40" CornerRadius="20" BorderBrush="LightBlue" BorderThickness="1" Margin="0,10,10,10" ClipToBounds="True">
-        <Image x:Name="AvatarImage" Source="avares://Kairo/Assets/kairo.ico" Stretch="UniformToFill"/>
-      </Border>
-      <TextBlock VerticalAlignment="Center" FontSize="24" Text="隧道列表"/>
-    </DockPanel>
-    <Border Grid.Row="1" CornerRadius="8" Padding="12" Background="{DynamicResource LayerFillColorDefaultBrush}">
-      <ScrollViewer>
-        <WrapPanel x:Name="ListPanel" />
-      </ScrollViewer>
-    </Border>
-    <!-- Controls row: add a new button before '创建新隧道' -->
-    <Grid Grid.Row="2" ColumnDefinitions="Auto,Auto,Auto,*" Margin="0,12,0,0" ColumnSpacing="12">
-      <Button x:Name="NodePingBtn" Grid.Column="0" Content="节点延迟" Click="NodePingBtn_OnClick"/>
-      <Button x:Name="CreateProxyBtn" Grid.Column="1" Content="创建新隧道" Click="CreateProxyBtn_OnClick"/>
-      <Button x:Name="RefreshBtn" Grid.Column="2" Content="刷新" Click="RefreshBtn_OnClick"/>
-      <Border Grid.Column="3" VerticalAlignment="Center" Padding="8" CornerRadius="6" Background="{DynamicResource LayerFillColorDefaultBrush}">
-        <TextBlock Text="PS:右键隧道可以打开菜单哦喵~"/>
-      </Border>
+    <UserControl.Styles>
+        <!-- Base proxy card style -->
+        <Style Selector="Border.proxy-card">
+            <!-- Use a subtle stroke so edges (especially left) are always visible; was Transparent -->
+            <Setter Property="BorderBrush" Value="{DynamicResource ControlStrokeColorDefaultBrush}" />
+            <!-- Keep constant thickness to avoid layout shifts hiding left edge -->
+            <Setter Property="BorderThickness" Value="2" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Padding" Value="10" />
+            <Setter Property="Margin" Value="6,0,6,10" />
+            <Setter Property="Background" Value="{DynamicResource LayerFillColorDefaultBrush}" />
+            <Setter Property="MinWidth" Value="220" />
+            <Setter Property="UseLayoutRounding" Value="True" />
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="BorderBrush" Duration="0:0:0.18" />
+                    <BrushTransition Property="Background" Duration="0:0:0.18" />
+                </Transitions>
+            </Setter>
+        </Style>
+        <!-- Hover state -->
+        <Style Selector="Border.proxy-card:pointerover">
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentStrokeColorDefaultBrush}" />
+            <Setter Property="Background" Value="{DynamicResource LayerFillColorAltBrush}" />
+        </Style>
+        <!-- Selected state: accent outline (thickness unchanged to prevent clipping) -->
+        <Style Selector="Border.proxy-card.selected">
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentFillColorDefaultBrush}" />
+        </Style>
+        <!-- Running state (applied in code by adding class 'running') -->
+        <Style Selector="Border.proxy-card.running">
+            <!-- Subtle green tint overlay while preserving readable foreground -->
+            <Setter Property="Background" Value="#2040A060" />
+            <Setter Property="BorderBrush" Value="#4080C090" />
+        </Style>
+        <!-- Running + Selected (ensure selection outline shows) -->
+        <Style Selector="Border.proxy-card.running.selected">
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentFillColorSecondaryBrush}" />
+        </Style>
+    </UserControl.Styles>
+    <Grid RowDefinitions="Auto,*,70" Margin="12">
+        <Border Grid.Row="0" CornerRadius="8" Padding="12,0" Background="{DynamicResource LayerFillColorDefaultBrush}" HorizontalAlignment="Left">
+            <TextBlock VerticalAlignment="Center" FontSize="24" Text="隧道列表" Margin="0,12,0,12" />
+        </Border>
+        <Border Grid.Row="1" CornerRadius="8" Padding="12" Background="{DynamicResource LayerFillColorDefaultBrush}" Margin="0,12,0,0">
+            <ScrollViewer>
+                <WrapPanel x:Name="ListPanel" />
+            </ScrollViewer>
+        </Border>
+        <!-- Controls row: add a new button before '创建新隧道' -->
+        <Grid Grid.Row="2" ColumnDefinitions="Auto,Auto,Auto,*" Margin="0,12,0,0" ColumnSpacing="12">
+            <Button x:Name="NodePingBtn" Grid.Column="0" Content="节点延迟" Click="NodePingBtn_OnClick" />
+            <Button x:Name="CreateProxyBtn" Grid.Column="1" Content="创建新隧道" Click="CreateProxyBtn_OnClick" />
+            <Button x:Name="RefreshBtn" Grid.Column="2" Content="刷新" Click="RefreshBtn_OnClick" />
+            <Border Grid.Column="3" VerticalAlignment="Center" Padding="8" CornerRadius="6"
+                    Background="{DynamicResource LayerFillColorDefaultBrush}">
+                <TextBlock Text="PS:右键隧道可以打开菜单哦喵~" />
+            </Border>
+        </Grid>
     </Grid>
-  </Grid>
 </UserControl>
