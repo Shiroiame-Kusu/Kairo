@@ -1,149 +1,89 @@
 using System;
+using System.ComponentModel;
 using Avalonia.Controls;
-using Avalonia.Markup.Xaml;
 using Avalonia.Controls.Shapes;
-using Avalonia.Media;
 using Avalonia.Input;
-using FluentAvalonia.UI.Controls;
-using Avalonia.Controls.Primitives; // for FlyoutBase
+using Avalonia.Markup.Xaml;
+using Avalonia.Controls.Primitives;
+using Avalonia.Media;
+using Kairo.ViewModels;
 
 namespace Kairo.Components.DashBoard;
 
 public partial class ProxyCard : UserControl
 {
-    public Proxy? Proxy { get; private set; }
-
-    private MenuItem? _refreshItem;
-    private MenuItem? _createItem;
-    private MenuItem? _deleteItem;
-    private MenuItem? _startItem;
-    private MenuItem? _stopItem;
-
-    private Border? _rootCache;
-    private Ellipse? _indicatorCache;
-
-    // Action events raised to parent page
-    public event Action<ProxyCard, Proxy>? RequestSelect;
-    public event Action<ProxyCard, Proxy>? RequestRefresh;
-    public event Action<ProxyCard, Proxy>? RequestCreate;
-    public event Action<ProxyCard, Proxy>? RequestDelete;
-    public event Action<ProxyCard, Proxy>? RequestStart;
-    public event Action<ProxyCard, Proxy>? RequestStop;
+    private ProxyCardViewModel? _vm;
+    private Border? _rootBorder;
+    private Ellipse? _indicator;
 
     public ProxyCard()
     {
         InitializeComponent();
-        CacheMenuItemsAndWire();
-        AddHandler(PointerPressedEvent, OnPointerPressed, Avalonia.Interactivity.RoutingStrategies.Tunnel);
-        AddHandler(ContextRequestedEvent, OnContextRequested, Avalonia.Interactivity.RoutingStrategies.Bubble);
-        this.AttachedToVisualTree += (_, __) =>
-        {
-            var rb = GetRootBorder();
-            if (rb != null)
-            {
-                rb.DoubleTapped -= RootBorder_DoubleTapped;
-                rb.DoubleTapped += RootBorder_DoubleTapped;
-            }
-        };
-    }
-
-    private void CacheMenuItemsAndWire()
-    {
-        _refreshItem = this.FindControl<MenuItem>("RefreshItem");
-        _createItem = this.FindControl<MenuItem>("CreateItem");
-        _deleteItem = this.FindControl<MenuItem>("DeleteItem");
-        _startItem = this.FindControl<MenuItem>("StartItem");
-        _stopItem = this.FindControl<MenuItem>("StopItem");
-
-        if (_refreshItem != null) _refreshItem.Click += (_, __) => { if (Proxy != null) RequestRefresh?.Invoke(this, Proxy); };
-        if (_createItem != null) _createItem.Click += (_, __) => { if (Proxy != null) RequestCreate?.Invoke(this, Proxy); };
-        if (_deleteItem != null) _deleteItem.Click += (_, __) => { if (Proxy != null) RequestDelete?.Invoke(this, Proxy); };
-        if (_startItem != null) _startItem.Click += (_, __) => { if (Proxy != null) RequestStart?.Invoke(this, Proxy); };
-        if (_stopItem != null) _stopItem.Click += (_, __) => { if (Proxy != null) RequestStop?.Invoke(this, Proxy); };
-    }
-
-    private void RootBorder_DoubleTapped(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
-    {
-        if (Proxy != null) RequestStart?.Invoke(this, Proxy);
+        DataContextChanged += OnDataContextChanged;
     }
 
     private void InitializeComponent() => AvaloniaXamlLoader.Load(this);
 
-    public Border? GetRootBorder() => _rootCache ??= this.FindControl<Border>("RootBorder");
-    private Ellipse? GetIndicator() => _indicatorCache ??= this.FindControl<Ellipse>("Indicator");
-
-    public void Initialize(Proxy proxy)
+    private void OnDataContextChanged(object? sender, EventArgs e)
     {
-        Proxy = proxy;
-        var nameBlock = this.FindControl<TextBlock>("NameBlock");
-        var routeBlock = this.FindControl<TextBlock>("RouteBlock");
-        var indicator = GetIndicator();
-        if (nameBlock != null) nameBlock.Text = proxy.ProxyName;
-        if (routeBlock != null)
+        if (_vm != null)
         {
-            var nodeLabel = proxy.NodeInfo?.Host ?? proxy.NodeInfo?.Ip ?? (proxy.Node > 0 ? $"Node{proxy.Node}" : "Node");
-            var remote = proxy.RemotePort.HasValue ? proxy.RemotePort.Value.ToString() : (proxy.Domain ?? "-");
-            routeBlock.Text = $"{proxy.LocalIp}:{proxy.LocalPort} -> {nodeLabel}:{remote}";
+            _vm.PropertyChanged -= VmOnPropertyChanged;
         }
-        if (indicator != null)
+
+        _vm = DataContext as ProxyCardViewModel;
+        if (_vm != null)
         {
-            indicator.Stroke = Brushes.Gray;
-            indicator.Fill = Brushes.Gray;
+            _vm.PropertyChanged += VmOnPropertyChanged;
+            UpdateVisual();
         }
     }
 
-    private void OnPointerPressed(object? sender, PointerPressedEventArgs e)
+    private void VmOnPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (Proxy == null) return;
-        RequestSelect?.Invoke(this, Proxy);
+        if (e.PropertyName == nameof(ProxyCardViewModel.IsRunning) || e.PropertyName == nameof(ProxyCardViewModel.IsSelected))
+        {
+            UpdateVisual();
+        }
+    }
+
+    private void UpdateVisual()
+    {
+        if (_vm == null) return;
+        _rootBorder ??= this.FindControl<Border>("RootBorder");
+        _indicator ??= this.FindControl<Ellipse>("Indicator");
+
+        if (_rootBorder != null)
+        {
+            if (_vm.IsRunning) _rootBorder.Classes.Add("running"); else _rootBorder.Classes.Remove("running");
+            if (_vm.IsSelected) _rootBorder.Classes.Add("selected"); else _rootBorder.Classes.Remove("selected");
+        }
+
+        if (_indicator != null)
+        {
+            var brush = _vm.IsRunning ? Brushes.LightGreen : Brushes.Gray;
+            _indicator.Stroke = brush;
+            _indicator.Fill = brush;
+        }
+    }
+
+    private void OnCardPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (DataContext is not ProxyCardViewModel vm) return;
+        vm.SelectCommand.Execute(null);
         if (e.GetCurrentPoint(this).Properties.IsRightButtonPressed)
         {
-            var target = GetRootBorder() as Control ?? this;
-            var f = FlyoutBase.GetAttachedFlyout(target);
-            f?.ShowAt(target);
+            var target = this.FindControl<Border>("RootBorder") as Control ?? this;
+            FlyoutBase.GetAttachedFlyout(target)?.ShowAt(target);
             e.Handled = true;
         }
     }
 
-    private void OnContextRequested(object? sender, ContextRequestedEventArgs e)
+    private void OnCardDoubleTapped(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
-        if (Proxy == null) return;
-        RequestSelect?.Invoke(this, Proxy);
-        var target = GetRootBorder() as Control ?? this;
-        var f = FlyoutBase.GetAttachedFlyout(target);
-        f?.ShowAt(target);
-        e.Handled = true;
-    }
-
-    public void UpdateRunningState(bool running)
-    {
-        var rb = GetRootBorder();
-        var indicator = GetIndicator();
-        if (rb != null)
+        if (DataContext is ProxyCardViewModel vm)
         {
-            if (running) rb.Classes.Add("running"); else rb.Classes.Remove("running");
+            vm.StartCommand.Execute(null);
         }
-        if (indicator != null)
-        {
-            if (running)
-            {
-                indicator.Stroke = Brushes.LightGreen;
-                indicator.Fill = Brushes.LightGreen;
-            }
-            else
-            {
-                indicator.Stroke = Brushes.Gray;
-                indicator.Fill = Brushes.Gray;
-            }
-        }
-        if (_startItem != null)
-            _startItem.Header = running ? "重新启动" : "启动隧道";
-    }
-
-    public void HideFlyout()
-    {
-        var rb = GetRootBorder();
-        if (rb == null) return;
-        if (FlyoutBase.GetAttachedFlyout(rb) is FlyoutBase f) f.Hide();
     }
 }

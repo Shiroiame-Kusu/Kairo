@@ -1,25 +1,28 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             x:Class="Kairo.Components.DashBoard.ProxyCard">
-  <Border x:Name="RootBorder" Classes="proxy-card">
+             xmlns:vm="clr-namespace:Kairo.ViewModels"
+             x:Class="Kairo.Components.DashBoard.ProxyCard"
+             x:DataType="vm:ProxyCardViewModel">
+  <Border x:Name="RootBorder" Classes="proxy-card" DoubleTapped="OnCardDoubleTapped" PointerPressed="OnCardPointerPressed">
     <FlyoutBase.AttachedFlyout>
       <MenuFlyout>
-        <MenuItem x:Name="RefreshItem" Header="刷新" />
+        <MenuItem Header="刷新" Command="{Binding RefreshCommand}" />
         <Separator/>
-        <MenuItem x:Name="CreateItem" Header="新建隧道" />
-        <MenuItem x:Name="DeleteItem" Header="删除隧道" />
+        <MenuItem Header="新建隧道" Command="{Binding CreateCommand}" />
+        <MenuItem Header="删除隧道" Command="{Binding DeleteCommand}" />
         <Separator/>
-        <MenuItem x:Name="StartItem" Header="启动隧道" />
-        <MenuItem x:Name="StopItem" Header="停止隧道" />
+        <MenuItem Header="启动隧道" Command="{Binding StartCommand}" />
+        <MenuItem Header="停止隧道" Command="{Binding StopCommand}" />
       </MenuFlyout>
     </FlyoutBase.AttachedFlyout>
     <!-- Remove zero padding; style now provides Padding=10 -->
     <StackPanel x:Name="MainPanel" Spacing="6" Margin="0">
       <StackPanel Orientation="Horizontal" Spacing="4">
-        <TextBlock x:Name="NameBlock" FontWeight="SemiBold"/>
-        <Ellipse x:Name="Indicator" Width="10" Height="10" StrokeThickness="2" Margin="4,0,0,0"/>
+        <TextBlock Text="{Binding Name}" FontWeight="SemiBold"/>
+        <Ellipse x:Name="Indicator" Width="10" Height="10" StrokeThickness="2" Margin="4,0,0,0">
+        </Ellipse>
       </StackPanel>
-      <TextBlock x:Name="RouteBlock" FontSize="12" TextWrapping="Wrap"/>
+      <TextBlock Text="{Binding RouteText}" FontSize="12" TextWrapping="Wrap"/>
     </StackPanel>
   </Border>
 </UserControl>

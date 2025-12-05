@@ -1,11 +1,13 @@
 <Window xmlns="https://github.com/avaloniaui"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:fa="using:FluentAvalonia.UI.Controls"
-        xmlns:controls="clr-namespace:Kairo.Controls"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:fa="using:FluentAvalonia.UI.Controls"
+    xmlns:controls="clr-namespace:Kairo.Controls"
+    xmlns:vm="clr-namespace:Kairo.ViewModels"
         mc:Ignorable="d"
         x:Class="Kairo.Components.DashBoard.DashBoard"
+    x:DataType="vm:DashBoardViewModel"
         Title="Kairo - DashBoard"
         Width="800" Height="500"
         MinWidth="800" MinHeight="500"
@@ -54,7 +56,12 @@
                         </fa:NavigationView.FooterMenuItems>
                         <Grid>
                             <ContentControl x:Name="ContentHost" />
-                            <fa:InfoBar x:Name="Snackbar" IsOpen="False" HorizontalAlignment="Right"
+                            <fa:InfoBar x:Name="Snackbar"
+                                        IsOpen="{Binding IsSnackbarOpen}"
+                                        Title="{Binding SnackbarTitle}"
+                                        Message="{Binding SnackbarMessage}"
+                                        Severity="{Binding SnackbarSeverity}"
+                                        HorizontalAlignment="Right"
                                         VerticalAlignment="Bottom" Margin="0,0,16,16" />
                         </Grid>
                     </fa:NavigationView>
