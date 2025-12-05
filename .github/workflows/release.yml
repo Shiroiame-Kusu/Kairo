@@ -146,13 +146,7 @@ jobs:
         run: dotnet restore "$PROJECT_PATH"
       - name: Publish
         run: |
-          dotnet publish "$PROJECT_PATH" \
-            -c "$CONFIGURATION" \
-            -r ${{ matrix.rid }} \
-            /p:Version=${{ needs.prepare.outputs.version }} \
-            /p:AssemblyVersion=${{ needs.prepare.outputs.assembly_version }} \
-            /p:FileVersion=${{ needs.prepare.outputs.assembly_version }} \
-            -o publish/${{ matrix.rid }}
+          dotnet publish "$PROJECT_PATH" -c "$CONFIGURATION" -r ${{ matrix.rid }} /p:Version=${{ needs.prepare.outputs.version }} /p:AssemblyVersion=${{ needs.prepare.outputs.assembly_version }} /p:FileVersion=${{ needs.prepare.outputs.assembly_version }} -o publish/${{ matrix.rid }}
       - name: Archive
         shell: bash
         run: |
