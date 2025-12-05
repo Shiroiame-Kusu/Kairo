@@ -14,7 +14,9 @@
         WindowStartupLocation="CenterScreen"
         Icon="avares://Kairo/Assets/kairo.ico"
         SystemDecorations="None"
-        TransparencyLevelHint="Mica, AcrylicBlur, Blur"
+        ExtendClientAreaToDecorationsHint="True"
+        TransparencyLevelHint="Transparent, Mica, AcrylicBlur, Blur"
+        TransparencyBackgroundFallback="Transparent"
         Background="Transparent">
     <Window.KeyBindings>
         <KeyBinding Command="{Binding StartOAuthCommand}" Gesture="Enter" />
@@ -29,8 +31,14 @@
             </Setter>
         </Style>
     </Window.Styles>
-    <Border CornerRadius="12" Background="{DynamicResource SolidBackgroundFillColorBaseBrush}"
-            BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" BorderThickness="0" ClipToBounds="True">
+    <Grid Background="Transparent">
+        <Border Margin="8"
+                CornerRadius="{DynamicResource WindowCornerRadius}"
+                Background="{DynamicResource SolidBackgroundFillColorBaseBrush}"
+                BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                BorderThickness="0"
+                BoxShadow="{DynamicResource WindowShadow}"
+                ClipToBounds="True">
         <Grid RowDefinitions="Auto,*">
             <!-- Custom Title Bar -->
             <controls:CustomTitleBar Title="Kairo - Another LocyanFrp Client" />
@@ -84,5 +92,6 @@
                 </Grid>
             </Grid>
         </Grid>
-    </Border>
+        </Border>
+    </Grid>
 </Window>

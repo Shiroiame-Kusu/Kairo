@@ -15,10 +15,18 @@
         Icon="avares://Kairo/Assets/kairo.ico"
         Closing="DashBoard_OnClosing"
         SystemDecorations="None"
-        TransparencyLevelHint="Mica, AcrylicBlur, Blur"
+        ExtendClientAreaToDecorationsHint="True"
+        TransparencyLevelHint="Transparent, Mica, AcrylicBlur, Blur"
+        TransparencyBackgroundFallback="Transparent"
         Background="Transparent">
-    <Border CornerRadius="12" Background="{DynamicResource SolidBackgroundFillColorBaseBrush}"
-            BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" BorderThickness="0" ClipToBounds="True">
+    <Grid Background="Transparent">
+        <Border Margin="8"
+                CornerRadius="{DynamicResource WindowCornerRadius}"
+                Background="{DynamicResource SolidBackgroundFillColorBaseBrush}"
+                BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                BorderThickness="0"
+                BoxShadow="{DynamicResource WindowShadow}"
+                ClipToBounds="True">
         <Grid RowDefinitions="Auto,*">
             <controls:CustomTitleBar x:Name="TitleBar" Title="Kairo - DashBoard" ShowUserInfo="True" />
             <Grid Grid.Row="1">
@@ -68,5 +76,6 @@
                 </Border>
             </Grid>
         </Grid>
-    </Border>
+        </Border>
+    </Grid>
 </Window>

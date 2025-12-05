@@ -11,6 +11,8 @@ namespace Kairo.Utils;
 
 internal static class FrpcProcessManager
 {
+    private const LogDestination FrpcLogDestinations = LogDestination.Console | LogDestination.File | LogDestination.Cache | LogDestination.Event;
+
     private class ProcInfo
     {
         public int ProxyId { get; init; }
@@ -50,15 +52,23 @@ internal static class FrpcProcessManager
                 StandardErrorEncoding = Encoding.UTF8
             };
             var proc = new Process { StartInfo = psi, EnableRaisingEvents = true };
-            proc.OutputDataReceived += (_, e) => { if (!string.IsNullOrEmpty(e.Data)) AppLogger.Output(LogType.Info, e.Data); };
-            proc.ErrorDataReceived += (_, e) => { if (!string.IsNullOrEmpty(e.Data)) AppLogger.Output(LogType.Error, e.Data); };
+            proc.OutputDataReceived += (_, e) =>
+            {
+                if (!string.IsNullOrEmpty(e.Data))
+                    AppLogger.Output(LogType.Info, FrpcLogDestinations, e.Data);
+            };
+            proc.ErrorDataReceived += (_, e) =>
+            {
+                if (!string.IsNullOrEmpty(e.Data))
+                    AppLogger.Output(LogType.Error, FrpcLogDestinations, e.Data);
+            };
             proc.Exited += (_, _) =>
             {
                 lock (_processes)
                 {
                     _processes.Remove(proxyId);
                 }
-                AppLogger.Output(LogType.Info, $"[FRPC] Proxy {proxyId} 进程已退出");
+                AppLogger.Output(LogType.Info, FrpcLogDestinations, $"[FRPC] Proxy {proxyId} 进程已退出");
                 try { ProxyExited?.Invoke(proxyId); } catch { }
             };
             if (!proc.Start())
@@ -72,13 +82,13 @@ internal static class FrpcProcessManager
             {
                 _processes[proxyId] = new ProcInfo { ProxyId = proxyId, Process = proc };
             }
-            AppLogger.Output(LogType.Info, $"[FRPC] 已启动隧道 {proxyId}, PID={proc.Id}");
+            AppLogger.Output(LogType.Info, FrpcLogDestinations, $"[FRPC] 已启动隧道 {proxyId}, PID={proc.Id}");
             onStarted?.Invoke("已启动");
             return true;
         }
         catch (Exception ex)
         {
-            AppLogger.Output(LogType.Error, "启动 frpc 失败", ex);
+            AppLogger.Output(LogType.Error, FrpcLogDestinations, "启动 frpc 失败", ex);
             onFailed?.Invoke(ex.Message);
             return false;
         }
@@ -100,11 +110,11 @@ internal static class FrpcProcessManager
                 }
                 catch (Exception ex)
                 {
-                    AppLogger.Output(LogType.Error, "结束隧道失败", ex);
+                    AppLogger.Output(LogType.Error, FrpcLogDestinations, "结束隧道失败", ex);
                     return false;
                 }
                 _processes.Remove(proxyId);
-                AppLogger.Output(LogType.Info, $"[FRPC] 已结束隧道 {proxyId}");
+                AppLogger.Output(LogType.Info, FrpcLogDestinations, $"[FRPC] 已结束隧道 {proxyId}");
                 return true;
             }
         }
