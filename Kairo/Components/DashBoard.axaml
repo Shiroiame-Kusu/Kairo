@@ -1,11 +1,13 @@
 <Window xmlns="https://github.com/avaloniaui"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:fa="using:FluentAvalonia.UI.Controls"
-        xmlns:controls="clr-namespace:Kairo.Controls"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:fa="using:FluentAvalonia.UI.Controls"
+    xmlns:controls="clr-namespace:Kairo.Controls"
+    xmlns:vm="clr-namespace:Kairo.ViewModels"
         mc:Ignorable="d"
         x:Class="Kairo.Components.DashBoard.DashBoard"
+    x:DataType="vm:DashBoardViewModel"
         Title="Kairo - DashBoard"
         Width="800" Height="500"
         MinWidth="800" MinHeight="500"
@@ -13,10 +15,18 @@
         Icon="avares://Kairo/Assets/kairo.ico"
         Closing="DashBoard_OnClosing"
         SystemDecorations="None"
-        TransparencyLevelHint="Mica, AcrylicBlur, Blur"
+        ExtendClientAreaToDecorationsHint="True"
+        TransparencyLevelHint="Transparent, Mica, AcrylicBlur, Blur"
+        TransparencyBackgroundFallback="Transparent"
         Background="Transparent">
-    <Border CornerRadius="12" Background="{DynamicResource SolidBackgroundFillColorBaseBrush}"
-            BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" BorderThickness="0" ClipToBounds="True">
+    <Grid Background="Transparent">
+        <Border Margin="8"
+                CornerRadius="{DynamicResource WindowCornerRadius}"
+                Background="{DynamicResource SolidBackgroundFillColorBaseBrush}"
+                BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                BorderThickness="0"
+                BoxShadow="{DynamicResource WindowShadow}"
+                ClipToBounds="True">
         <Grid RowDefinitions="Auto,*">
             <controls:CustomTitleBar x:Name="TitleBar" Title="Kairo - DashBoard" ShowUserInfo="True" />
             <Grid Grid.Row="1">
@@ -54,12 +64,18 @@
                         </fa:NavigationView.FooterMenuItems>
                         <Grid>
                             <ContentControl x:Name="ContentHost" />
-                            <fa:InfoBar x:Name="Snackbar" IsOpen="False" HorizontalAlignment="Right"
+                            <fa:InfoBar x:Name="Snackbar"
+                                        IsOpen="{Binding IsSnackbarOpen}"
+                                        Title="{Binding SnackbarTitle}"
+                                        Message="{Binding SnackbarMessage}"
+                                        Severity="{Binding SnackbarSeverity}"
+                                        HorizontalAlignment="Right"
                                         VerticalAlignment="Bottom" Margin="0,0,16,16" />
                         </Grid>
                     </fa:NavigationView>
                 </Border>
             </Grid>
         </Grid>
-    </Border>
+        </Border>
+    </Grid>
 </Window>

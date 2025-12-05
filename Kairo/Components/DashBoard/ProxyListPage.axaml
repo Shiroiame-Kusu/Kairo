@@ -1,6 +1,9 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             x:Class="Kairo.Components.DashBoard.ProxyListPage">
+             xmlns:vm="clr-namespace:Kairo.ViewModels"
+             xmlns:local="clr-namespace:Kairo.Components.DashBoard"
+             x:Class="Kairo.Components.DashBoard.ProxyListPage"
+             x:DataType="vm:ProxyListPageViewModel">
     <UserControl.Styles>
         <!-- Base proxy card style -->
         <Style Selector="Border.proxy-card">
@@ -47,14 +50,25 @@
         </Border>
         <Border Grid.Row="1" CornerRadius="8" Padding="12" Background="{DynamicResource LayerFillColorDefaultBrush}" Margin="0,12,0,0">
             <ScrollViewer>
-                <WrapPanel x:Name="ListPanel" />
+                <ItemsControl ItemsSource="{Binding Proxies}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:ProxyCardViewModel">
+                            <local:ProxyCard />
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
             </ScrollViewer>
         </Border>
         <!-- Controls row: add a new button before '创建新隧道' -->
         <Grid Grid.Row="2" ColumnDefinitions="Auto,Auto,Auto,*" Margin="0,12,0,0" ColumnSpacing="12">
-            <Button x:Name="NodePingBtn" Grid.Column="0" Content="节点延迟" Click="NodePingBtn_OnClick" />
-            <Button x:Name="CreateProxyBtn" Grid.Column="1" Content="创建新隧道" Click="CreateProxyBtn_OnClick" />
-            <Button x:Name="RefreshBtn" Grid.Column="2" Content="刷新" Click="RefreshBtn_OnClick" />
+            <Button Grid.Column="0" Content="节点延迟" Command="{Binding NodePingCommand}" />
+            <Button Grid.Column="1" Content="创建新隧道" Command="{Binding CreateCommand}" />
+            <Button Grid.Column="2" Content="刷新" Command="{Binding RefreshCommand}" />
             <Border Grid.Column="3" VerticalAlignment="Center" Padding="8" CornerRadius="6"
                     Background="{DynamicResource LayerFillColorDefaultBrush}">
                 <TextBlock Text="PS:右键隧道可以打开菜单哦喵~" />

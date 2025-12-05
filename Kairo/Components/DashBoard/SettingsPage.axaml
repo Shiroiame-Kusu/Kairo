@@ -1,6 +1,8 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:Kairo.ViewModels"
              x:Class="Kairo.Components.DashBoard.SettingsPage"
+             x:DataType="vm:SettingsPageViewModel"
              VerticalAlignment="Stretch">
   <Grid Margin="12" RowDefinitions="*,Auto">
     <!-- Scrollable settings content -->
@@ -8,20 +10,20 @@
       <StackPanel Spacing="16">
         <TextBlock Text="Frpc路径" FontSize="12"/>
         <Grid ColumnDefinitions="*,Auto" >
-          <TextBox x:Name="FrpcPathBox" IsReadOnly="True" Text=""/>
+          <TextBox IsReadOnly="True" Text="{Binding FrpcPath}"/>
           <Button Grid.Column="1" Margin="8,0,0,0" Content="选择文件" Click="SelectFile_OnClick"/>
         </Grid>
         <TextBlock Text="功能" FontSize="12"/>
         <Border  Background="{DynamicResource LayerFillColorDefaultBrush}" Padding="12" CornerRadius="8">
           <WrapPanel ScrollViewer.AllowAutoHide="True">
             <StackPanel Width="140" Spacing="8">
-              <ToggleSwitch x:Name="FollowSystemSwitch" Content="跟随系统主题" IsChecked="True" IsCheckedChanged="FollowSystemSwitch_OnChanged"/>
-              <ToggleSwitch x:Name="DarkThemeSwitch" Content="使用深色主题" IsEnabled="False" IsCheckedChanged="DarkThemeSwitch_OnChanged"/>
-              <ToggleSwitch x:Name="DebugModeSwitch" Content="调试模式" IsCheckedChanged="DebugModeSwitch_OnChanged" IsVisible="False"/>
+              <ToggleSwitch Content="跟随系统主题" IsChecked="{Binding FollowSystem, Mode=TwoWay}"/>
+              <ToggleSwitch Content="使用深色主题" IsEnabled="{Binding CanToggleDarkTheme}" IsChecked="{Binding DarkTheme, Mode=TwoWay}"/>
+              <ToggleSwitch Content="调试模式" IsVisible="False" IsChecked="{Binding DebugMode, Mode=TwoWay}"/>
               <!-- <ToggleSwitch x:Name="AutoStartSwitch" Content="开机自动启动" IsCheckedChanged="AutoStartSwitch_OnChanged"/> -->
             </StackPanel>
             <StackPanel Width="140" Spacing="8">
-              <ToggleSwitch x:Name="UseMirrorSwitch" Content="国内镜像" IsChecked="True" IsCheckedChanged="UseMirrorSwitch_OnChanged"/>
+              <ToggleSwitch Content="国内镜像" IsChecked="{Binding UseMirror, Mode=TwoWay}"/>
               <Button x:Name="DownloadFrpcBtn"  Content="下载FRPC" Click="DownloadFrpcBtn_OnClick"/>
             </StackPanel>
             <StackPanel Width="140" Spacing="8">
@@ -31,7 +33,7 @@
             </StackPanel>
             <StackPanel Width="180" Spacing="8" IsVisible="False">
               <TextBlock Text="更新分支"/>
-              <ComboBox x:Name="UpdateBranchBox" SelectionChanged="UpdateBranchBox_OnChanged">
+              <ComboBox SelectedIndex="{Binding UpdateBranchIndex, Mode=TwoWay}">
                 <ComboBoxItem Content="Release"/>
                 <ComboBoxItem Content="ReleaseCandidate"/>
                 <ComboBoxItem Content="Beta"/>
@@ -51,11 +53,11 @@
     <!-- Fixed bottom build info -->
     <Border Grid.Row="1" CornerRadius="8" Background="Transparent" Padding="12" Margin="0,16,0,0">
       <Grid ColumnDefinitions="*,Auto" >
-        <TextBlock x:Name="BuildInfoText" Text="" FontSize="12" TextWrapping="Wrap"/>
+        <TextBlock Text="{Binding BuildInfoText}" FontSize="12" TextWrapping="Wrap"/>
         <StackPanel Grid.Column="1" Margin="24,0,0,0" Spacing="4">
-          <TextBlock x:Name="VersionText" Text="" FontSize="12"/>
-          <TextBlock x:Name="DeveloperText" Text="" FontSize="12"/>
-          <TextBlock x:Name="CopyrightText" Text="" FontSize="12"/>
+          <TextBlock Text="{Binding VersionText}" FontSize="12"/>
+          <TextBlock Text="{Binding DeveloperText}" FontSize="12"/>
+          <TextBlock Text="{Binding CopyrightText}" FontSize="12"/>
         </StackPanel>
       </Grid>
     </Border>

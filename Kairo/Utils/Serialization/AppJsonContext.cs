@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
-using Kairo;
+using Kairo.Models;
 using Kairo.Components;
 using Kairo.Utils.Configuration;
 using static Kairo.Utils.CrashInterception;
@@ -18,8 +18,8 @@ namespace Kairo.Utils.Serialization;
 [JsonSerializable(typeof(List<Proxy>))]
 [JsonSerializable(typeof(Proxy))]
 [JsonSerializable(typeof(ProxyNode))]
-[JsonSerializable(typeof(MainWindow.UserInfo))]
-[JsonSerializable(typeof(MainWindow.UserInfo.LimitInfo))]
+[JsonSerializable(typeof(UserInfo))]
+[JsonSerializable(typeof(UserInfo.LimitInfo))]
 [JsonSerializable(typeof(CrashReport))]
 [JsonSerializable(typeof(CrashReport.LogLine))]
 internal partial class AppJsonContext : JsonSerializerContext

@@ -1,191 +1,71 @@
 using System;
+using System.Diagnostics;
 using System.IO;
+using System.Linq;
+using System.Net.Http;
+using System.Text.Json;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
 using Avalonia.Platform.Storage;
 using Kairo.Utils;
 using Kairo.Utils.Configuration;
-using Avalonia; // added for Design.IsDesignMode
-using System.Net.Http;
-using System.Text.Json;
-using System.Diagnostics;
-using Kairo.Utils.Logger; // add
-using System.Linq; // needed for TakeWhile
+using Kairo.Utils.Logger;
+using Kairo.ViewModels;
 
 namespace Kairo.Components.DashBoard
 {
     public partial class SettingsPage : UserControl
     {
-        // Added explicit control references (FindControl pattern) to avoid reliance on generated fields
-        private TextBox? _frpcPathBox;
-        private ToggleSwitch? _followSystemSwitch;
-        private ToggleSwitch? _darkThemeSwitch;
-        private ToggleSwitch? _useMirrorSwitch;
-        private ToggleSwitch? _debugModeSwitch;
-        private TextBlock? _buildInfoText;
-        private TextBlock? _versionText;
-        private TextBlock? _developerText;
-        private TextBlock? _copyrightText;
-        private ComboBox? _updateBranchBox;
+        private int _easterCount;
 
         public SettingsPage()
         {
             InitializeComponent();
+            DataContext = new SettingsPageViewModel();
             Loaded += OnLoaded;
         }
+
         private void InitializeComponent()
         {
             AvaloniaXamlLoader.Load(this);
-            // Resolve controls explicitly (mirrors pattern in HomePage.axaml.cs)
-            _frpcPathBox = this.FindControl<TextBox>("FrpcPathBox");
-            _followSystemSwitch = this.FindControl<ToggleSwitch>("FollowSystemSwitch");
-            _darkThemeSwitch = this.FindControl<ToggleSwitch>("DarkThemeSwitch");
-            _useMirrorSwitch = this.FindControl<ToggleSwitch>("UseMirrorSwitch");
-            _debugModeSwitch = this.FindControl<ToggleSwitch>("DebugModeSwitch");
-            _buildInfoText = this.FindControl<TextBlock>("BuildInfoText");
-            _versionText = this.FindControl<TextBlock>("VersionText");
-            _developerText = this.FindControl<TextBlock>("DeveloperText");
-            _copyrightText = this.FindControl<TextBlock>("CopyrightText");
-            _updateBranchBox = this.FindControl<ComboBox>("UpdateBranchBox");
         }
 
         private void OnLoaded(object? sender, RoutedEventArgs e)
         {
-            // Design mode sample data and early return to avoid accessing runtime-only state
+            if (DataContext is not SettingsPageViewModel vm) return;
+
             if (Design.IsDesignMode)
             {
-                if (_frpcPathBox != null) _frpcPathBox.Text = "/usr/bin/frpc"; // replaced direct name
-                if (_useMirrorSwitch != null) _useMirrorSwitch.IsChecked = true;
-                // if (AutoStartSwitch != null) AutoStartSwitch.IsChecked = false;
-                if (_followSystemSwitch != null) _followSystemSwitch.IsChecked = true;
-                if (_darkThemeSwitch != null) { _darkThemeSwitch.IsChecked = false; _darkThemeSwitch.IsEnabled = false; }
-                if (_debugModeSwitch != null) _debugModeSwitch.IsChecked = false;
-                if (_buildInfoText != null) _buildInfoText.Text = "(设计时) BuildInfo 占位";
-                if (_versionText != null) _versionText.Text = "版本: 0.0.0 Design";
-                if (_developerText != null) _developerText.Text = "开发者: ---";
-                if (_copyrightText != null) _copyrightText.Text = "Copyright ©";
+                vm.FrpcPath = "/usr/bin/frpc";
+                vm.UseMirror = true;
+                vm.FollowSystem = true;
+                vm.DarkTheme = false;
+                vm.DebugMode = false;
+                vm.UpdateBranchIndex = 0;
                 return;
             }
 
-            if (_frpcPathBox != null) _frpcPathBox.Text = Global.Config.FrpcPath ?? string.Empty; // replaced direct name
-            if (_useMirrorSwitch != null) _useMirrorSwitch.IsChecked = Global.Config.UsingDownloadMirror;
-            // if (AutoStartSwitch != null) AutoStartSwitch.IsChecked = Global.Config.AutoStartUp;
-            if (_followSystemSwitch != null) _followSystemSwitch.IsChecked = Global.Config.FollowSystemTheme;
-            if (_darkThemeSwitch != null)
-            {
-                _darkThemeSwitch.IsChecked = Global.Config.DarkTheme;
-                _darkThemeSwitch.IsEnabled = !Global.Config.FollowSystemTheme;
-            }
-            if (_debugModeSwitch != null)
-                _debugModeSwitch.IsChecked = Global.Config.DebugMode;
-            if (_buildInfoText != null) _buildInfoText.Text = Global.BuildInfo?.ToString() ?? string.Empty;
-            if (_versionText != null) _versionText.Text = $"版本: {Global.Version} {Global.VersionName}";
-            if (_developerText != null) _developerText.Text = $"开发者: {Global.Developer}";
-            if (_copyrightText != null) _copyrightText.Text = Global.Copyright;
-
-            // Initialize update branch selector: use stored preference or current branch
-            if (_updateBranchBox != null)
-            {
-                var preferred = string.IsNullOrWhiteSpace(Global.Config.UpdateBranch) ? Global.Branch : Global.Config.UpdateBranch;
-                _updateBranchBox.SelectedIndex = BranchToIndex(preferred);
-            }
-        }
-
-        private static int BranchToIndex(string? branch)
-        {
-            var b = NormalizeBranch(branch);
-            return b switch
-            {
-                "Release" => 0,
-                "ReleaseCandidate" => 1,
-                "Beta" => 2,
-                "Alpha" => 3,
-                _ => 0
-            };
-        }
-
-        private static string IndexToBranch(int idx) => idx switch
-        {
-            0 => "Release",
-            1 => "ReleaseCandidate",
-            2 => "Beta",
-            3 => "Alpha",
-            _ => "Release"
-        };
-
-        private static string? NormalizeBranch(string? b)
-        {
-            if (string.IsNullOrWhiteSpace(b)) return null;
-            b = b.Trim();
-            if (b.Equals("alpha", StringComparison.OrdinalIgnoreCase)) return "Alpha";
-            if (b.Equals("beta", StringComparison.OrdinalIgnoreCase)) return "Beta";
-            if (b.Equals("rc", StringComparison.OrdinalIgnoreCase) || b.Equals("releasecandidate", StringComparison.OrdinalIgnoreCase)) return "ReleaseCandidate";
-            if (b.Equals("release", StringComparison.OrdinalIgnoreCase)) return "Release";
-            return null;
-        }
-
-        private void UpdateBranchBox_OnChanged(object? sender, RoutedEventArgs e)
-        {
-            if (_updateBranchBox == null) return;
-            var idx = _updateBranchBox.SelectedIndex;
-            var sel = IndexToBranch(idx);
-            Global.Config.UpdateBranch = sel;
-            ConfigManager.Save();
-            (Access.DashBoard as DashBoard)?.OpenSnackbar("分支已设置", sel);
+            vm.LoadFromConfig();
         }
 
         private async void SelectFile_OnClick(object? sender, RoutedEventArgs e)
         {
+            if (DataContext is not SettingsPageViewModel vm) return;
             if (TopLevel.GetTopLevel(this) is not TopLevel top) return;
+
             var files = await top.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
             {
                 AllowMultiple = false,
                 Title = "选择 frpc 可执行文件"
             });
             var file = files.Count > 0 ? files[0] : null;
-            if (file != null)
-            {
-                Global.Config.FrpcPath = file.Path.LocalPath;
-                if (_frpcPathBox != null) _frpcPathBox.Text = Global.Config.FrpcPath;
-                ConfigManager.Save();
-                (Access.DashBoard as DashBoard)?.OpenSnackbar("已选择", Global.Config.FrpcPath);
-            }
-        }
+            if (file == null) return;
 
-        private void FollowSystemSwitch_OnChanged(object? sender, RoutedEventArgs e)
-        {
-            var toggle = sender as ToggleSwitch; // null-safe
-            bool follow = toggle?.IsChecked == true;
-            Global.Config.FollowSystemTheme = follow;
-            if (_darkThemeSwitch != null)
-                _darkThemeSwitch.IsEnabled = !follow;
-            ThemeManager.Apply(follow, Global.Config.DarkTheme);
+            vm.FrpcPath = file.Path.LocalPath;
             ConfigManager.Save();
-        }
-
-        private void DarkThemeSwitch_OnChanged(object? sender, RoutedEventArgs e)
-        {
-            if (Global.Config.FollowSystemTheme) return; // ignore when system theme is followed
-            var toggle = sender as ToggleSwitch;
-            Global.Config.DarkTheme = toggle?.IsChecked == true;
-            ThemeManager.Apply(false, Global.Config.DarkTheme);
-            ConfigManager.Save();
-        }
-
-        private void DebugModeSwitch_OnChanged(object? sender, RoutedEventArgs e)
-        {
-            var toggle = sender as ToggleSwitch;
-            bool enabled = toggle?.IsChecked == true;
-            Global.SetDebugMode(enabled, persist: true);
-            (Access.DashBoard as DashBoard)?.OpenSnackbar("调试模式", enabled ? "已开启" : "已关闭");
-        }
-
-        private void AutoStartSwitch_OnChanged(object? sender, RoutedEventArgs e)
-        {
-            var toggle = sender as ToggleSwitch;
-            Global.Config.AutoStartUp = toggle?.IsChecked == true;
-            ConfigManager.Save();
+            (Access.DashBoard as DashBoard)?.OpenSnackbar("已选择", vm.FrpcPath);
         }
 
         private void CopyTokenBtn_OnClick(object? sender, RoutedEventArgs e)
@@ -200,7 +80,7 @@ namespace Kairo.Components.DashBoard
             Global.Config.RefreshToken = string.Empty;
             ConfigManager.Save();
             (Access.DashBoard as DashBoard)?.OpenSnackbar("已退出", "请重新登录");
-            // show main window login again
+
             if (Access.MainWindow is MainWindow mw)
             {
                 MainWindow.LogoutCleanup();
@@ -210,23 +90,17 @@ namespace Kairo.Components.DashBoard
 
         private async void DownloadFrpcBtn_OnClick(object? sender, RoutedEventArgs e)
         {
+            if (DataContext is not SettingsPageViewModel vm) return;
+
             var win = new DownloadFrpcWindow();
             if (Access.DashBoard is Window owner)
                 await win.ShowDialog(owner);
             else
                 win.Show();
-            if (_frpcPathBox != null)
-                _frpcPathBox.Text = Global.Config.FrpcPath; // replaced direct name
+
+            vm.FrpcPath = Global.Config.FrpcPath;
         }
 
-        private void UseMirrorSwitch_OnChanged(object? sender, RoutedEventArgs e)
-        {
-            var toggle = sender as ToggleSwitch;
-            Global.Config.UsingDownloadMirror = toggle?.IsChecked == true;
-            ConfigManager.Save();
-        }
-
-        private int _easterCount;
         private void EasterEggBtn_OnClick(object? sender, RoutedEventArgs e)
         {
             _easterCount++;
@@ -246,7 +120,6 @@ namespace Kairo.Components.DashBoard
                 using var http = new HttpClient();
                 http.DefaultRequestHeaders.UserAgent.ParseAdd("Kairo/UpdateCheck");
 
-                // Determine desired branch
                 var desiredPref = NormalizeBranch(Global.Config.UpdateBranch) ?? Global.Branch;
                 var desired = NormalizeBranch(desiredPref) ?? "Release";
                 bool canSwitchBranch = Global.Branch.Equals("Alpha", StringComparison.OrdinalIgnoreCase) || desired.Equals(Global.Branch, StringComparison.OrdinalIgnoreCase);
@@ -268,7 +141,6 @@ namespace Kairo.Components.DashBoard
                     return;
                 }
                 var tagName = chosen.Value.GetProperty("tag_name").GetString() ?? string.Empty;
-                // Parse current and remote as version-branch.revision
                 var current = new Version(Global.Version);
                 var currentBranch = NormalizeBranch(Global.Branch) ?? "Release";
                 var currentRev = Global.Revision;
@@ -277,12 +149,10 @@ namespace Kairo.Components.DashBoard
                 bool updateAvailable;
                 if (currentBranch.Equals(remoteBranch, StringComparison.OrdinalIgnoreCase))
                 {
-                    // Same branch: update if version new or revision higher
                     updateAvailable = remoteVer > current || (remoteVer == current && remoteRev > currentRev);
                 }
                 else
                 {
-                    // Different branch: allow only if on Alpha (override) and user selected desired branch
                     updateAvailable = canSwitchBranch && desired.Equals(remoteBranch, StringComparison.OrdinalIgnoreCase) && !(remoteVer == current && remoteRev == currentRev && currentBranch == remoteBranch);
                 }
 
@@ -293,7 +163,6 @@ namespace Kairo.Components.DashBoard
                 }
                 (Access.DashBoard as DashBoard)?.OpenSnackbar("发现新版本", $"将退出并更新到 {remoteVer}-{remoteBranch}.{remoteRev}");
 
-                // Resolve updater path and launch with branch argument
                 var baseDir = AppContext.BaseDirectory;
                 var updaterDll = Path.Combine(baseDir, "Updater.dll");
                 var updaterExe = Path.Combine(baseDir, OperatingSystem.IsWindows() ? "Updater.exe" : "Updater");
@@ -356,28 +225,36 @@ namespace Kairo.Components.DashBoard
             };
         }
 
+        private static string? NormalizeBranch(string? b)
+        {
+            if (string.IsNullOrWhiteSpace(b)) return null;
+            b = b.Trim();
+            if (b.Equals("alpha", StringComparison.OrdinalIgnoreCase)) return "Alpha";
+            if (b.Equals("beta", StringComparison.OrdinalIgnoreCase)) return "Beta";
+            if (b.Equals("rc", StringComparison.OrdinalIgnoreCase) || b.Equals("releasecandidate", StringComparison.OrdinalIgnoreCase)) return "ReleaseCandidate";
+            if (b.Equals("release", StringComparison.OrdinalIgnoreCase)) return "Release";
+            return null;
+        }
+
         private static (Version ver, string branch, int revision) ParseTag(string? tag)
         {
-            // Expect like v3.1.0-beta.1, v3.1.0-alpha.2, v3.1.0-rc.3, v3.1.0-release.1
             tag ??= string.Empty;
-            var nonNullTag = tag ?? string.Empty;
-            string t = nonNullTag.StartsWith("v", StringComparison.OrdinalIgnoreCase)
-                ? (nonNullTag.Length > 1 ? nonNullTag[1..] : string.Empty)
-                : nonNullTag;
-            var safeT = t ?? string.Empty;
+            string t = tag.StartsWith("v", StringComparison.OrdinalIgnoreCase)
+                ? (tag.Length > 1 ? tag[1..] : string.Empty)
+                : tag;
             string branch = "Release";
             int rev = 0;
-            var lower = safeT.ToLowerInvariant();
-            string versionPart = safeT;
+            var lower = t.ToLowerInvariant();
+            string versionPart = t;
             if (lower.Contains("-alpha."))
             {
                 branch = "Alpha";
                 var idx = lower.IndexOf("-alpha.", StringComparison.Ordinal);
-                if (idx >= 0 && idx <= safeT.Length)
+                if (idx >= 0 && idx <= t.Length)
                 {
-                    versionPart = idx == 0 ? string.Empty : safeT[..idx];
+                    versionPart = idx == 0 ? string.Empty : t[..idx];
                     var suffixIndex = idx + "-alpha.".Length;
-                    var rstr = suffixIndex < safeT.Length ? safeT[suffixIndex..] : string.Empty;
+                    var rstr = suffixIndex < t.Length ? t[suffixIndex..] : string.Empty;
                     int.TryParse(new string(rstr.TakeWhile(char.IsDigit).ToArray()), out rev);
                 }
             }
@@ -385,11 +262,11 @@ namespace Kairo.Components.DashBoard
             {
                 branch = "Beta";
                 var idx = lower.IndexOf("-beta.", StringComparison.Ordinal);
-                if (idx >= 0 && idx <= safeT.Length)
+                if (idx >= 0 && idx <= t.Length)
                 {
-                    versionPart = idx == 0 ? string.Empty : safeT[..idx];
+                    versionPart = idx == 0 ? string.Empty : t[..idx];
                     var suffixIndex = idx + "-beta.".Length;
-                    var rstr = suffixIndex < safeT.Length ? safeT[suffixIndex..] : string.Empty;
+                    var rstr = suffixIndex < t.Length ? t[suffixIndex..] : string.Empty;
                     int.TryParse(new string(rstr.TakeWhile(char.IsDigit).ToArray()), out rev);
                 }
             }
@@ -397,11 +274,11 @@ namespace Kairo.Components.DashBoard
             {
                 branch = "ReleaseCandidate";
                 var idx = lower.IndexOf("-rc.", StringComparison.Ordinal);
-                if (idx >= 0 && idx <= safeT.Length)
+                if (idx >= 0 && idx <= t.Length)
                 {
-                    versionPart = idx == 0 ? string.Empty : safeT[..idx];
+                    versionPart = idx == 0 ? string.Empty : t[..idx];
                     var suffixIndex = idx + "-rc.".Length;
-                    var rstr = suffixIndex < safeT.Length ? safeT[suffixIndex..] : string.Empty;
+                    var rstr = suffixIndex < t.Length ? t[suffixIndex..] : string.Empty;
                     int.TryParse(new string(rstr.TakeWhile(char.IsDigit).ToArray()), out rev);
                 }
             }
@@ -409,14 +286,15 @@ namespace Kairo.Components.DashBoard
             {
                 branch = "Release";
                 var idx = lower.IndexOf("-release.", StringComparison.Ordinal);
-                if (idx >= 0 && idx <= safeT.Length)
+                if (idx >= 0 && idx <= t.Length)
                 {
-                    versionPart = idx == 0 ? string.Empty : safeT[..idx];
+                    versionPart = idx == 0 ? string.Empty : t[..idx];
                     var suffixIndex = idx + "-release.".Length;
-                    var rstr = suffixIndex < safeT.Length ? safeT[suffixIndex..] : string.Empty;
+                    var rstr = suffixIndex < t.Length ? t[suffixIndex..] : string.Empty;
                     int.TryParse(new string(rstr.TakeWhile(char.IsDigit).ToArray()), out rev);
                 }
             }
+
             if (!Version.TryParse(versionPart, out var ver))
             {
                 ver = new Version(0, 0, 0);

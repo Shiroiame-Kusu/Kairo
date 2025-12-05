@@ -181,7 +181,7 @@ namespace Kairo.Utils.Logger
         }
     }
 
-    internal enum LogType
+    public enum LogType
     {
         Undefined,
         Info,

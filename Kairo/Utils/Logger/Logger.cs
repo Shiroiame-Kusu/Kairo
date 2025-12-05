@@ -37,9 +37,9 @@ namespace Kairo.Utils.Logger
         public static int MaxCacheSize { get; set; } = 500;
         public static int CacheTrimTo { get; set; } = 400;
 
-        private const LogDestination DefaultDestinations = LogDestination.All;
+        private const LogDestination DefaultDestinations = LogDestination.Console | LogDestination.File;
         private const LogDestination NetworkDestinations = LogDestination.Console | LogDestination.File;
-        private static bool ShouldEmitToConsole(LogType type) => Global.DebugMode || type is LogType.Warn or LogType.Error;
+        private static bool ShouldEmitToConsole(LogType type) => true; // always mirror logs to console regardless of build/debug flags
 
         // New: expose a snapshot of cached lines for late subscribers / page reloads
         public static System.Collections.Generic.List<(LogType, string)> GetCacheSnapshot()
@@ -265,11 +265,6 @@ namespace Kairo.Utils.Logger
                 w.Close();
         }
 
-        private static LogDestination GetNetworkDestinations(LogType type)
-        {
-            if (type == LogType.DetailDebug && !Global.DebugMode)
-                return LogDestination.File | LogDestination.Cache;
-            return NetworkDestinations;
-        }
+        private static LogDestination GetNetworkDestinations(LogType type) => NetworkDestinations;
     }
 }

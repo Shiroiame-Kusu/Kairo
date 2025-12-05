@@ -12,6 +12,7 @@ using Kairo.Controls;
 using Kairo.Utils;
 using Avalonia.Threading; // added for DispatcherTimer
 using Kairo.Utils.Logger;
+using Kairo.ViewModels;
 
 namespace Kairo.Components.DashBoard
 {
@@ -23,61 +24,52 @@ namespace Kairo.Components.DashBoard
         private StatusPage? _statusPage;
         private SettingsPage? _settingsPage;
 
-        private bool _frpcChecked;
-
+        private readonly DashBoardViewModel _viewModel;
         private DispatcherTimer? _snackbarTimer; // auto-dismiss timer
-        private InfoBar? _snackbar;
         private CustomTitleBar? _titleBar;
 
         public DashBoard()
         {
             InitializeComponent();
+            _viewModel = new DashBoardViewModel();
+            DataContext = _viewModel;
             Access.DashBoard = this;
             NavView.SelectedItem = HomeNavItem;
             _titleBar = this.FindControl<CustomTitleBar>("TitleBar");
             this.Opened += OnDashBoardOpened;
             this.Deactivated += OnDashBoardDeactivated;
-            _snackbar = this.FindControl<InfoBar>("Snackbar");
             _ = LoadAvatar();
         }
 
         private void OnDashBoardOpened(object? sender, EventArgs e)
         {
-            if (_frpcChecked) return;
-            _frpcChecked = true;
-            try
+            if (_viewModel.ShouldPromptFrpcDownload())
             {
-                var path = Global.Config.FrpcPath;
-                if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
+                try
                 {
-                    // Show download window
                     var win = new DownloadFrpcWindow();
                     win.Show(this);
                     OpenSnackbar("提示", "检测到未安装 frpc, 正在打开下载窗口", InfoBarSeverity.Informational);
                 }
-            }
-            catch (Exception ex)
-            {
-                OpenSnackbar("检测异常", ex.Message, InfoBarSeverity.Warning);
-                var win = new DownloadFrpcWindow();
-                win.Show(this);
-                OpenSnackbar("提示", "检测到未安装 frpc, 正在打开下载窗口", InfoBarSeverity.Informational);    
-                
+                catch (Exception ex)
+                {
+                    OpenSnackbar("检测异常", ex.Message, InfoBarSeverity.Warning);
+                }
             }
         }
 
         private void OnDashBoardDeactivated(object? sender, EventArgs e)
         {
-            CloseTransientUI();
+            // No transient UI to close after MVVM refactor
         }
 
         private async Task LoadAvatar()
         {
             try
             {
-                if (string.IsNullOrWhiteSpace(MainWindow.Avatar)) return;
+                if (string.IsNullOrWhiteSpace(SessionState.AvatarUrl)) return;
                 using HttpClient hc = new();
-                var bytes = await hc.GetByteArrayAsyncLogged(MainWindow.Avatar);
+                var bytes = await hc.GetByteArrayAsyncLogged(SessionState.AvatarUrl);
                 using var ms = new System.IO.MemoryStream(bytes);
                 Avatar = new Bitmap(ms);
                 Dispatcher.UIThread.Post(() =>
@@ -92,10 +84,12 @@ namespace Kairo.Components.DashBoard
         {
             if (e.SelectedItem is NavigationViewItem nvi && nvi.Tag is string tag)
             {
+                _viewModel.SelectedTag = tag;
                 OpenPage(tag);
             }
             else if (e.IsSettingsSelected)
             {
+                _viewModel.SelectedTag = "settings";
                 OpenPage("settings");
             }
         }
@@ -119,23 +113,13 @@ namespace Kairo.Components.DashBoard
             }
         }
 
-        private void CloseTransientUI()
-        {
-            _proxyListPage?.CloseAllTransientUI();
-        }
-
         public void OpenSnackbar(string title, string? message, InfoBarSeverity severity = InfoBarSeverity.Informational)
         {
-            if (_snackbar == null) return;
-            _snackbar.Title = title;
-            _snackbar.Message = message ?? string.Empty;
-            _snackbar.Severity = severity;
-            _snackbar.IsOpen = true;
+            _viewModel.ShowSnackbar(title, message, severity);
 
-            // Setup / restart auto-dismiss timer (5s)
             _snackbarTimer ??= new DispatcherTimer { Interval = TimeSpan.FromSeconds(5) };
             _snackbarTimer.Stop();
-            _snackbarTimer.Tick -= SnackbarTimer_Tick; // ensure not duplicated
+            _snackbarTimer.Tick -= SnackbarTimer_Tick;
             _snackbarTimer.Tick += SnackbarTimer_Tick;
             _snackbarTimer.Start();
         }
@@ -143,14 +127,12 @@ namespace Kairo.Components.DashBoard
         private void SnackbarTimer_Tick(object? sender, EventArgs e)
         {
             _snackbarTimer?.Stop();
-            if (_snackbar != null)
-                _snackbar.IsOpen = false;
+            _viewModel.CloseSnackbar();
         }
 
         public void DashBoard_OnClosing(object? sender, WindowClosingEventArgs e)
         {
-            CloseTransientUI();
-            if (MainWindow.IsLoggedIn)
+            if (SessionState.IsLoggedIn)
             {
                 e.Cancel = true;
                 Hide();
