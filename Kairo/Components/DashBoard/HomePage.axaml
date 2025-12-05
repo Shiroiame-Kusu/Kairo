@@ -1,34 +1,38 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             x:Class="Kairo.Components.DashBoard.HomePage">
-  <Grid RowDefinitions="60,*,70" Margin="12">
-    <!-- Header -->
-    <DockPanel Height="60">
-      <Border Height="40" Width="40" CornerRadius="20" BorderBrush="LightBlue" BorderThickness="1" Margin="0,10,10,10" ClipToBounds="True">
-        <Image x:Name="AvatarImage" Source="avares://Kairo/Assets/kairo.ico" Stretch="UniformToFill"/>
-      </Border>
-      <TextBlock x:Name="WelcomeText" VerticalAlignment="Center" FontSize="24" Text="欢迎回来，"/>
-    </DockPanel>
-    <!-- Announcement / Content -->
-    <Border Grid.Row="1" CornerRadius="8" Padding="12" Background="{DynamicResource LayerFillColorDefaultBrush}">
-      <ScrollViewer>
-        <TextBlock x:Name="AnnouncementPlain" Text="加载公告中..." TextWrapping="Wrap"/>
-      </ScrollViewer>
-    </Border>
-    <!-- Footer stats -->
-    <Grid Grid.Row="2" ColumnDefinitions="Auto,Auto,Auto,*" Margin="0,12,0,0">
-      <Border Grid.Column="0" VerticalAlignment="Center" Margin="0,0,16,0" Padding="12" CornerRadius="8" Background="{DynamicResource LayerFillColorDefaultBrush}">
-        <TextBlock x:Name="BandwidthText" Text="上行/下行带宽: -/-"/>
-      </Border>
-      <Border Grid.Column="1" VerticalAlignment="Center" Margin="0,0,16,0" Padding="12" CornerRadius="8" Background="{DynamicResource LayerFillColorDefaultBrush}">
-        <TextBlock x:Name="TrafficText" Text="剩余流量: -"/>
-      </Border>
-      <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-        <Button x:Name="SignButton" Content="签到" Click="SignButton_OnClick"/>
-        <Border x:Name="SignedBorder" IsVisible="False" CornerRadius="6" Padding="8" Background="#33999999">
-          <TextBlock Text="你今天已经签到过啦！"/>
+             xmlns:vm="clr-namespace:Kairo.ViewModels"
+             x:Class="Kairo.Components.DashBoard.HomePage"
+             x:DataType="vm:HomePageViewModel">
+    <Grid RowDefinitions="Auto,*,70" Margin="12">
+        <!-- Header -->
+        <Border Grid.Row="0" CornerRadius="8" Padding="12,0" Background="{DynamicResource LayerFillColorDefaultBrush}"
+                HorizontalAlignment="Left">
+            <TextBlock VerticalAlignment="Center" FontSize="24" Text="{Binding WelcomeText}" Margin="0,12,0,12" />
         </Border>
-      </StackPanel>
+
+        <!-- Announcement / Content -->
+        <Border Grid.Row="1" CornerRadius="8" Padding="12" Background="{DynamicResource LayerFillColorDefaultBrush}"
+                Margin="0,12,0,0">
+            <ScrollViewer>
+                <TextBlock Text="{Binding Announcement}" TextWrapping="Wrap" />
+            </ScrollViewer>
+        </Border>
+        <!-- Footer stats -->
+        <Grid Grid.Row="2" ColumnDefinitions="Auto,Auto,Auto,*" Margin="0,12,0,0">
+            <Border Grid.Column="0" VerticalAlignment="Center" Margin="0,0,16,0" Padding="12" CornerRadius="8"
+                    Background="{DynamicResource LayerFillColorDefaultBrush}">
+                <TextBlock Text="{Binding BandwidthText}" />
+            </Border>
+            <Border Grid.Column="1" VerticalAlignment="Center" Margin="0,0,16,0" Padding="12" CornerRadius="8"
+                    Background="{DynamicResource LayerFillColorDefaultBrush}">
+                <TextBlock Text="{Binding TrafficText}" />
+            </Border>
+            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                <Button Content="签到" Command="{Binding SignCommand}" IsVisible="{Binding SignButtonVisible}" />
+                <Border IsVisible="{Binding SignedBorderVisible}" CornerRadius="6" Padding="8" Background="#33999999">
+                    <TextBlock Text="你今天已经签到过啦！" />
+                </Border>
+            </StackPanel>
+        </Grid>
     </Grid>
-  </Grid>
 </UserControl>

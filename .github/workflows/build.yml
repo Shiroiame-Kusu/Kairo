@@ -8,22 +8,47 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
+
+env:
+  PROJECT_PATH: Kairo/Kairo.csproj
+  CONFIGURATION: Release
+  DOTNET_VERSION: 10.0.x
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: '1'
+  DOTNET_NOLOGO: '1'
 
 jobs:
-  publish:
-    name: Build (${{ matrix.rid }})
-    runs-on: ubuntu-latest
+  build:
+    name: Build (${{ matrix.display }})
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        rid: [ win-x64, linux-x64 ]
-    env:
-      DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
-      DOTNET_NOLOGO: 1
-      Configuration: Release
-      PROJECT_PATH: Kairo/Kairo.csproj
-      FRAMEWORK: net9.0
+        include:
+          - rid: win-x64
+            os: windows-latest
+            archive: zip
+            display: Windows x64
+          - rid: win-arm64
+            os: windows-11-arm
+            archive: zip
+            display: Windows arm64
+          - rid: linux-x64
+            os: ubuntu-latest
+            archive: tar.gz
+            display: Linux x64
+          - rid: linux-arm64
+            os: ubuntu-latest
+            archive: tar.gz
+            display: Linux arm64
+          - rid: osx-x64
+            os: macos-15-intel
+            archive: tar.gz
+            display: macOS x64
+          - rid: osx-arm64
+            os: macos-latest
+            archive: tar.gz
+            display: macOS arm64
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -31,7 +56,13 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '9.0.x'
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt install -y clang llvm binutils-aarch64-linux-gnu gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
 
       - name: Cache NuGet
         uses: actions/cache@v4
@@ -41,39 +72,28 @@ jobs:
           restore-keys: |
             nuget-${{ runner.os }}-
 
-      - name: Restore
-        run: dotnet restore $PROJECT_PATH
-
-      - name: Publish (single-file, self-contained)
-        run: >-
-          dotnet publish $PROJECT_PATH
-          -c $Configuration
-          -r ${{ matrix.rid }}
-          -f $FRAMEWORK
-          --self-contained true
-          /p:PublishSingleFile=true
-          /p:IncludeAllContentForSelfExtract=true
-          /p:EnableCompressionInSingleFile=true
-          /p:PublishTrimmed=false
-          /p:DebugType=none
-          /p:GenerateDocumentationFile=false
-          /p:InvariantGlobalization=false
-
-      - name: Prepare Artifact
+      - name: Generate build info
+        shell: bash
         run: |
-          OUT_DIR=Kairo/bin/$Configuration/$FRAMEWORK/${{ matrix.rid }}/publish
-          ls -al "$OUT_DIR"
-          ART_NAME=Kairo-${{ matrix.rid }}
-          if [ "${{ matrix.rid }}" = "win-x64" ]; then BIN=Kairo.exe; else BIN=Kairo; fi
-          chmod +x "$OUT_DIR/$BIN" || true
-          # Place zip into Kairo/bin/Release so upload path matches
-          (cd "$OUT_DIR" && zip -r ../../../${ART_NAME}.zip .)
-          ls -al Kairo/bin/$Configuration | grep ${ART_NAME}.zip || true
-          echo "ART_ZIP=${ART_NAME}.zip" >> $GITHUB_ENV
+          chmod +x Kairo/Components/BuildInfo.sh || true
+          Kairo/Components/BuildInfo.sh || echo "BuildInfo script skipped"
+      - name: Restore
+        run: dotnet restore "${{ env.PROJECT_PATH }}"
+
+      - name: Publish
+        run: >-
+          dotnet publish "${{ env.PROJECT_PATH }}" -c "${{ env.CONFIGURATION }}" -r ${{ matrix.rid }}
+          -o publish/${{ matrix.rid }} /p:InvariantGlobalization=false
+
+      - name: Ensure execute bit
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          chmod +x publish/${{ matrix.rid }}/Kairo || true
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: Kairo-${{ matrix.rid }}
-          path: Kairo/bin/${{ env.Configuration }}/Kairo-${{ matrix.rid }}.zip
+          path: publish/${{ matrix.rid }}
           if-no-files-found: error

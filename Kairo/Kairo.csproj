@@ -1,13 +1,22 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
-        <OutputType>Exe</OutputType>
-        <TargetFramework>net9.0</TargetFramework>
+        <OutputType>WinExe</OutputType>
+        <TargetFramework>net10.0</TargetFramework>
         <Nullable>enable</Nullable>
         <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
         <ApplicationManifest>app.manifest</ApplicationManifest>
         <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
         <GenerateAssemblyInfo>false</GenerateAssemblyInfo> <!-- custom assembly info -->
-        <PublishAot>false</PublishAot>
+        <ApplicationIcon>Assets/kairo.ico</ApplicationIcon>
+    </PropertyGroup>
+
+    <!-- AOT/Trimming only for Release builds to allow Designer to work in Debug -->
+    <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+        <PublishAot>true</PublishAot>
+        <PublishTrimmed>true</PublishTrimmed>
+        <PublishSingleFile>true</PublishSingleFile>
+        <OptimizationPreference>Speed</OptimizationPreference>
+        <StripSymbols>true</StripSymbols>
     </PropertyGroup>
 
     <!-- Ensure full globalization support (FluentAvalonia requires real cultures like en-US) -->
@@ -16,44 +25,50 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Avalonia" Version="11.3.4" />
-        <PackageReference Include="Avalonia.Desktop" Version="11.3.4" />
-        <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.4" />
-        <PackageReference Include="Avalonia.Fonts.Inter" Version="11.3.4" />
+        <PackageReference Include="Avalonia" Version="11.3.9"/>
+        <PackageReference Include="Avalonia.Controls.DataGrid" Version="11.3.9"/>
+        <PackageReference Include="Avalonia.Desktop" Version="11.3.9"/>
+        <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.9"/>
+        <PackageReference Include="Avalonia.Fonts.Inter" Version="11.3.9"/>
         <!--Condition below is needed to remove Avalonia.Diagnostics package from build output in Release configuration.-->
-        <PackageReference Include="Avalonia.Diagnostics" Version="11.3.4">
+        <PackageReference Include="Avalonia.Diagnostics" Version="11.3.9">
             <IncludeAssets Condition="'$(Configuration)' != 'Debug'">None</IncludeAssets>
             <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
         </PackageReference>
-        <PackageReference Include="FluentAvaloniaUI" Version="2.4.0" />
-        <PackageReference Include="MessageBox.Avalonia" Version="3.2.0" />
-        <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-        <PackageReference Include="Downloader" Version="4.0.3" />
+        <PackageReference Include="ExtendedNumerics.BigDecimal" Version="3001.1.0.233"/>
+        <PackageReference Include="FluentAvaloniaUI" Version="2.4.1"/>
+        <PackageReference Include="MessageBox.Avalonia" Version="3.3.0"/>
+        <PackageReference Include="Newtonsoft.Json" Version="13.0.4"/>
+        <PackageReference Include="Downloader" Version="4.0.3"/>
     </ItemGroup>
 
     <ItemGroup>
-      <!-- Embed Avalonia assets (icon, images) -->
-      <AvaloniaResource Include="Assets/**" />
+        <Resource Include="Assets/kairo.ico"/>
+    </ItemGroup>
+    
+    <ItemGroup>
+        <!-- Embed Avalonia assets (icon, images) -->
+        <AvaloniaResource Include="Assets/**"/>
     </ItemGroup>
 
     <ItemGroup>
-      <EmbeddedResource Update="Properties\Resources.resx">
-        <Generator>ResXFileCodeGenerator</Generator>
-        <LastGenOutput>Resources.Designer.cs</LastGenOutput>
-      </EmbeddedResource>
+        <EmbeddedResource Update="Properties\Resources.resx">
+            <Generator>ResXFileCodeGenerator</Generator>
+            <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+        </EmbeddedResource>
     </ItemGroup>
 
     <ItemGroup>
-      <Compile Update="Properties\Resources.Designer.cs">
-        <DesignTime>True</DesignTime>
-        <AutoGen>True</AutoGen>
-        <DependentUpon>Resources.resx</DependentUpon>
-      </Compile>
+        <Compile Update="Properties\Resources.Designer.cs">
+            <DesignTime>True</DesignTime>
+            <AutoGen>True</AutoGen>
+            <DependentUpon>Resources.resx</DependentUpon>
+        </Compile>
     </ItemGroup>
     <ItemGroup>
-        <FrameworkReference Include="Microsoft.AspNetCore.App" />
+        <FrameworkReference Include="Microsoft.AspNetCore.App"/>
     </ItemGroup>
     <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
-      <Exec Command="bash ./Components/BuildInfo.sh" />
+        <Exec Command="bash ./Components/BuildInfo.sh"/>
     </Target>
 </Project>

@@ -8,14 +8,14 @@ using Kairo; // to access Global constants
 [assembly: AssemblyTitle("Kairo")]
 [assembly: AssemblyProduct("Kairo")]
 [assembly: AssemblyDescription("A tool which can launch LocyanFrp's proxies.")]
-[assembly: AssemblyCompany(Kairo.Global.Developer)] // using Developer string as company/author line
+[assembly: AssemblyCompany(Global.Developer)] // using Developer string as company/author line
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 [assembly: ComVisible(false)]
 
 // Version attributes (AssemblyVersion & FileVersion must be compile-time constants)
-[assembly: AssemblyVersion(Kairo.Global.Version + ".0")]      // becomes e.g. 3.1.0.0
-[assembly: AssemblyFileVersion(Kairo.Global.Version + ".0")] // keeps file version aligned
+[assembly: AssemblyVersion(Global.Version + ".0")]      // becomes e.g. 3.1.0.0
+[assembly: AssemblyFileVersion(Global.Version + ".0")] // keeps file version aligned
 // Informational version (can include marketing name). Must remain a constant expression (string concatenation only)
-[assembly: AssemblyInformationalVersion(Kairo.Global.Version + " " + Kairo.Global.VersionName)]
+[assembly: AssemblyInformationalVersion(Global.Version + " " + Global.VersionName)]
 

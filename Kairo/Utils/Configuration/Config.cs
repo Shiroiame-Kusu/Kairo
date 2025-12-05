@@ -1,12 +1,8 @@
-using Newtonsoft.Json.Serialization;
-using Newtonsoft.Json;
 using System.Collections.Generic;
 using Kairo.Components;
 
 namespace Kairo.Utils.Configuration
 {
-    
-    [JsonObject(NamingStrategyType = typeof(CamelCaseNamingStrategy))]
     internal class Config
     {
         public string AccessToken = "";
@@ -17,7 +13,7 @@ namespace Kairo.Utils.Configuration
         //public string Password = "";
         public string FrpToken = "";
         public string FrpcPath = "";
-        public bool DebugMode = true;
+        public bool DebugMode = false;
         public bool AutoStartUp = false;
         public int AppliedTheme = 0;
         public bool UsingDownloadMirror = true;

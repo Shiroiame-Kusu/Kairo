@@ -1,4 +1,5 @@
 using System;
+using System.Buffers;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -12,9 +13,10 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.VisualTree;
 using System.Collections.Generic;
-using System.Text.Json;
 using System.Security.Cryptography;
 using Kairo.Utils.Logger; // for recent logs
+using System.Text.Json;
+using Kairo.Utils.Serialization;
 
 namespace Kairo.Utils
 {
@@ -231,7 +233,7 @@ namespace Kairo.Utils
                 }
                 if (CurrentOptions.WriteStructuredFile)
                 {
-                    string json = JsonSerializer.Serialize(report, new JsonSerializerOptions { WriteIndented = true });
+                    string json = SerializeCrashReport(report, indented: true);
                     lock (FileWriteLock)
                     {
                         File.WriteAllText(baseName + ".json", json, Encoding.UTF8);
@@ -363,7 +365,7 @@ namespace Kairo.Utils
             if (CurrentOptions.ShowJsonTab)
             {
                 string json;
-                try { json = JsonSerializer.Serialize(report, new JsonSerializerOptions { WriteIndented = true }); }
+                try { json = SerializeCrashReport(report, indented: true); }
                 catch { json = "<json serialization failed>"; }
                 items.Add(new TabItem
                 {
@@ -514,6 +516,21 @@ namespace Kairo.Utils
         public static void ShowException(Exception e, Window? parentWindow = null)
         {
             HandleException(e, "Explicit", parentWindow);
+        }
+
+        private static string SerializeCrashReport(CrashReport report, bool indented)
+        {
+            if (!indented)
+            {
+                return JsonSerializer.Serialize(report, AppJsonContext.Default.CrashReport);
+            }
+
+            var buffer = new ArrayBufferWriter<byte>();
+            using (var writer = new Utf8JsonWriter(buffer, new JsonWriterOptions { Indented = true }))
+            {
+                JsonSerializer.Serialize(writer, report, AppJsonContext.Default.CrashReport);
+            }
+            return Encoding.UTF8.GetString(buffer.WrittenSpan);
         }
 
         // ---- Data model ----

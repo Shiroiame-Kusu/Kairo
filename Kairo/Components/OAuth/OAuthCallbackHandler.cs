@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Kairo.Utils.Configuration;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 
 namespace Kairo.Components.OAuth
 {
@@ -15,8 +16,8 @@ namespace Kairo.Components.OAuth
     {
         private static bool _started;
         private static readonly object _lock = new();
-        private static WebApplication _application;
-        private static Task _runTask; // store host task
+        private static WebApplication? _application;
+        private static Task? _runTask; // store host task
         public static void Init()
         {
             lock (_lock)
@@ -41,9 +42,24 @@ namespace Kairo.Components.OAuth
 
                     var builder = WebApplication.CreateBuilder();
                     builder.WebHost.UseUrls($"http://127.0.0.1:{Global.OAuthPort}");
-                    builder.Services.AddControllers();
+                    // Minimal APIs only; avoid MVC which isn't trim/AOT friendly
+                    //builder.Services.AddControllers();
                     _application = builder.Build();
-                    _application.MapControllers();
+
+                    // Map minimal OAuth callback endpoint
+                    _application.MapGet("/oauth/callback", async (HttpContext ctx) =>
+                    {
+                        var refreshToken = ctx.Request.Query["refresh_token"].ToString();
+                        if (!string.IsNullOrWhiteSpace(refreshToken) && Kairo.Utils.Access.MainWindow is Kairo.MainWindow mw)
+                        {
+                            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(async () => await mw.AcceptOAuthRefreshToken(refreshToken));
+                        }
+                        const string html = "<html><head><title>OAuth Complete</title></head><body><h3>授权完成，可以返回 Kairo 应用。</h3><script>setTimeout(()=>window.close(),1500);</script></body></html>";
+                        ctx.Response.ContentType = "text/html; charset=utf-8";
+                        await ctx.Response.WriteAsync(html);
+                    });
+
+                    // _application.MapControllers();
                     _runTask = _application.RunAsync(); // keep reference
                     
                 }

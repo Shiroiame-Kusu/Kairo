@@ -1,55 +1,81 @@
 <Window xmlns="https://github.com/avaloniaui"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:fa="using:FluentAvalonia.UI.Controls"
-        xmlns:controls="clr-namespace:Kairo.Controls"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:fa="using:FluentAvalonia.UI.Controls"
+    xmlns:controls="clr-namespace:Kairo.Controls"
+    xmlns:vm="clr-namespace:Kairo.ViewModels"
         mc:Ignorable="d"
         x:Class="Kairo.Components.DashBoard.DashBoard"
+    x:DataType="vm:DashBoardViewModel"
         Title="Kairo - DashBoard"
         Width="800" Height="500"
         MinWidth="800" MinHeight="500"
         WindowStartupLocation="CenterScreen"
         Icon="avares://Kairo/Assets/kairo.ico"
         Closing="DashBoard_OnClosing"
-        SystemDecorations="None">
-  <Grid RowDefinitions="Auto,*">
-    <controls:CustomTitleBar Title="Kairo - DashBoard" />
-    <Grid Grid.Row="1">
-      <fa:NavigationView x:Name="NavView"
-                         PaneTitle="Kairo"
-                         IsSettingsVisible="False"
-                         AlwaysShowHeader="False"
-                         SelectionChanged="NavView_OnSelectionChanged">
-        <fa:NavigationView.MenuItems>
-          <fa:NavigationViewItem x:Name="HomeNavItem" Content="开始" Tag="home">
-            <fa:NavigationViewItem.IconSource>
-              <fa:SymbolIconSource Symbol="Home" />
-            </fa:NavigationViewItem.IconSource>
-          </fa:NavigationViewItem>
-          <fa:NavigationViewItem Content="隧道列表" Tag="proxylist">
-            <fa:NavigationViewItem.IconSource>
-              <fa:SymbolIconSource Symbol="List" />
-            </fa:NavigationViewItem.IconSource>
-          </fa:NavigationViewItem>
-          <fa:NavigationViewItem Content="运行状态" Tag="status">
-            <fa:NavigationViewItem.IconSource>
-              <fa:SymbolIconSource Symbol="Code" />
-            </fa:NavigationViewItem.IconSource>
-          </fa:NavigationViewItem>
-        </fa:NavigationView.MenuItems>
-        <fa:NavigationView.FooterMenuItems>
-          <fa:NavigationViewItem Content="设置" Tag="settings">
-            <fa:NavigationViewItem.IconSource>
-              <fa:SymbolIconSource Symbol="Settings" />
-            </fa:NavigationViewItem.IconSource>
-          </fa:NavigationViewItem>
-        </fa:NavigationView.FooterMenuItems>
-        <Grid>
-          <ContentControl x:Name="ContentHost" />
-          <fa:InfoBar x:Name="Snackbar" IsOpen="False" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,16,16" />
+        SystemDecorations="None"
+        ExtendClientAreaToDecorationsHint="True"
+        TransparencyLevelHint="Transparent, Mica, AcrylicBlur, Blur"
+        TransparencyBackgroundFallback="Transparent"
+        Background="Transparent">
+    <Grid Background="Transparent">
+        <Border Margin="8"
+                CornerRadius="{DynamicResource WindowCornerRadius}"
+                Background="{DynamicResource SolidBackgroundFillColorBaseBrush}"
+                BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                BorderThickness="0"
+                BoxShadow="{DynamicResource WindowShadow}"
+                ClipToBounds="True">
+        <Grid RowDefinitions="Auto,*">
+            <controls:CustomTitleBar x:Name="TitleBar" Title="Kairo - DashBoard" ShowUserInfo="True" />
+            <Grid Grid.Row="1">
+                <Border CornerRadius="{DynamicResource WindowCornerRadius}"
+                        Background="{DynamicResource LayerFillColorDefaultBrush}"
+                        BoxShadow="{DynamicResource WindowShadow}">
+                    <fa:NavigationView x:Name="NavView"
+                                       PaneTitle="Kairo"
+                                       IsSettingsVisible="False"
+                                       AlwaysShowHeader="False"
+                                       SelectionChanged="NavView_OnSelectionChanged">
+                        <fa:NavigationView.MenuItems>
+                            <fa:NavigationViewItem x:Name="HomeNavItem" Content="开始" Tag="home">
+                                <fa:NavigationViewItem.IconSource>
+                                    <fa:SymbolIconSource Symbol="Home" />
+                                </fa:NavigationViewItem.IconSource>
+                            </fa:NavigationViewItem>
+                            <fa:NavigationViewItem Content="隧道列表" Tag="proxylist">
+                                <fa:NavigationViewItem.IconSource>
+                                    <fa:SymbolIconSource Symbol="List" />
+                                </fa:NavigationViewItem.IconSource>
+                            </fa:NavigationViewItem>
+                            <fa:NavigationViewItem Content="运行状态" Tag="status">
+                                <fa:NavigationViewItem.IconSource>
+                                    <fa:SymbolIconSource Symbol="Code" />
+                                </fa:NavigationViewItem.IconSource>
+                            </fa:NavigationViewItem>
+                        </fa:NavigationView.MenuItems>
+                        <fa:NavigationView.FooterMenuItems>
+                            <fa:NavigationViewItem Content="设置" Tag="settings">
+                                <fa:NavigationViewItem.IconSource>
+                                    <fa:SymbolIconSource Symbol="Settings" />
+                                </fa:NavigationViewItem.IconSource>
+                            </fa:NavigationViewItem>
+                        </fa:NavigationView.FooterMenuItems>
+                        <Grid>
+                            <ContentControl x:Name="ContentHost" />
+                            <fa:InfoBar x:Name="Snackbar"
+                                        IsOpen="{Binding IsSnackbarOpen}"
+                                        Title="{Binding SnackbarTitle}"
+                                        Message="{Binding SnackbarMessage}"
+                                        Severity="{Binding SnackbarSeverity}"
+                                        HorizontalAlignment="Right"
+                                        VerticalAlignment="Bottom" Margin="0,0,16,16" />
+                        </Grid>
+                    </fa:NavigationView>
+                </Border>
+            </Grid>
         </Grid>
-      </fa:NavigationView>
+        </Border>
     </Grid>
-  </Grid>
 </Window>

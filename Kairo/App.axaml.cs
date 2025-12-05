@@ -46,7 +46,7 @@ public partial class App : Application
             Access.MainWindow = desktop.MainWindow; // store reference for Logger dialogs
             desktop.Exit += async (_, __) =>
             {
-                try { await Components.OAuth.OAuthCallbackHandler.StopAsync(); } catch { }
+                try { await OAuthCallbackHandler.StopAsync(); } catch { }
                 try { FrpcProcessManager.StopAll(); } catch { }
             };
         }

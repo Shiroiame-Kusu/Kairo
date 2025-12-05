@@ -1,65 +1,85 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="clr-namespace:Kairo.ViewModels"
         x:Class="Kairo.Components.CreateProxyWindow"
-        x:CompileBindings="False"
-        Title="创建隧道" Width="520" Height="640" WindowStartupLocation="CenterOwner">
+        x:CompileBindings="True"
+        x:DataType="vm:CreateProxyWindowViewModel"
+        Title="创建隧道" Width="520" Height="750" WindowStartupLocation="CenterOwner">
   <Grid RowDefinitions="Auto,* ,Auto" Margin="16" RowSpacing="12">
     <TextBlock Text="填写信息以创建新隧道"/>
     <ScrollViewer Grid.Row="1">
       <StackPanel Spacing="10">
         <TextBlock Text="隧道名称"/>
-        <TextBox x:Name="NameBox"/>
+        <TextBox Text="{Binding Name, Mode=TwoWay}"/>
 
         <TextBlock Text="协议类型"/>
-        <ComboBox x:Name="TypeBox" SelectedIndex="0">
-          <ComboBoxItem Content="tcp"/>
-          <ComboBoxItem Content="udp"/>
-          <ComboBoxItem Content="xtcp"/>
-          <ComboBoxItem Content="stcp"/>
-          <ComboBoxItem Content="http"/>
-          <ComboBoxItem Content="https"/>
-        </ComboBox>
+        <ComboBox ItemsSource="{Binding Types}" SelectedItem="{Binding SelectedType, Mode=TwoWay}" SelectedIndex="0"/>
 
         <TextBlock Text="本地服务 IP"/>
-        <TextBox x:Name="LocalIpBox" Text="127.0.0.1"/>
+        <TextBox Text="{Binding LocalIp, Mode=TwoWay}"/>
 
         <TextBlock Text="本地服务端口"/>
-        <TextBox x:Name="LocalPortBox"/>
+        <TextBox Text="{Binding LocalPort, Mode=TwoWay}"/>
 
-        <StackPanel x:Name="RemotePortPanel">
+        <StackPanel IsVisible="{Binding NeedRemotePort}">
           <TextBlock Text="远端服务端口 (tcp/udp 需要)"/>
-          <TextBox x:Name="RemotePortBox"/>
+          <TextBox Text="{Binding RemotePort, Mode=TwoWay}"/>
         </StackPanel>
 
         <TextBlock Text="节点"/>
-        <!-- Replace single ComboBox with ComboBox + latency test button -->
         <StackPanel Orientation="Horizontal" Spacing="8">
-          <ComboBox x:Name="NodeBox" MinWidth="260"/>
-          <Button x:Name="PingButton" Content="测试延迟" Click="PingBtn_OnClick"/>
+          <ComboBox ItemsSource="{Binding Nodes}" SelectedItem="{Binding SelectedNode, Mode=TwoWay}" MinWidth="260">
+            <ComboBox.ItemTemplate>
+              <DataTemplate x:DataType="vm:CreateProxyWindowViewModel+NodeItem">
+                <TextBlock Text="{Binding DisplayLabel}"/>
+              </DataTemplate>
+            </ComboBox.ItemTemplate>
+          </ComboBox>
+          <Button Content="测试延迟" Command="{Binding PingCommand}" IsEnabled="{Binding CanPing}"/>
+        </StackPanel>
+
+        <StackPanel Spacing="4" DataContext="{Binding SelectedNode}">
+          <TextBlock Text="节点信息"/>
+          <Border Padding="10" CornerRadius="6" Background="#0F000000">
+            <StackPanel Spacing="4" x:DataType="vm:CreateProxyWindowViewModel+NodeItem">
+              <TextBlock TextWrapping="Wrap">
+                <Run Text="名称："/>
+                <Run Text="{Binding DisplayName, TargetNullValue=—}"/>
+              </TextBlock>
+              <TextBlock TextWrapping="Wrap">
+                <Run Text="端口范围："/>
+                <Run Text="{Binding PortRangeDisplay, TargetNullValue=—}"/>
+              </TextBlock>
+              <TextBlock TextWrapping="Wrap">
+                <Run Text="描述："/>
+                <Run Text="{Binding DescriptionDisplay, TargetNullValue=暂无}"/>
+              </TextBlock>
+            </StackPanel>
+          </Border>
         </StackPanel>
 
         <StackPanel Orientation="Horizontal" Spacing="20">
-          <CheckBox x:Name="EncryptionBox" Content="启用加密"/>
-          <CheckBox x:Name="CompressionBox" Content="启用压缩"/>
+          <CheckBox Content="启用加密" IsChecked="{Binding UseEncryption}"/>
+          <CheckBox Content="启用压缩" IsChecked="{Binding UseCompression}"/>
         </StackPanel>
 
-        <StackPanel x:Name="SecretKeyPanel">
+        <StackPanel IsVisible="{Binding NeedSecretKey}">
           <TextBlock Text="访问密钥 (xtcp/stcp 需要)"/>
-          <TextBox x:Name="SecretKeyBox"/>
+          <TextBox Text="{Binding SecretKey, Mode=TwoWay}"/>
         </StackPanel>
 
-        <StackPanel x:Name="DomainPanel">
+        <StackPanel IsVisible="{Binding NeedDomain}">
           <TextBlock Text="域名 (http/https 需要)"/>
-          <TextBox x:Name="DomainBox"/>
+          <TextBox Text="{Binding Domain, Mode=TwoWay}"/>
         </StackPanel>
 
-        <TextBlock x:Name="StatusText" Foreground="Gray"/>
+        <TextBlock Foreground="Gray" Text="{Binding StatusText}"/>
       </StackPanel>
     </ScrollViewer>
 
     <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
-      <Button x:Name="CreateButton" Content="创建" Click="CreateBtn_OnClick"/>
-      <Button Content="取消" Click="CancelBtn_OnClick"/>
+      <Button Content="创建" Command="{Binding CreateCommand}"/>
+      <Button Content="取消" Command="{Binding CancelCommand}"/>
     </StackPanel>
   </Grid>
 </Window>
