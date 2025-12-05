@@ -41,12 +41,6 @@ jobs:
       assembly_version: ${{ steps.version.outputs.assembly_version }}
       prerelease: ${{ steps.prerelease.outputs.flag }}
     steps:
-      - name: Install Linux dependencies
-        if: runner.os == 'Linux'
-        run: |
-          sudo apt-get update
-          sudo apt install -y clang llvm binutils-aarch64-linux-gnu gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
-
       - name: Derive version
         id: version
         run: |
@@ -144,6 +138,11 @@ jobs:
           Kairo/Components/BuildInfo.sh || echo "BuildInfo script skipped"
       - name: Restore
         run: dotnet restore "${{env.PROJECT_PATH}}"
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt install -y clang llvm binutils-aarch64-linux-gnu gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
       - name: Publish
         run: |
           dotnet publish "${{env.PROJECT_PATH}}" -c "${{env.CONFIGURATION}}" -r ${{ matrix.rid }} /p:Version=${{ needs.prepare.outputs.version }} /p:AssemblyVersion=${{ needs.prepare.outputs.assembly_version }} /p:FileVersion=${{ needs.prepare.outputs.assembly_version }} -o publish/${{ matrix.rid }}
