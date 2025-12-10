@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Diagnostics;
 using System.Security.Cryptography;
+using Avalonia.Threading;
 using FluentAvalonia.UI.Controls;
 using Kairo.Models;
 using Kairo.Utils;
@@ -32,11 +33,24 @@ namespace Kairo.ViewModels
 
         public RelayCommand StartOAuthCommand { get; }
 
+        private static void RunOnUi(Action action)
+        {
+            if (Dispatcher.UIThread.CheckAccess())
+                action();
+            else
+                Dispatcher.UIThread.Post(action);
+        }
+
         public bool IsLoggingIn
         {
             get => _isLoggingIn;
             private set
             {
+                if (!Dispatcher.UIThread.CheckAccess())
+                {
+                    Dispatcher.UIThread.Post(() => IsLoggingIn = value);
+                    return;
+                }
                 if (SetProperty(ref _isLoggingIn, value))
                 {
                     OnPropertyChanged(nameof(IsLoginFormVisible));
@@ -52,7 +66,15 @@ namespace Kairo.ViewModels
         public bool IsLoggedIn
         {
             get => _isLoggedIn;
-            private set => SetProperty(ref _isLoggedIn, value);
+            private set
+            {
+                if (!Dispatcher.UIThread.CheckAccess())
+                {
+                    Dispatcher.UIThread.Post(() => IsLoggedIn = value);
+                    return;
+                }
+                SetProperty(ref _isLoggedIn, value);
+            }
         }
 
         public bool IsLoginFormVisible => !IsLoggingIn;
@@ -204,12 +226,12 @@ namespace Kairo.ViewModels
                 SessionState.IsLoggedIn = true;
                 ConfigManager.Save();
                 ShowSnackbar("登录成功", $"欢迎 {_userInfo.Username}", InfoBarSeverity.Success);
-                LoginSucceeded?.Invoke(this, _userInfo);
+                RunOnUi(() => LoginSucceeded?.Invoke(this, _userInfo));
             }
             catch (Exception ex)
             {
                 ShowSnackbar("异常", ex.Message, InfoBarSeverity.Error);
-                LoginFailed?.Invoke(this, ex.Message);
+                RunOnUi(() => LoginFailed?.Invoke(this, ex.Message));
             }
             finally
             {
@@ -238,10 +260,13 @@ namespace Kairo.ViewModels
 
         public void ShowSnackbar(string title, string? message, InfoBarSeverity severity)
         {
-            SnackbarTitle = title;
-            SnackbarMessage = message ?? string.Empty;
-            SnackbarSeverity = severity;
-            IsSnackbarOpen = true;
+            RunOnUi(() =>
+            {
+                SnackbarTitle = title;
+                SnackbarMessage = message ?? string.Empty;
+                SnackbarSeverity = severity;
+                IsSnackbarOpen = true;
+            });
         }
 
         private void BeginLoginTimeout()
@@ -253,8 +278,11 @@ namespace Kairo.ViewModels
                 try
                 {
                     await Task.Delay(LoginTimeout, _loginTimeoutCts.Token);
-                    ShowSnackbar("登录超时", "OAuth 验证未完成，请重试", InfoBarSeverity.Warning);
-                    IsLoggingIn = false;
+                    await Dispatcher.UIThread.InvokeAsync(() =>
+                    {
+                        ShowSnackbar("登录超时", "OAuth 验证未完成，请重试", InfoBarSeverity.Warning);
+                        IsLoggingIn = false;
+                    });
                 }
                 catch (TaskCanceledException)
                 {
