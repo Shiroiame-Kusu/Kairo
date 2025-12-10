@@ -218,7 +218,7 @@ namespace Kairo.ViewModels
                 var frpResp = await _http.GetAsyncLogged(frpUrl);
                 var frpBody = await frpResp.Content.ReadAsStringAsync();
                 var frpJson = JsonNode.Parse(frpBody);
-                _userInfo.FrpToken = frpJson? ["data"]? ["frp_token"]?.GetValue<string>();
+                _userInfo.FrpToken = frpJson? ["data"]? ["token"]?.GetValue<string>();
                 Global.Config.Username = _userInfo.Username;
                 Global.Config.FrpToken = _userInfo.FrpToken ?? string.Empty;
                 ApplyUserInfoToSession(_userInfo);

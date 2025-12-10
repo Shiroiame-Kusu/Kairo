@@ -139,7 +139,7 @@ jobs:
       - name: Restore
         run: dotnet restore "${{env.PROJECT_PATH}}"
       - name: Install Linux dependencies
-        if: runner.os == 'Linux'
+        if: runner.os == 'Linux' && (matrix.rid == 'linux-arm64')
         run: |
           sudo apt-get update
           sudo apt install -y clang llvm binutils-aarch64-linux-gnu gcc-aarch64-linux-gnu g++-aarch64-linux-gnu

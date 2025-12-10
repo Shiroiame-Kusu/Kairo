@@ -13,7 +13,7 @@ namespace Kairo
         public const string Version = "3.2.0";
         public const string VersionName = "Sonetto";
         public const string Branch = "Release";
-        public const int Revision = 3;
+        public const int Revision = 4;
         public static readonly BuildInfo BuildInfo = new();
         public const string Developer = "Shiroiame-Kusu & Daiyangcheng";
         public const string Copyright = "Copyright © Shiroiame-Kusu All Rights Reserved";
