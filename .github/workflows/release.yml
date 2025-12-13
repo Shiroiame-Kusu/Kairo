@@ -258,14 +258,8 @@ jobs:
             cd ../..
           }
           
-          # Archive GUI
-          archive_dir "publish/gui-$RID" "Kairo-$VERSION-$RID"
-          
-          # Archive CLI
-          archive_dir "publish/cli-$RID" "Kairo-CLI-$VERSION-$RID"
-          
-          # Archive Launcher
-          archive_dir "publish/launcher-$RID" "Kairo-Launcher-$VERSION-$RID"
+          # Archive Launcher only (contains embedded GUI and CLI)
+          archive_dir "publish/launcher-$RID" "Kairo-$VERSION-$RID"
           
           echo "Created archives:"
           ls -lh dist/

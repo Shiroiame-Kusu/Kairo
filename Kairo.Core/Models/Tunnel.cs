@@ -62,3 +62,14 @@ public class TunnelNode
     [JsonPropertyName("ip")]
     public string? Ip { get; set; }
 }
+
+/// <summary>
+/// AOT 兼容的 JSON 序列化上下文
+/// </summary>
+[JsonSerializable(typeof(Tunnel))]
+[JsonSerializable(typeof(TunnelNode))]
+[JsonSerializable(typeof(List<Tunnel>))]
+[JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower)]
+public partial class TunnelJsonContext : JsonSerializerContext
+{
+}

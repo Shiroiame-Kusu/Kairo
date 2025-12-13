@@ -149,20 +149,6 @@ jobs:
           chmod +x publish/cli-${{ matrix.rid }}/kairo-cli || true
           chmod +x publish/launcher-${{ matrix.rid }}/kairo || true
 
-      - name: Upload GUI Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: Kairo-${{ matrix.rid }}
-          path: publish/gui-${{ matrix.rid }}
-          if-no-files-found: error
-
-      - name: Upload CLI Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: Kairo-CLI-${{ matrix.rid }}
-          path: publish/cli-${{ matrix.rid }}
-          if-no-files-found: error
-
       - name: Upload Launcher Artifact
         uses: actions/upload-artifact@v4
         with:
