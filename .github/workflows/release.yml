@@ -19,7 +19,6 @@ on:
         required: false
 
 env:
-  PROJECT_PATH: Kairo/Kairo.csproj
   CONFIGURATION: Release
   DOTNET_VERSION: 10.0.x
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: '1'
@@ -73,6 +72,7 @@ jobs:
           echo "assembly_version=$ASSEMBLY_VERSION" >> "$GITHUB_OUTPUT"
           echo "Derived version: $RAW_VERSION";
           echo "Assembly version: $ASSEMBLY_VERSION";
+
       - name: Prerelease flag
         id: prerelease
         run: |
@@ -99,90 +99,182 @@ jobs:
           - rid: win-x64
             os: windows-latest
             archive: zip
-            display: Windows x64
           - rid: win-arm64
             os: windows-11-arm
             archive: zip
-            display: Windows arm64
           - rid: linux-x64
             os: ubuntu-latest
             archive: tar.gz
-            display: Linux x64
           - rid: linux-arm64
             os: ubuntu-latest
             archive: tar.gz
-            display: Linux arm64
           - rid: osx-x64
             os: macos-15-intel
             archive: tar.gz
-            display: macOS x64
           - rid: osx-arm64
             os: macos-latest
             archive: tar.gz
-            display: macOS arm64
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
-      - name: Display .NET info
-        run: dotnet --info
+
       - name: Generate build info
         shell: bash
         run: |
           chmod +x Kairo/Components/BuildInfo.sh || true
           Kairo/Components/BuildInfo.sh || echo "BuildInfo script skipped"
-      - name: Restore
-        run: dotnet restore "${{env.PROJECT_PATH}}"
-      - name: Install Linux dependencies
-        if: runner.os == 'Linux'
+
+      - name: Install Linux cross-compile dependencies
+        if: runner.os == 'Linux' && matrix.rid == 'linux-arm64'
         run: |
           sudo apt-get update
-          sudo apt install -y clang llvm binutils-aarch64-linux-gnu gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
-      - name: Publish
+          sudo apt-get install -y clang llvm binutils-aarch64-linux-gnu gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
+
+      - name: Restore
+        run: dotnet restore Kairo.sln
+
+      # Build GUI
+      - name: Publish GUI
+        shell: bash
         run: |
-          dotnet publish "${{env.PROJECT_PATH}}" -c "${{env.CONFIGURATION}}" -r ${{ matrix.rid }} /p:Version=${{ needs.prepare.outputs.version }} /p:AssemblyVersion=${{ needs.prepare.outputs.assembly_version }} /p:FileVersion=${{ needs.prepare.outputs.assembly_version }} -o publish/${{ matrix.rid }}
-      - name: Archive
+          dotnet publish Kairo/Kairo.csproj -c ${{ env.CONFIGURATION }} -r ${{ matrix.rid }} \
+            /p:Version=${{ needs.prepare.outputs.version }} \
+            /p:AssemblyVersion=${{ needs.prepare.outputs.assembly_version }} \
+            /p:FileVersion=${{ needs.prepare.outputs.assembly_version }} \
+            -o publish/gui-${{ matrix.rid }}
+
+      # Build CLI
+      - name: Publish CLI
+        shell: bash
+        run: |
+          dotnet publish Kairo.Cli/Kairo.Cli.csproj -c ${{ env.CONFIGURATION }} -r ${{ matrix.rid }} \
+            /p:Version=${{ needs.prepare.outputs.version }} \
+            /p:AssemblyVersion=${{ needs.prepare.outputs.assembly_version }} \
+            /p:FileVersion=${{ needs.prepare.outputs.assembly_version }} \
+            -o publish/cli-${{ matrix.rid }}
+
+      # Remove debug symbols
+      - name: Remove debug symbols
+        shell: bash
+        run: |
+          find publish -name '*.pdb' -delete
+          find publish -name '*.dbg' -delete
+
+      # Generate hashes and package for Launcher
+      - name: Generate hashes for Launcher
+        shell: bash
+        run: |
+          mkdir -p Kairo.Launcher/Resources
+          
+          # Generate GUI hashes
+          cd publish/gui-${{ matrix.rid }}
+          find . -type f | while read -r file; do
+            if command -v md5sum &> /dev/null; then
+              md5sum "$file"
+            elif command -v md5 &> /dev/null; then
+              md5 -r "$file" | awk '{print $1 "  " $2}'
+            fi
+          done > ../../Kairo.Launcher/Resources/kairo-gui.hashes
+          
+          # Generate CLI hashes
+          cd ../cli-${{ matrix.rid }}
+          find . -type f | while read -r file; do
+            if command -v md5sum &> /dev/null; then
+              md5sum "$file"
+            elif command -v md5 &> /dev/null; then
+              md5 -r "$file" | awk '{print $1 "  " $2}'
+            fi
+          done > ../../Kairo.Launcher/Resources/kairo-cli.hashes
+          
+          cd ../..
+          echo "Generated hash files:"
+          wc -l Kairo.Launcher/Resources/*.hashes
+
+      # Create tar.gz archives for Launcher embedding
+      - name: Create Launcher resources
+        shell: bash
+        run: |
+          cd publish/gui-${{ matrix.rid }}
+          tar -czf ../../Kairo.Launcher/Resources/kairo-gui.tar.gz .
+          
+          cd ../cli-${{ matrix.rid }}
+          tar -czf ../../Kairo.Launcher/Resources/kairo-cli.tar.gz .
+          
+          cd ../..
+          echo "Created Launcher resources:"
+          ls -lh Kairo.Launcher/Resources/
+
+      # Build Launcher (with embedded GUI and CLI)
+      - name: Publish Launcher
+        shell: bash
+        run: |
+          dotnet publish Kairo.Launcher/Kairo.Launcher.csproj -c ${{ env.CONFIGURATION }} -r ${{ matrix.rid }} \
+            /p:Version=${{ needs.prepare.outputs.version }} \
+            /p:AssemblyVersion=${{ needs.prepare.outputs.assembly_version }} \
+            /p:FileVersion=${{ needs.prepare.outputs.assembly_version }} \
+            -o publish/launcher-${{ matrix.rid }}
+
+      - name: Remove Launcher debug symbols
+        shell: bash
+        run: |
+          find publish/launcher-${{ matrix.rid }} -name '*.pdb' -delete
+          find publish/launcher-${{ matrix.rid }} -name '*.dbg' -delete
+
+      # Archive all products
+      - name: Archive products
         shell: bash
         run: |
           set -e
-          cd publish/${{ matrix.rid }}
-          APP_NAME=Kairo-${{ needs.prepare.outputs.version }}-${{ matrix.rid }}
-          case "${{ matrix.archive }}" in
-            zip)
-              if [[ "${{ runner.os }}" == 'Windows' ]]; then
-                powershell -Command "Compress-Archive -Path * -DestinationPath ../$APP_NAME.zip"
-              else
-                zip -r ../$APP_NAME.zip .
-              fi
-              ;;
-            tar.gz)
-              tar -czf ../$APP_NAME.tar.gz .
-              ;;
-          esac
-          echo "Created archive(s):"; ls -1 ../
-      - name: List publish directory (debug)
-        shell: bash
-        run: |
-          if [ -d publish ]; then
-            echo 'Listing publish directory:'
-            ls -l publish
-            echo 'Find built archives:'
-            find publish -type f \( -name '*.zip' -o -name '*.tar.gz' \) -print || true
-          else
-            echo 'publish directory not found'
-          fi
-      - name: Upload artifact
+          VERSION="${{ needs.prepare.outputs.version }}"
+          RID="${{ matrix.rid }}"
+          ARCHIVE_TYPE="${{ matrix.archive }}"
+          
+          mkdir -p dist
+          
+          archive_dir() {
+            local src_dir="$1"
+            local name="$2"
+            
+            cd "$src_dir"
+            case "$ARCHIVE_TYPE" in
+              zip)
+                if [[ "${{ runner.os }}" == 'Windows' ]]; then
+                  powershell -Command "Compress-Archive -Path * -DestinationPath ../../dist/$name.zip"
+                else
+                  zip -r ../../dist/$name.zip .
+                fi
+                ;;
+              tar.gz)
+                tar -czf ../../dist/$name.tar.gz .
+                ;;
+            esac
+            cd ../..
+          }
+          
+          # Archive GUI
+          archive_dir "publish/gui-$RID" "Kairo-$VERSION-$RID"
+          
+          # Archive CLI
+          archive_dir "publish/cli-$RID" "Kairo-CLI-$VERSION-$RID"
+          
+          # Archive Launcher
+          archive_dir "publish/launcher-$RID" "Kairo-Launcher-$VERSION-$RID"
+          
+          echo "Created archives:"
+          ls -lh dist/
+
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: release-${{ matrix.rid }}
-          path: |
-            publish/*.zip
-            publish/*.tar.gz
+          path: dist/*
           if-no-files-found: error
 
   release:
@@ -193,32 +285,39 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           path: artifacts
+
       - name: Flatten artifacts
         run: |
           mkdir dist
-          find artifacts -type f -name '*.zip' -exec mv {} dist/ \;
-          find artifacts -type f -name '*.tar.gz' -exec mv {} dist/ \;
+          find artifacts -type f \( -name '*.zip' -o -name '*.tar.gz' \) -exec mv {} dist/ \;
           ls -lh dist
+
       - name: Generate checksums
         run: |
           cd dist
           sha256sum * > SHA256SUMS.txt
           cat SHA256SUMS.txt
-      - name: Create / Update Release
+
+      - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-            tag_name: v${{ needs.prepare.outputs.version }}
-            name: Kairo v${{ needs.prepare.outputs.version }}
-            prerelease: ${{ needs.prepare.outputs.prerelease }}
-            draft: false
-            files: |
-              dist/*
+          tag_name: v${{ needs.prepare.outputs.version }}
+          name: Kairo v${{ needs.prepare.outputs.version }}
+          prerelease: ${{ needs.prepare.outputs.prerelease }}
+          draft: false
+          files: dist/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Release summary
         run: |
-          echo "Version: ${{ needs.prepare.outputs.version }}" >> $GITHUB_STEP_SUMMARY
-          echo "Assembly Version: ${{ needs.prepare.outputs.assembly_version }}" >> $GITHUB_STEP_SUMMARY
-          echo "Pre-release: ${{ needs.prepare.outputs.prerelease }}" >> $GITHUB_STEP_SUMMARY
-          echo "Assets:" >> $GITHUB_STEP_SUMMARY
+          echo "## Release Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** ${{ needs.prepare.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Assembly Version:** ${{ needs.prepare.outputs.assembly_version }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Pre-release:** ${{ needs.prepare.outputs.prerelease }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Assets" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           ls -1 dist >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
