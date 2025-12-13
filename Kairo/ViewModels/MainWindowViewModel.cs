@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
@@ -179,8 +180,13 @@ namespace Kairo.ViewModels
                 }
                 _http.DefaultRequestHeaders.Remove("User-Agent");
                 _http.DefaultRequestHeaders.Add("User-Agent", $"Kairo-{Global.Version}");
-                var accessUrl = $"{Global.APIList.GetAccessToken}?app_id={Global.APPID}&refresh_token={refreshToken}";
-                var response = await _http.PostAsyncLogged(accessUrl, null);
+                var accessUrl = Global.APIList.GetAccessToken;
+                var formContent = new FormUrlEncodedContent(new[]
+                {
+                    new KeyValuePair<string, string>("app_id", Global.APPID.ToString()),
+                    new KeyValuePair<string, string>("refresh_token", refreshToken)
+                });
+                var response = await _http.PostAsyncLogged(accessUrl, formContent);
                 var accessBody = await response.Content.ReadAsStringAsync();
                 var json = JsonNode.Parse(accessBody);
                 var accessStatus = json? ["status"]?.GetValue<int>() ?? 0;
