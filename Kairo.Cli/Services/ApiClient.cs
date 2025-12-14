@@ -189,7 +189,9 @@ public class ApiClient : IDisposable
                     var tunnel = JsonSerializer.Deserialize(item.ToJsonString(), TunnelJsonContext.Default.Tunnel);
                     if (tunnel != null) tunnels.Add(tunnel);
                 }
-                catch { }
+                catch
+                {
+                }
             }
 
             return tunnels;
