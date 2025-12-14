@@ -30,6 +30,44 @@ public class ApiClient : IDisposable
     public void Dispose() => _http.Dispose();
 
     /// <summary>
+    /// 使用 OAuth Code 获取 Refresh Token
+    /// </summary>
+    public async Task<LoginResult> ExchangeCodeForRefreshTokenAsync(string code)
+    {
+        try
+        {
+            var formContent = new FormUrlEncodedContent(new[]
+            {
+                new KeyValuePair<string, string>("code", code)
+            });
+
+            var response = await _http.PostAsync(ApiEndpoints.GetRefreshToken, formContent);
+            var body = await response.Content.ReadAsStringAsync();
+            var json = JsonNode.Parse(body);
+
+            var status = json?["status"]?.GetValue<int>() ?? 0;
+            if (status != 200)
+            {
+                var message = json?["message"]?.GetValue<string>() ?? "未知错误";
+                return new LoginResult { Success = false, Message = $"获取 Refresh Token 失败: {message}" };
+            }
+
+            var refreshToken = json?["data"]?["refresh_token"]?.GetValue<string>();
+            if (string.IsNullOrEmpty(refreshToken))
+            {
+                return new LoginResult { Success = false, Message = "API 返回的 Refresh Token 为空" };
+            }
+
+            // 使用获取到的 refresh token 继续登录
+            return await LoginWithRefreshTokenAsync(refreshToken);
+        }
+        catch (Exception ex)
+        {
+            return new LoginResult { Success = false, Message = ex.Message };
+        }
+    }
+
+    /// <summary>
     /// 使用 Refresh Token 登录
     /// </summary>
     public async Task<LoginResult> LoginWithRefreshTokenAsync(string refreshToken)
@@ -138,7 +176,8 @@ public class ApiClient : IDisposable
                 return null;
             }
 
-            var dataArray = json?["data"] as JsonArray;
+            // API 返回格式: { "data": { "list": [...] } }
+            var dataArray = json?["data"]?["list"] as JsonArray;
             if (dataArray == null) return new List<Tunnel>();
 
             var tunnels = new List<Tunnel>();

@@ -50,6 +50,7 @@ public static class ApiEndpoints
     // User & OAuth
     public const string GetUserInfo = $"{API}/user";
     public const string OAuthAuthorize = $"{Dashboard}/auth/oauth/authorize";
+    public const string GetRefreshToken = $"{API}/auth/oauth/refresh-token";
     public const string GetAccessToken = $"{API}/auth/oauth/access-token";
     public const string GetFrpToken = $"{API}/user/frp/token";
 

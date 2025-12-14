@@ -370,3 +370,4 @@ docs/
 # Kairo Launcher embedded resources
 Kairo.Launcher/Resources/
 publish/
+.lcf-cache/
