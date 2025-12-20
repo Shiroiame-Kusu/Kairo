@@ -150,6 +150,7 @@ namespace Kairo.ViewModels
             catch (Exception ex)
             {
                 CancelLoginTimeout();
+                Logger.Output(LogType.Error, "[Login] 启动浏览器失败:", ex);
                 ShowSnackbar("启动浏览器失败", ex.Message, InfoBarSeverity.Error);
                 IsLoggingIn = false;
             }
@@ -160,6 +161,7 @@ namespace Kairo.ViewModels
             CancelLoginTimeout();
             if (string.IsNullOrWhiteSpace(refreshToken))
             {
+                Logger.Output(LogType.Warn, "[Login] OAuth 回调提供的刷新令牌为空");
                 ShowSnackbar("无效令牌", "提供的刷新令牌为空", InfoBarSeverity.Warning);
                 IsLoggingIn = false;
                 return;
@@ -193,6 +195,7 @@ namespace Kairo.ViewModels
                 if (accessStatus != 200)
                 {
                     var message = json? ["message"]?.GetValue<string>() ?? "未知错误";
+                    Logger.Output(LogType.Error, $"[Login] 获取 AccessToken 失败: API状态={accessStatus}, 消息={message}");
                     if (!auto) ShowSnackbar("登录失败", $"API状态: {accessStatus} {message}", InfoBarSeverity.Error);
                     Global.Config.RefreshToken = string.Empty;
                     Global.Config.AccessToken = string.Empty;
@@ -215,6 +218,7 @@ namespace Kairo.ViewModels
                 _userInfo = userNode == null ? null : JsonSerializer.Deserialize(userNode.ToJsonString(), AppJsonContext.Default.UserInfo);
                 if (_userInfo == null)
                 {
+                    Logger.Output(LogType.Error, "[Login] 解析用户信息失败, userNode:", userNode?.ToJsonString() ?? "null");
                     ShowSnackbar("错误", "解析用户信息失败", InfoBarSeverity.Error);
                     IsLoggingIn = false;
                     return;
@@ -236,6 +240,7 @@ namespace Kairo.ViewModels
             }
             catch (Exception ex)
             {
+                Logger.Output(LogType.Error, "[Login] 登录异常:", ex);
                 ShowSnackbar("异常", ex.Message, InfoBarSeverity.Error);
                 RunOnUi(() => LoginFailed?.Invoke(this, ex.Message));
             }
@@ -266,6 +271,16 @@ namespace Kairo.ViewModels
 
         public void ShowSnackbar(string title, string? message, InfoBarSeverity severity)
         {
+            // 记录到日志
+            var logType = severity switch
+            {
+                InfoBarSeverity.Error => LogType.Error,
+                InfoBarSeverity.Warning => LogType.Warn,
+                _ => LogType.Info
+            };
+            var logMessage = string.IsNullOrEmpty(message) ? title : $"{title}: {message}";
+            Logger.Output(logType, "[Login]", logMessage);
+
             RunOnUi(() =>
             {
                 SnackbarTitle = title;
