@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
@@ -7,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Diagnostics;
 using System.Security.Cryptography;
+using Avalonia.Threading;
 using FluentAvalonia.UI.Controls;
 using Kairo.Models;
 using Kairo.Utils;
@@ -32,11 +34,24 @@ namespace Kairo.ViewModels
 
         public RelayCommand StartOAuthCommand { get; }
 
+        private static void RunOnUi(Action action)
+        {
+            if (Dispatcher.UIThread.CheckAccess())
+                action();
+            else
+                Dispatcher.UIThread.Post(action);
+        }
+
         public bool IsLoggingIn
         {
             get => _isLoggingIn;
             private set
             {
+                if (!Dispatcher.UIThread.CheckAccess())
+                {
+                    Dispatcher.UIThread.Post(() => IsLoggingIn = value);
+                    return;
+                }
                 if (SetProperty(ref _isLoggingIn, value))
                 {
                     OnPropertyChanged(nameof(IsLoginFormVisible));
@@ -52,7 +67,15 @@ namespace Kairo.ViewModels
         public bool IsLoggedIn
         {
             get => _isLoggedIn;
-            private set => SetProperty(ref _isLoggedIn, value);
+            private set
+            {
+                if (!Dispatcher.UIThread.CheckAccess())
+                {
+                    Dispatcher.UIThread.Post(() => IsLoggedIn = value);
+                    return;
+                }
+                SetProperty(ref _isLoggedIn, value);
+            }
         }
 
         public bool IsLoginFormVisible => !IsLoggingIn;
@@ -127,6 +150,7 @@ namespace Kairo.ViewModels
             catch (Exception ex)
             {
                 CancelLoginTimeout();
+                Logger.Output(LogType.Error, "[Login] 启动浏览器失败:", ex);
                 ShowSnackbar("启动浏览器失败", ex.Message, InfoBarSeverity.Error);
                 IsLoggingIn = false;
             }
@@ -137,6 +161,7 @@ namespace Kairo.ViewModels
             CancelLoginTimeout();
             if (string.IsNullOrWhiteSpace(refreshToken))
             {
+                Logger.Output(LogType.Warn, "[Login] OAuth 回调提供的刷新令牌为空");
                 ShowSnackbar("无效令牌", "提供的刷新令牌为空", InfoBarSeverity.Warning);
                 IsLoggingIn = false;
                 return;
@@ -157,14 +182,20 @@ namespace Kairo.ViewModels
                 }
                 _http.DefaultRequestHeaders.Remove("User-Agent");
                 _http.DefaultRequestHeaders.Add("User-Agent", $"Kairo-{Global.Version}");
-                var accessUrl = $"{Global.APIList.GetAccessToken}?app_id={Global.APPID}&refresh_token={refreshToken}";
-                var response = await _http.PostAsyncLogged(accessUrl, null);
+                var accessUrl = Global.APIList.GetAccessToken;
+                var formContent = new FormUrlEncodedContent(new[]
+                {
+                    new KeyValuePair<string, string>("app_id", Global.APPID.ToString()),
+                    new KeyValuePair<string, string>("refresh_token", refreshToken)
+                });
+                var response = await _http.PostAsyncLogged(accessUrl, formContent);
                 var accessBody = await response.Content.ReadAsStringAsync();
                 var json = JsonNode.Parse(accessBody);
                 var accessStatus = json? ["status"]?.GetValue<int>() ?? 0;
                 if (accessStatus != 200)
                 {
                     var message = json? ["message"]?.GetValue<string>() ?? "未知错误";
+                    Logger.Output(LogType.Error, $"[Login] 获取 AccessToken 失败: API状态={accessStatus}, 消息={message}");
                     if (!auto) ShowSnackbar("登录失败", $"API状态: {accessStatus} {message}", InfoBarSeverity.Error);
                     Global.Config.RefreshToken = string.Empty;
                     Global.Config.AccessToken = string.Empty;
@@ -187,6 +218,7 @@ namespace Kairo.ViewModels
                 _userInfo = userNode == null ? null : JsonSerializer.Deserialize(userNode.ToJsonString(), AppJsonContext.Default.UserInfo);
                 if (_userInfo == null)
                 {
+                    Logger.Output(LogType.Error, "[Login] 解析用户信息失败, userNode:", userNode?.ToJsonString() ?? "null");
                     ShowSnackbar("错误", "解析用户信息失败", InfoBarSeverity.Error);
                     IsLoggingIn = false;
                     return;
@@ -196,7 +228,7 @@ namespace Kairo.ViewModels
                 var frpResp = await _http.GetAsyncLogged(frpUrl);
                 var frpBody = await frpResp.Content.ReadAsStringAsync();
                 var frpJson = JsonNode.Parse(frpBody);
-                _userInfo.FrpToken = frpJson? ["data"]? ["frp_token"]?.GetValue<string>();
+                _userInfo.FrpToken = frpJson? ["data"]? ["token"]?.GetValue<string>();
                 Global.Config.Username = _userInfo.Username;
                 Global.Config.FrpToken = _userInfo.FrpToken ?? string.Empty;
                 ApplyUserInfoToSession(_userInfo);
@@ -204,12 +236,13 @@ namespace Kairo.ViewModels
                 SessionState.IsLoggedIn = true;
                 ConfigManager.Save();
                 ShowSnackbar("登录成功", $"欢迎 {_userInfo.Username}", InfoBarSeverity.Success);
-                LoginSucceeded?.Invoke(this, _userInfo);
+                RunOnUi(() => LoginSucceeded?.Invoke(this, _userInfo));
             }
             catch (Exception ex)
             {
+                Logger.Output(LogType.Error, "[Login] 登录异常:", ex);
                 ShowSnackbar("异常", ex.Message, InfoBarSeverity.Error);
-                LoginFailed?.Invoke(this, ex.Message);
+                RunOnUi(() => LoginFailed?.Invoke(this, ex.Message));
             }
             finally
             {
@@ -238,10 +271,23 @@ namespace Kairo.ViewModels
 
         public void ShowSnackbar(string title, string? message, InfoBarSeverity severity)
         {
-            SnackbarTitle = title;
-            SnackbarMessage = message ?? string.Empty;
-            SnackbarSeverity = severity;
-            IsSnackbarOpen = true;
+            // 记录到日志
+            var logType = severity switch
+            {
+                InfoBarSeverity.Error => LogType.Error,
+                InfoBarSeverity.Warning => LogType.Warn,
+                _ => LogType.Info
+            };
+            var logMessage = string.IsNullOrEmpty(message) ? title : $"{title}: {message}";
+            Logger.Output(logType, "[Login]", logMessage);
+
+            RunOnUi(() =>
+            {
+                SnackbarTitle = title;
+                SnackbarMessage = message ?? string.Empty;
+                SnackbarSeverity = severity;
+                IsSnackbarOpen = true;
+            });
         }
 
         private void BeginLoginTimeout()
@@ -253,8 +299,11 @@ namespace Kairo.ViewModels
                 try
                 {
                     await Task.Delay(LoginTimeout, _loginTimeoutCts.Token);
-                    ShowSnackbar("登录超时", "OAuth 验证未完成，请重试", InfoBarSeverity.Warning);
-                    IsLoggingIn = false;
+                    await Dispatcher.UIThread.InvokeAsync(() =>
+                    {
+                        ShowSnackbar("登录超时", "OAuth 验证未完成，请重试", InfoBarSeverity.Warning);
+                        IsLoggingIn = false;
+                    });
                 }
                 catch (TaskCanceledException)
                 {

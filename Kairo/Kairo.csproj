@@ -24,6 +24,11 @@
         <InvariantGlobalization>false</InvariantGlobalization>
     </PropertyGroup>
 
+    <!-- Prevent BigDecimal library from being trimmed (fixes TypeInitializationException) -->
+    <ItemGroup Condition="'$(Configuration)' == 'Release'">
+        <TrimmerRootAssembly Include="ExtendedNumerics.BigDecimal" />
+    </ItemGroup>
+
     <ItemGroup>
         <PackageReference Include="Avalonia" Version="11.3.9"/>
         <PackageReference Include="Avalonia.Controls.DataGrid" Version="11.3.9"/>

@@ -1,12 +1,25 @@
 using System;
 using System.Threading.Tasks;
 using System.Windows.Input;
+using Avalonia.Threading;
 
 namespace Kairo.ViewModels
 {
     /// <summary>
     /// Simple ICommand implementations for synchronous and asynchronous actions.
     /// </summary>
+    internal static class UiThreadHelper
+    {
+        public static void RaiseOnUi(EventHandler? handler, object sender)
+        {
+            if (handler == null) return;
+            if (Dispatcher.UIThread.CheckAccess())
+                handler(sender, EventArgs.Empty);
+            else
+                Dispatcher.UIThread.Post(() => handler(sender, EventArgs.Empty));
+        }
+    }
+
     public class RelayCommand : ICommand
     {
         private readonly Action _execute;
@@ -24,7 +37,7 @@ namespace Kairo.ViewModels
 
         public void Execute(object? parameter) => _execute();
 
-        public void RaiseCanExecuteChanged() => CanExecuteChanged?.Invoke(this, EventArgs.Empty);
+        public void RaiseCanExecuteChanged() => UiThreadHelper.RaiseOnUi(CanExecuteChanged, this);
     }
 
     public class AsyncRelayCommand : ICommand
@@ -59,6 +72,6 @@ namespace Kairo.ViewModels
             }
         }
 
-        public void RaiseCanExecuteChanged() => CanExecuteChanged?.Invoke(this, EventArgs.Empty);
+        public void RaiseCanExecuteChanged() => UiThreadHelper.RaiseOnUi(CanExecuteChanged, this);
     }
 }
