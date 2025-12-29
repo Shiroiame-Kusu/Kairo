@@ -89,7 +89,7 @@ namespace Kairo.ViewModels
         public bool CanToggleDarkTheme => !FollowSystem;
 
         public string BuildInfoText => Global.BuildInfo?.ToString() ?? string.Empty;
-        public string VersionText => $"版本: {Global.Version} {Global.VersionName}";
+        public string VersionText => $"版本: {Global.Version} {Global.VersionName} Rev {Global.Revision}";
         public string DeveloperText => $"开发者: {Global.Developer}";
         public string CopyrightText => Global.Copyright;
 

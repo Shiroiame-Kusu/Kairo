@@ -13,7 +13,7 @@ namespace Kairo
         public const string Version = "3.2.0";
         public const string VersionName = "Sonetto";
         public const string Branch = "Release";
-        public const int Revision = 1;
+        public const int Revision = 6;
         public static readonly BuildInfo BuildInfo = new();
         public const string Developer = "Shiroiame-Kusu & Daiyangcheng";
         public const string Copyright = "Copyright © Shiroiame-Kusu All Rights Reserved";
@@ -51,7 +51,7 @@ namespace Kairo
 
         // API v3 base
         public const string API = "https://api.locyanfrp.cn/v3";
-        public const string Dashboard = "https://preview.locyanfrp.cn";
+        public const string Dashboard = "https://dashboard.locyanfrp.cn";
         //public const string UpdateCheckerAPI = "http://localhost:5043/api";
         public const string UpdateCheckerAPI = "https://kairo.nyat.icu/api";
         public const string GithubMirror = "https://hub.locyan.cloud/";
