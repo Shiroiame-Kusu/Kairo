@@ -366,3 +366,8 @@ Kairo/resource/net9.0-windows/win-x64
 Legacy/
 .idea/
 docs/
+
+# Kairo Launcher embedded resources
+Kairo.Launcher/Resources/
+publish/
+.lcf-cache/
