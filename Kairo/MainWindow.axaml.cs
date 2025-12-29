@@ -1,7 +1,9 @@
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Media;
 using Avalonia.Threading;
 using FluentAvalonia.UI.Controls;
 using Kairo.Components.DashBoard;
@@ -24,10 +26,38 @@ public partial class MainWindow : Window
         _viewModel = new MainWindowViewModel();
         DataContext = _viewModel;
         Access.MainWindow = this;
+        SetupPlatformWindowStyle();
         SetupTrayIcon();
         HookViewModel();
         Opened += async (_, _) => await _viewModel.InitializeAsync();
         Closed += (_, _) => DisposeTrayIcon();
+    }
+
+    /// <summary>
+    /// 根据平台设置窗口样式（边距和阴影）
+    /// Windows: 无边距无阴影（避免透明边框问题）
+    /// Linux/macOS: 有边距有阴影
+    /// </summary>
+    private void SetupPlatformWindowStyle()
+    {
+        var windowBorder = this.FindControl<Avalonia.Controls.Border>("WindowBorder");
+        if (windowBorder == null) return;
+
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            // Windows: 不使用边距和阴影，避免透明边框问题
+            windowBorder.Margin = new Thickness(0);
+            windowBorder.BoxShadow = new BoxShadows();
+        }
+        else
+        {
+            // Linux/macOS: 使用边距和阴影
+            windowBorder.Margin = new Thickness(8);
+            if (Application.Current!.TryFindResource("WindowShadow", out var shadow) && shadow is BoxShadows boxShadows)
+            {
+                windowBorder.BoxShadow = boxShadows;
+            }
+        }
     }
 
     private void HookViewModel()
