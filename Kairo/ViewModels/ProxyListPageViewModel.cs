@@ -4,7 +4,6 @@ using System.Net.Http;
 using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 using FluentAvalonia.UI.Controls;
-using Avalonia.Threading;
 using Kairo.Components.DashBoard;
 using Kairo.Utils;
 using Kairo.Utils.Logger;
@@ -177,22 +176,14 @@ namespace Kairo.ViewModels
 
         private void OnProxyExited(int proxyId)
         {
-            void UpdateFlag()
+            foreach (var vm in Proxies)
             {
-                foreach (var vm in Proxies)
+                if (vm.Proxy.Id == proxyId)
                 {
-                    if (vm.Proxy.Id == proxyId)
-                    {
-                        vm.IsRunning = false;
-                        break;
-                    }
+                    vm.IsRunning = false;
+                    break;
                 }
             }
-
-            if (Dispatcher.UIThread.CheckAccess())
-                UpdateFlag();
-            else
-                Dispatcher.UIThread.Post(UpdateFlag);
         }
 
         private void UpdateRunningStates()
