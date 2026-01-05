@@ -10,10 +10,10 @@ namespace Kairo
     {
         public static readonly DateTime StartTime = DateTime.Now;
         public static bool LoginedByConsole = false;
-        public const string Version = "3.2.0";
+        public const string Version = "3.2.1";
         public const string VersionName = "Sonetto";
         public const string Branch = "Release";
-        public const int Revision = 6;
+        public const int Revision = 1;
         public static readonly BuildInfo BuildInfo = new();
         public const string Developer = "Shiroiame-Kusu & Daiyangcheng";
         public const string Copyright = "Copyright © Shiroiame-Kusu All Rights Reserved";

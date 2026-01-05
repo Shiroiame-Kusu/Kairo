@@ -43,7 +43,7 @@ internal static class FrpcProcessManager
             var psi = new ProcessStartInfo
             {
                 FileName = frpcPath,
-                Arguments = $" -u {frpToken} -p {proxyId}",
+                Arguments = $" -u {frpToken} -t {proxyId}",
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
