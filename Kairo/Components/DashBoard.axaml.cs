@@ -23,6 +23,7 @@ namespace Kairo.Components.DashBoard
         public static Bitmap? Avatar = null;
         private HomePage? _homePage;
         private ProxyListPage? _proxyListPage;
+        private LanPartyLobbyPage? _lanPartyLobbyPage;
         private StatusPage? _statusPage;
         private SettingsPage? _settingsPage;
 
@@ -53,22 +54,9 @@ namespace Kairo.Components.DashBoard
         {
             var windowBorder = this.FindControl<Avalonia.Controls.Border>("WindowBorder");
             if (windowBorder == null) return;
-
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                // Windows: 不使用边距和阴影，避免透明边框问题
-                windowBorder.Margin = new Thickness(0);
-                windowBorder.BoxShadow = new BoxShadows();
-            }
-            else
-            {
-                // Linux/macOS: 使用边距和阴影
-                windowBorder.Margin = new Thickness(8);
-                if (Application.Current!.TryFindResource("WindowShadow", out var shadow) && shadow is BoxShadows boxShadows)
-                {
-                    windowBorder.BoxShadow = boxShadows;
-                }
-            }
+            windowBorder.Margin = new Thickness(0);
+            windowBorder.BoxShadow = new BoxShadows();
+            
         }
 
         private void OnDashBoardOpened(object? sender, EventArgs e)
@@ -100,7 +88,7 @@ namespace Kairo.Components.DashBoard
                 if (string.IsNullOrWhiteSpace(SessionState.AvatarUrl)) return;
                 using HttpClient hc = new();
                 var bytes = await hc.GetByteArrayAsyncLogged(SessionState.AvatarUrl);
-                using var ms = new System.IO.MemoryStream(bytes);
+                using var ms = new MemoryStream(bytes);
                 Avatar = new Bitmap(ms);
                 Dispatcher.UIThread.Post(() =>
                 {
@@ -133,6 +121,9 @@ namespace Kairo.Components.DashBoard
                     break;
                 case "proxylist":
                     ContentHost.Content = _proxyListPage ??= new ProxyListPage();
+                    break;
+                case "lanparty":
+                    ContentHost.Content = _lanPartyLobbyPage ??= new LanPartyLobbyPage();
                     break;
                 case "status":
                     ContentHost.Content = _statusPage ??= new StatusPage();

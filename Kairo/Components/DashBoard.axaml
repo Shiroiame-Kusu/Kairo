@@ -43,6 +43,11 @@
                                         <fa:SymbolIconSource Symbol="List" />
                                     </fa:NavigationViewItem.IconSource>
                                 </fa:NavigationViewItem>
+                                <fa:NavigationViewItem Content="联机房间" Tag="lanparty">
+                                    <fa:NavigationViewItem.IconSource>
+                                        <fa:SymbolIconSource Symbol="People" />
+                                    </fa:NavigationViewItem.IconSource>
+                                </fa:NavigationViewItem>
                                 <fa:NavigationViewItem Content="运行状态" Tag="status">
                                     <fa:NavigationViewItem.IconSource>
                                         <fa:SymbolIconSource Symbol="Code" />

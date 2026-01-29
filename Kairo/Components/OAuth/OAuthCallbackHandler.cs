@@ -1,10 +1,8 @@
 using Kairo.Utils;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Net;
 using System.Net.NetworkInformation;
-using System.Threading;
 using System.Threading.Tasks;
 using Kairo.Utils.Configuration;
 using Microsoft.AspNetCore.Hosting;
