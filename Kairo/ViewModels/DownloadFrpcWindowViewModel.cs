@@ -140,8 +140,8 @@ namespace Kairo.ViewModels
                 CanClose = false;
                 IsIndeterminate = true;
                 SetStatus("正在获取版本信息...");
-                _http.DefaultRequestHeaders.UserAgent.ParseAdd("Kairo-FrpcDownloader");
-                string apiMirror = "https://api-gh.1l1.icu/repos/LoCyan-Team/LocyanFrpPureApp/releases/latest";
+                _http.DefaultRequestHeaders.UserAgent.ParseAdd($"Kairo-{Global.Version}");
+                string apiMirror = "https://hub.locyan.cloud/repos/LoCyan-Team/LocyanFrpPureApp/releases/latest";
                 string apiOrigin = "https://api.github.com/repos/LoCyan-Team/LocyanFrpPureApp/releases/latest";
                 JsonObject release = await TryFetch(apiMirror) ??
                                      await TryFetch(apiOrigin) ?? throw new Exception("无法获取版本信息");
@@ -247,6 +247,7 @@ namespace Kairo.ViewModels
 
         private async Task<JsonObject?> TryFetch(string url)
         {
+            
             try
             {
                 using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(8));

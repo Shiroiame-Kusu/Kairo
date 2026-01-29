@@ -30,7 +30,7 @@
         <Grid RowDefinitions="Auto,*">
             <controls:CustomTitleBar x:Name="TitleBar" Title="Kairo - DashBoard" ShowUserInfo="True" />
             <Grid Grid.Row="1">
-                <Border CornerRadius="{DynamicResource WindowCornerRadius}"
+                <Border CornerRadius="0"
                         Background="{DynamicResource LayerFillColorDefaultBrush}"
                         BoxShadow="{DynamicResource WindowShadow}">
                     <fa:NavigationView x:Name="NavView"
