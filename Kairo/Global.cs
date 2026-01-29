@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Kairo.Components;
+using Kairo.Core;
 using Kairo.Utils.Configuration;
 using Kairo.Utils;
 
@@ -10,13 +11,13 @@ namespace Kairo
     {
         public static readonly DateTime StartTime = DateTime.Now;
         public static bool LoginedByConsole = false;
-        public const string Version = "3.2.1";
-        public const string VersionName = "Sonetto";
-        public const string Branch = "Release";
-        public const int Revision = 1;
+        public const string Version = AppConstants.Version;
+        public const string VersionName = AppConstants.VersionName;
+        public const string Branch = AppConstants.Branch;
+        public const int Revision = AppConstants.Revision;
         public static readonly BuildInfo BuildInfo = new();
-        public const string Developer = "Shiroiame-Kusu & Daiyangcheng";
-        public const string Copyright = "Copyright © Shiroiame-Kusu All Rights Reserved";
+        public const string Developer = AppConstants.Developer;
+        public const string Copyright = AppConstants.Copyright;
         public static Config Config = new();
         public static bool isDarkThemeEnabled;
         public static bool DebugMode { get; private set; }
@@ -50,11 +51,11 @@ namespace Kairo
         };
 
         // API v3 base
-        public const string API = "https://api.locyanfrp.cn/v3";
-        public const string Dashboard = "https://dashboard.locyanfrp.cn";
+        public const string API = AppConstants.API;
+        public const string Dashboard = AppConstants.Dashboard;
         //public const string UpdateCheckerAPI = "http://localhost:5043/api";
-        public const string UpdateCheckerAPI = "https://kairo.nyat.icu/api";
-        public const string GithubMirror = "https://hub.locyan.cloud/";
+        public const string UpdateCheckerAPI = AppConstants.UpdateCheckerAPI;
+        public const string GithubMirror = AppConstants.GithubMirror;
 
         public class APIList
         {

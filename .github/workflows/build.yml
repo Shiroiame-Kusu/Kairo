@@ -10,7 +10,6 @@ permissions:
   contents: read
 
 env:
-  PROJECT_PATH: Kairo/Kairo.csproj
   CONFIGURATION: Release
   DOTNET_VERSION: 10.0.x
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: '1'
@@ -76,23 +75,82 @@ jobs:
         run: |
           chmod +x Kairo/Components/BuildInfo.sh || true
           Kairo/Components/BuildInfo.sh || echo "BuildInfo script skipped"
-      - name: Restore
-        run: dotnet restore "${{ env.PROJECT_PATH }}"
 
-      - name: Publish
+      - name: Restore
+        run: dotnet restore Kairo.sln
+
+      - name: Publish GUI
         run: >-
-          dotnet publish "${{ env.PROJECT_PATH }}" -c "${{ env.CONFIGURATION }}" -r ${{ matrix.rid }}
-          -o publish/${{ matrix.rid }} /p:InvariantGlobalization=false
+          dotnet publish Kairo/Kairo.csproj -c "${{ env.CONFIGURATION }}" -r ${{ matrix.rid }}
+          -o publish/gui-${{ matrix.rid }} /p:InvariantGlobalization=false
+
+      - name: Publish CLI
+        run: >-
+          dotnet publish Kairo.Cli/Kairo.Cli.csproj -c "${{ env.CONFIGURATION }}" -r ${{ matrix.rid }}
+          -o publish/cli-${{ matrix.rid }}
+
+      - name: Remove debug symbols
+        shell: bash
+        run: |
+          find publish -name '*.pdb' -delete
+          find publish -name '*.dbg' -delete
+
+      # Generate hashes and tar.gz for Launcher embedding
+      - name: Prepare Launcher resources
+        shell: bash
+        run: |
+          mkdir -p Kairo.Launcher/Resources
+          
+          # Generate GUI hashes
+          cd publish/gui-${{ matrix.rid }}
+          find . -type f | while read -r file; do
+            if command -v md5sum &> /dev/null; then
+              md5sum "$file"
+            elif command -v md5 &> /dev/null; then
+              md5 -r "$file" | awk '{print $1 "  " $2}'
+            fi
+          done > ../../Kairo.Launcher/Resources/kairo-gui.hashes
+          tar -czf ../../Kairo.Launcher/Resources/kairo-gui.tar.gz .
+          
+          # Generate CLI hashes
+          cd ../cli-${{ matrix.rid }}
+          find . -type f | while read -r file; do
+            if command -v md5sum &> /dev/null; then
+              md5sum "$file"
+            elif command -v md5 &> /dev/null; then
+              md5 -r "$file" | awk '{print $1 "  " $2}'
+            fi
+          done > ../../Kairo.Launcher/Resources/kairo-cli.hashes
+          tar -czf ../../Kairo.Launcher/Resources/kairo-cli.tar.gz .
+          
+          cd ../..
+          echo "Launcher resources:"
+          ls -lh Kairo.Launcher/Resources/
+
+      # Build Launcher with embedded GUI and CLI
+      - name: Publish Launcher
+        shell: bash
+        run: >-
+          dotnet publish Kairo.Launcher/Kairo.Launcher.csproj -c "${{ env.CONFIGURATION }}" -r ${{ matrix.rid }}
+          -o publish/launcher-${{ matrix.rid }}
+
+      - name: Remove Launcher debug symbols
+        shell: bash
+        run: |
+          find publish/launcher-${{ matrix.rid }} -name '*.pdb' -delete
+          find publish/launcher-${{ matrix.rid }} -name '*.dbg' -delete
 
       - name: Ensure execute bit
         if: runner.os != 'Windows'
         shell: bash
         run: |
-          chmod +x publish/${{ matrix.rid }}/Kairo || true
+          chmod +x publish/gui-${{ matrix.rid }}/Kairo || true
+          chmod +x publish/cli-${{ matrix.rid }}/kairo-cli || true
+          chmod +x publish/launcher-${{ matrix.rid }}/kairo || true
 
-      - name: Upload Artifact
+      - name: Upload Launcher Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Kairo-${{ matrix.rid }}
-          path: publish/${{ matrix.rid }}
+          name: Kairo-Launcher-${{ matrix.rid }}
+          path: publish/launcher-${{ matrix.rid }}
           if-no-files-found: error
