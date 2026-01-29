@@ -1,0 +1,12 @@
+{
+  "servers": {
+    "LoCyanFrp API - API 文档": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "apifox-mcp-server@latest",
+        "--site-id=5202203"
+      ]
+    }
+  }
+}
