@@ -3,8 +3,8 @@ using System.Net;
 using System.Net.NetworkInformation;
 using System.Threading;
 using System.Threading.Tasks;
-using HakuuLib.Minecraft.Discovery;
-using HakuuLib.Minecraft.Forwarding;
+using HakuuLib.Minecraft.Java.Discovery;
+using HakuuLib.Minecraft.Java.Forwarding;
 
 namespace Kairo.Utils
 {
@@ -13,13 +13,13 @@ namespace Kairo.Utils
     /// </summary>
     public static class MinecraftLanPartyHandler
     {
-        private static MinecraftLanForwarder? _lanForwarder;
-        private static LanDiscoveryListener? _lanHostListener;
+        private static JavaLanForwarder? _lanForwarder;
+        private static JavaLanDiscoveryListener? _lanHostListener;
 
         /// <summary>
         /// Creates a forwarder for joining a remote Minecraft server and broadcasting on LAN.
         /// </summary>
-        public static MinecraftLanForwarder CreateForwarder(string remoteHost, int remotePort)
+        public static JavaLanForwarder CreateForwarder(string remoteHost, int remotePort)
         {
             int port = 20000;
             while (port <= 65535 && IsPortInUse(port))
@@ -32,9 +32,9 @@ namespace Kairo.Utils
         /// <summary>
         /// Creates a forwarder with a specific local listen port.
         /// </summary>
-        public static MinecraftLanForwarder CreateForwarder(int listenPort, string remoteHost, int remotePort)
+        public static JavaLanForwarder CreateForwarder(int listenPort, string remoteHost, int remotePort)
         {
-            return new MinecraftLanForwarder(new MinecraftLanForwarderOptions
+            return new JavaLanForwarder(new JavaLanForwarderOptions
             {
                 ListenPort = listenPort,
                 RemoteHost = remoteHost,
@@ -45,9 +45,9 @@ namespace Kairo.Utils
         /// <summary>
         /// Creates and starts a host listener for detecting local Minecraft LAN servers.
         /// </summary>
-        public static LanDiscoveryListener CreateHostListener()
+        public static JavaLanDiscoveryListener CreateHostListener()
         {
-            _lanHostListener ??= new LanDiscoveryListener();
+            _lanHostListener ??= new JavaLanDiscoveryListener();
             return _lanHostListener;
         }
 
@@ -55,7 +55,7 @@ namespace Kairo.Utils
         /// Starts detection and invokes the callback for each detected server.
         /// </summary>
         public static async Task StartDetectionAsync(
-            Action<LanAnnouncement> onServerDetected,
+            Action<JavaLanAnnouncement> onServerDetected,
             CancellationToken cancellationToken = default)
         {
             var listener = CreateHostListener();
@@ -79,7 +79,7 @@ namespace Kairo.Utils
         /// <summary>
         /// Starts a forwarder to join a remote room.
         /// </summary>
-        public static async Task<MinecraftLanForwarder> StartForwarderAsync(
+        public static async Task<JavaLanForwarder> StartForwarderAsync(
             string remoteHost,
             int remotePort,
             string motd,
@@ -89,7 +89,7 @@ namespace Kairo.Utils
             await StopForwarderAsync();
 
             var port = FindAvailablePort(25565);
-            _lanForwarder = new MinecraftLanForwarder(new MinecraftLanForwarderOptions
+            _lanForwarder = new JavaLanForwarder(new JavaLanForwarderOptions
             {
                 ListenPort = port,
                 RemoteHost = remoteHost,

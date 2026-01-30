@@ -1,6 +1,5 @@
 using System;
 using System.IO; // added for File.Exists
-using System.Net.Http;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Avalonia;
@@ -13,7 +12,6 @@ using FluentAvalonia.UI.Controls;
 using Kairo.Controls;
 using Kairo.Utils;
 using Avalonia.Threading; // added for DispatcherTimer
-using Kairo.Utils.Logger;
 using Kairo.ViewModels;
 
 namespace Kairo.Components.DashBoard
@@ -52,7 +50,7 @@ namespace Kairo.Components.DashBoard
         /// </summary>
         private void SetupPlatformWindowStyle()
         {
-            var windowBorder = this.FindControl<Avalonia.Controls.Border>("WindowBorder");
+            var windowBorder = this.FindControl<Border>("WindowBorder");
             if (windowBorder == null) return;
             windowBorder.Margin = new Thickness(0);
             windowBorder.BoxShadow = new BoxShadows();
@@ -86,8 +84,8 @@ namespace Kairo.Components.DashBoard
             try
             {
                 if (string.IsNullOrWhiteSpace(SessionState.AvatarUrl)) return;
-                using HttpClient hc = new();
-                var bytes = await hc.GetByteArrayAsyncLogged(SessionState.AvatarUrl);
+                using var api = new ApiClient();
+                var bytes = await api.GetByteArrayWithoutAuthAsync(SessionState.AvatarUrl);
                 using var ms = new MemoryStream(bytes);
                 Avatar = new Bitmap(ms);
                 Dispatcher.UIThread.Post(() =>

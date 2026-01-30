@@ -1,13 +1,11 @@
 using System;
 using System.Collections.ObjectModel;
-using System.Net.Http;
 using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 using FluentAvalonia.UI.Controls;
 using Avalonia.Threading;
 using Kairo.Components.DashBoard;
 using Kairo.Utils;
-using Kairo.Utils.Logger;
 using Kairo.Utils.Serialization;
 using System.Text.Json;
 
@@ -15,7 +13,7 @@ namespace Kairo.ViewModels
 {
     public class ProxyListPageViewModel : ViewModelBase, IDisposable
     {
-        private readonly HttpClient _http = new();
+        private readonly ApiClient _api = new();
         private bool _isLoaded;
         private ProxyCardViewModel? _selected;
 
@@ -54,7 +52,7 @@ namespace Kairo.ViewModels
         public void Dispose()
         {
             FrpcProcessManager.ProxyExited -= OnProxyExited;
-            _http.Dispose();
+            _api.Dispose();
         }
 
         public void OnLoaded()
@@ -84,10 +82,8 @@ namespace Kairo.ViewModels
         {
             try
             {
-                _http.DefaultRequestHeaders.Remove("Authorization");
-                _http.DefaultRequestHeaders.Add("Authorization", $"Bearer {Global.Config.AccessToken}");
-                var url = $"{Global.APIList.GetAllProxy}{Global.Config.ID}";
-                var resp = await _http.GetAsyncLogged(url);
+                var url = ApiClient.GetProxiesUrl();
+                var resp = await _api.GetAsync(url);
                 var body = await resp.Content.ReadAsStringAsync();
                 var json = JsonNode.Parse(body);
                 var status = json?["status"]?.GetValue<int>() ?? 0;
@@ -120,10 +116,8 @@ namespace Kairo.ViewModels
         {
             try
             {
-                using HttpClient hc = new();
-                hc.DefaultRequestHeaders.Add("Authorization", $"Bearer {Global.Config.AccessToken}");
-                var url = $"{Global.APIList.DeleteProxy}{Global.Config.ID}&tunnel_id={vm.Proxy.Id}";
-                var resp = await hc.DeleteAsyncLogged(url);
+                var url = ApiClient.GetDeleteProxyUrl(vm.Proxy.Id);
+                var resp = await _api.DeleteAsync(url);
                 var body = await resp.Content.ReadAsStringAsync();
                 var json = JsonNode.Parse(body);
                 if (json?["status"]?.GetValue<int>() == 200)

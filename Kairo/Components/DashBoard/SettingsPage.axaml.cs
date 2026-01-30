@@ -2,7 +2,6 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Net.Http;
 using System.Text.Json;
 using Avalonia;
 using Avalonia.Controls;
@@ -11,7 +10,6 @@ using Avalonia.Markup.Xaml;
 using Avalonia.Platform.Storage;
 using Kairo.Utils;
 using Kairo.Utils.Configuration;
-using Kairo.Utils.Logger;
 using Kairo.ViewModels;
 
 namespace Kairo.Components.DashBoard
@@ -117,15 +115,14 @@ namespace Kairo.Components.DashBoard
             try
             {
                 (Access.DashBoard as DashBoard)?.OpenSnackbar("检查更新", "正在从 GitHub 获取最新版本...");
-                using var http = new HttpClient();
-                http.DefaultRequestHeaders.UserAgent.ParseAdd("Kairo/UpdateCheck");
+                using var api = new ApiClient();
 
                 var desiredPref = NormalizeBranch(Global.Config.UpdateBranch) ?? Global.Branch;
                 var desired = NormalizeBranch(desiredPref) ?? "Release";
                 bool canSwitchBranch = Global.Branch.Equals("Alpha", StringComparison.OrdinalIgnoreCase) || desired.Equals(Global.Branch, StringComparison.OrdinalIgnoreCase);
 
                 var releasesUrl = "https://api.github.com/repos/Shiroiame-Kusu/Kairo/releases";
-                var resp = await http.GetAsyncLogged(releasesUrl);
+                var resp = await api.GetWithoutAuthAsync(releasesUrl);
                 resp.EnsureSuccessStatusCode();
                 await using var stream = await resp.Content.ReadAsStreamAsync();
                 using var doc = await JsonDocument.ParseAsync(stream);

@@ -22,7 +22,7 @@ namespace Kairo.ViewModels
 {
     public class DownloadFrpcWindowViewModel : ViewModelBase, IDisposable
     {
-        private readonly HttpClient _http = new();
+        private readonly ApiClient _api = new();
         private CancellationTokenSource _cts = new();
         private DownloadService? _downloadService;
         private string? _tempFile;
@@ -123,7 +123,7 @@ namespace Kairo.ViewModels
             }
 
             _cts.Cancel();
-            _http.Dispose();
+            _api.Dispose();
         }
 
         public async Task StartAsync()
@@ -140,7 +140,6 @@ namespace Kairo.ViewModels
                 CanClose = false;
                 IsIndeterminate = true;
                 SetStatus("正在获取版本信息...");
-                _http.DefaultRequestHeaders.UserAgent.ParseAdd($"Kairo-{Global.Version}");
                 string apiMirror = "https://hub.locyan.cloud/repos/LoCyan-Team/LocyanFrpPureApp/releases/latest";
                 string apiOrigin = "https://api.github.com/repos/LoCyan-Team/LocyanFrpPureApp/releases/latest";
                 JsonObject release = await TryFetch(apiMirror) ??
@@ -251,7 +250,7 @@ namespace Kairo.ViewModels
             try
             {
                 using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(8));
-                using var resp = await _http.GetAsyncLogged(url, cts.Token);
+                using var resp = await _api.GetWithoutAuthAsync(url, cts.Token);
                 var text = await resp.Content.ReadAsStringAsync(cts.Token);
                 return JsonNode.Parse(text) as JsonObject;
             }
@@ -489,7 +488,7 @@ namespace Kairo.ViewModels
                               Uri.EscapeDataString(releaseName) + "/" + Uri.EscapeDataString(checksumFileName);
             }
 
-            string checksumContent = await _http.GetStringAsyncLogged(checksumUrl, token);
+            string checksumContent = await _api.GetStringWithoutAuthAsync(checksumUrl, token);
             string? expectedHash = null;
             bool sha256 = false;
             foreach (var line in checksumContent.Split('\n'))

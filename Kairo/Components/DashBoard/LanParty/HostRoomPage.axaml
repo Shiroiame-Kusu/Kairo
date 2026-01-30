@@ -30,16 +30,13 @@
         </Style>
     </UserControl.Styles>
     
-    <ScrollViewer>
-        <StackPanel Spacing="12">
-            <!-- Instructions -->
-            <TextBlock Text="在 Minecraft 中开启局域网联机后，这里会自动探测到您的服务器。选择一个服务器和节点后点击「创建房间」。" 
-                       TextWrapping="Wrap" />
-            
-            <!-- Detected servers section -->
-            <TextBlock Text="探测到的本地服务器:" FontWeight="SemiBold" />
-            <Border Height="90" CornerRadius="8" Padding="8" Background="{DynamicResource LayerFillColorAltBrush}">
-                <StackPanel>
+    <StackPanel Spacing="10">
+        <TextBlock Text="在 Minecraft 中开启局域网联机后，这里会自动探测到您的服务器。选择一个服务器和节点后点击「创建房间」。" TextWrapping="Wrap" />
+        <!-- Detected servers section -->
+        <TextBlock Text="探测到的本地服务器:" FontWeight="SemiBold" />
+        <TextBlock Text="请在 Minecraft 中对局域网开放 (Esc → 对局域网开放)" Opacity="0.6" FontSize="12" Margin="0,-6,0,0" />
+        <Border Height="90" CornerRadius="8" Padding="8" Background="{DynamicResource LayerFillColorAltBrush}">
+            <StackPanel>
                     <ItemsControl ItemsSource="{Binding DetectedServers}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
@@ -52,7 +49,14 @@
                                         Classes.selected="{Binding IsSelected}"
                                         PointerPressed="OnServerCardPressed">
                                     <StackPanel Spacing="4">
-                                        <TextBlock Text="{Binding Motd}" FontWeight="SemiBold" />
+                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                            <TextBlock Text="{Binding Motd}" FontWeight="SemiBold" />
+                                            <Border Background="{DynamicResource AccentFillColorDefaultBrush}" 
+                                                    CornerRadius="4" Padding="4,1">
+                                                <TextBlock Text="{Binding EditionDisplay}" FontSize="10" 
+                                                           Foreground="White" VerticalAlignment="Center" />
+                                            </Border>
+                                        </StackPanel>
                                         <TextBlock Text="{Binding AddressDisplay}" FontSize="12" Opacity="0.7" />
                                     </StackPanel>
                                 </Border>
@@ -119,5 +123,4 @@
                 </Border>
             </Grid>
         </StackPanel>
-    </ScrollViewer>
 </UserControl>

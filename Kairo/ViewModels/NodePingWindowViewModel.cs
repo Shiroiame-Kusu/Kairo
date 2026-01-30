@@ -2,12 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using System.Net.Http;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 using Avalonia.Threading;
-using Kairo.Utils.Logger;
+using Kairo.Utils;
 
 namespace Kairo.ViewModels
 {
@@ -18,7 +17,7 @@ namespace Kairo.ViewModels
         private readonly bool _useApi;
         private readonly IEnumerable<string>? _presetNodes;
         private readonly string? _hostPattern;
-        private readonly HttpClient _http = new();
+        private readonly ApiClient _api = new();
         private bool _isPinging;
         private bool _permissionWarned;
         private string _statusText = string.Empty;
@@ -60,7 +59,7 @@ namespace Kairo.ViewModels
             {
             }
 
-            _http.Dispose();
+            _api.Dispose();
         }
 
         public async Task OnOpenedAsync()
@@ -104,16 +103,14 @@ namespace Kairo.ViewModels
         {
             try
             {
-                if (string.IsNullOrWhiteSpace(Global.Config.AccessToken) || Global.Config.ID == 0)
+                if (!ApiClient.TryEnsureLoggedIn(out var error))
                 {
-                    StatusText = "未登录或令牌缺失";
+                    StatusText = error!;
                     return;
                 }
 
-                _http.DefaultRequestHeaders.Remove("Authorization");
-                _http.DefaultRequestHeaders.Add("Authorization", $"Bearer {Global.Config.AccessToken}");
-                var url = $"{Global.APIList.GetAllNodes}{Global.Config.ID}";
-                var resp = await _http.GetAsyncLogged(url);
+                var url = ApiClient.GetNodesUrl();
+                var resp = await _api.GetAsync(url);
                 var content = await resp.Content.ReadAsStringAsync();
                 var json = System.Text.Json.Nodes.JsonNode.Parse(content);
                 if (json?["status"]?.GetValue<int>() != 200)

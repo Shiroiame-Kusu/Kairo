@@ -1,15 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Net.Http;
 using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using Avalonia.Controls;
 using FluentAvalonia.UI.Controls;
-using HakuuLib.Minecraft.Forwarding;
+using HakuuLib.Minecraft.Java.Forwarding;
+using HakuuLib.Minecraft.Bedrock.Forwarding;
 using Kairo.Utils;
-using Kairo.Utils.Logger;
 
 namespace Kairo.ViewModels
 {
@@ -23,16 +22,20 @@ namespace Kairo.ViewModels
         public string Code { get; }
         public int ProxyId { get; }
         public string Name { get; }
+        public string Type { get; }
+        public bool IsUdp => Type?.Equals("UDP", StringComparison.OrdinalIgnoreCase) == true;
+        public string EditionDisplay => IsUdp ? "基岩" : "Java";
         public string CodeDisplay => $"房间代码: {Code}";
 
         public ICommand CopyCodeCommand { get; }
         public ICommand DeleteCommand { get; }
 
-        public RoomViewModel(string code, int proxyId, string name, JoinRoomPageViewModel parent)
+        public RoomViewModel(string code, int proxyId, string name, string type, JoinRoomPageViewModel parent)
         {
             Code = code;
             ProxyId = proxyId;
             Name = name;
+            Type = type;
             _parent = parent;
             CopyCodeCommand = new RelayCommand(CopyCode);
             DeleteCommand = new AsyncRelayCommand(DeleteAsync);
@@ -78,8 +81,9 @@ namespace Kairo.ViewModels
 
     public class JoinRoomPageViewModel : ViewModelBase, IDisposable
     {
-        private readonly HttpClient _http = new();
-        private MinecraftLanForwarder? _activeForwarder;
+        private readonly ApiClient _api = new();
+        private JavaLanForwarder? _javaForwarder;
+        private BedrockLanForwarder? _bedrockForwarder;
 
         // Join room input
         private string _joinRoomCode = string.Empty;
@@ -140,8 +144,9 @@ namespace Kairo.ViewModels
 
         public void Dispose()
         {
-            _activeForwarder?.DisposeAsync().AsTask().Wait(1000);
-            _http.Dispose();
+            _javaForwarder?.DisposeAsync().AsTask().Wait(1000);
+            _bedrockForwarder?.DisposeAsync().AsTask().Wait(1000);
+            _api.Dispose();
         }
 
         public void ShowStatus(string message)
@@ -160,11 +165,8 @@ namespace Kairo.ViewModels
         {
             try
             {
-                using var hc = new HttpClient();
-                hc.DefaultRequestHeaders.Add("Authorization", $"Bearer {Global.Config.AccessToken}");
-
                 var url = $"{Global.API}/game/minecraft/games?user_id={Global.Config.ID}";
-                var resp = await hc.GetAsyncLogged(url);
+                var resp = await _api.GetAsync(url);
                 var body = await resp.Content.ReadAsStringAsync();
                 var json = JsonNode.Parse(body);
 
@@ -183,7 +185,8 @@ namespace Kairo.ViewModels
                         var code = item?["code"]?.GetValue<string>() ?? "";
                         var proxyId = item?["proxy_id"]?.GetValue<int>() ?? 0;
                         var name = item?["name"]?.GetValue<string>() ?? "未命名房间";
-                        MyRooms.Add(new RoomViewModel(code, proxyId, name, this));
+                        var type = item?["type"]?.GetValue<string>() ?? "TCP";
+                        MyRooms.Add(new RoomViewModel(code, proxyId, name, type, this));
                     }
                 }
 
@@ -200,11 +203,8 @@ namespace Kairo.ViewModels
         {
             try
             {
-                using var hc = new HttpClient();
-                hc.DefaultRequestHeaders.Add("Authorization", $"Bearer {Global.Config.AccessToken}");
-
                 var url = $"{Global.API}/game/minecraft/game?user_id={Global.Config.ID}&code={room.Code}";
-                var resp = await hc.DeleteAsyncLogged(url);
+                var resp = await _api.DeleteAsync(url);
                 var body = await resp.Content.ReadAsStringAsync();
                 var json = JsonNode.Parse(body);
 
@@ -242,7 +242,7 @@ namespace Kairo.ViewModels
 
                 // Get room info from API
                 var url = $"{Global.API}/game/minecraft/game?code={JoinRoomCode.Trim()}";
-                var resp = await _http.GetAsyncLogged(url);
+                var resp = await _api.GetAsync(url);
                 var body = await resp.Content.ReadAsStringAsync();
                 var json = JsonNode.Parse(body);
 
@@ -257,6 +257,8 @@ namespace Kairo.ViewModels
                 var host = json?["data"]?["host"]?.GetValue<string>();
                 var port = json?["data"]?["port"]?.GetValue<int>() ?? 0;
                 var name = json?["data"]?["name"]?.GetValue<string>() ?? "远程服务器";
+                var type = json?["data"]?["type"]?.GetValue<string>() ?? "TCP";
+                var isUdp = type.Equals("UDP", StringComparison.OrdinalIgnoreCase);
 
                 if (string.IsNullOrEmpty(host) || port == 0)
                 {
@@ -264,28 +266,53 @@ namespace Kairo.ViewModels
                     return;
                 }
 
-                // Stop existing forwarder
+                // Stop existing forwarders
                 await StopForwarderAsync();
 
-                // Start forwarder
+                // Start forwarder based on type
                 StatusText = $"正在连接到 {host}:{port}...";
 
-                var listenPort = FindAvailablePort();
-                var options = new MinecraftLanForwarderOptions
+                if (isUdp)
                 {
-                    RemoteHost = host,
-                    RemotePort = port,
-                    ListenPort = listenPort,
-                    Motd = name
-                };
+                    // Bedrock Edition (UDP)
+                    var listenPort = FindAvailableUdpPort();
+                    var options = new BedrockLanForwarderOptions
+                    {
+                        RemoteHost = host,
+                        RemotePort = port,
+                        ListenPort = listenPort,
+                        MotdLine1 = name,
+                        MotdLine2 = "Kairo LAN Party"
+                    };
 
-                _activeForwarder = new MinecraftLanForwarder(options);
-                await _activeForwarder.StartAsync();
+                    _bedrockForwarder = new BedrockLanForwarder(options);
+                    await _bedrockForwarder.StartAsync();
 
-                IsForwarderActive = true;
-                ForwarderStatus = $"转发 localhost:{listenPort} → {host}:{port}\n在 Minecraft 中打开多人游戏即可看到 \"{name}\"";
-                StatusText = "已连接！在 Minecraft 多人游戏中可以看到房间";
-                ShowSnackbar("加入成功", "在 Minecraft 多人游戏中可以看到房间", InfoBarSeverity.Success);
+                    IsForwarderActive = true;
+                    ForwarderStatus = $"基岩版转发 localhost:{listenPort} → {host}:{port}\n在 Minecraft 基岩版中打开好友页面即可看到 \"{name}\"";
+                    StatusText = "已连接！在 Minecraft 基岩版的好友游戏列表中可以看到房间";
+                    ShowSnackbar("加入成功", "在 Minecraft 基岩版好友列表中可以看到房间", InfoBarSeverity.Success);
+                }
+                else
+                {
+                    // Java Edition (TCP)
+                    var listenPort = FindAvailableTcpPort();
+                    var options = new JavaLanForwarderOptions
+                    {
+                        RemoteHost = host,
+                        RemotePort = port,
+                        ListenPort = listenPort,
+                        Motd = name
+                    };
+
+                    _javaForwarder = new JavaLanForwarder(options);
+                    await _javaForwarder.StartAsync();
+
+                    IsForwarderActive = true;
+                    ForwarderStatus = $"Java 版转发 localhost:{listenPort} → {host}:{port}\n在 Minecraft 中打开多人游戏即可看到 \"{name}\"";
+                    StatusText = "已连接！在 Minecraft 多人游戏中可以看到房间";
+                    ShowSnackbar("加入成功", "在 Minecraft 多人游戏中可以看到房间", InfoBarSeverity.Success);
+                }
             }
             catch (Exception ex)
             {
@@ -296,12 +323,13 @@ namespace Kairo.ViewModels
 
         private async Task StopForwarderAsync()
         {
-            if (_activeForwarder != null)
+            // Stop Java forwarder
+            if (_javaForwarder != null)
             {
                 try
                 {
-                    await _activeForwarder.StopAsync();
-                    await _activeForwarder.DisposeAsync();
+                    await _javaForwarder.StopAsync();
+                    await _javaForwarder.DisposeAsync();
                 }
                 catch
                 {
@@ -309,15 +337,34 @@ namespace Kairo.ViewModels
                 }
                 finally
                 {
-                    _activeForwarder = null;
-                    IsForwarderActive = false;
-                    ForwarderStatus = string.Empty;
-                    StatusText = "转发已停止";
+                    _javaForwarder = null;
                 }
             }
+
+            // Stop Bedrock forwarder
+            if (_bedrockForwarder != null)
+            {
+                try
+                {
+                    await _bedrockForwarder.StopAsync();
+                    await _bedrockForwarder.DisposeAsync();
+                }
+                catch
+                {
+                    // Ignore cleanup errors
+                }
+                finally
+                {
+                    _bedrockForwarder = null;
+                }
+            }
+
+            IsForwarderActive = false;
+            ForwarderStatus = string.Empty;
+            StatusText = "转发已停止";
         }
 
-        private static int FindAvailablePort()
+        private static int FindAvailableTcpPort()
         {
             int port = 25565;
             var properties = System.Net.NetworkInformation.IPGlobalProperties.GetIPGlobalProperties();
@@ -325,6 +372,26 @@ namespace Kairo.ViewModels
             var usedPorts = new HashSet<int>();
 
             foreach (var ep in tcpEndPoints)
+            {
+                usedPorts.Add(ep.Port);
+            }
+
+            while (usedPorts.Contains(port) && port < 65535)
+            {
+                port++;
+            }
+
+            return port;
+        }
+
+        private static int FindAvailableUdpPort()
+        {
+            int port = 19132; // Bedrock default port
+            var properties = System.Net.NetworkInformation.IPGlobalProperties.GetIPGlobalProperties();
+            var udpEndPoints = properties.GetActiveUdpListeners();
+            var usedPorts = new HashSet<int>();
+
+            foreach (var ep in udpEndPoints)
             {
                 usedPorts.Add(ep.Port);
             }

@@ -10,21 +10,38 @@ using System.Windows.Input;
 using Avalonia.Controls;
 using Avalonia.Threading;
 using FluentAvalonia.UI.Controls;
-using HakuuLib.Minecraft.Discovery;
+using HakuuLib.Minecraft.Java.Discovery;
+using HakuuLib.Minecraft.Bedrock.Discovery;
 using Kairo.Utils;
-using Kairo.Utils.Logger;
 
 namespace Kairo.ViewModels
 {
     /// <summary>
-    /// ViewModel for a detected local Minecraft LAN server.
+    /// Minecraft edition type.
+    /// </summary>
+    public enum MinecraftEdition
+    {
+        Java,
+        Bedrock
+    }
+
+    /// <summary>
+    /// ViewModel for a detected local Minecraft LAN server (supports both Java and Bedrock).
     /// </summary>
     public class DetectedServerViewModel : ViewModelBase
     {
         public string Motd { get; }
         public int Port { get; }
         public IPEndPoint Sender { get; }
+        public MinecraftEdition Edition { get; }
+        public string EditionDisplay => Edition == MinecraftEdition.Java ? "Java" : "基岩";
         public string AddressDisplay => $"{Sender.Address}:{Port}";
+
+        // Bedrock-specific properties
+        public string? VersionName { get; }
+        public int? PlayerCount { get; }
+        public int? MaxPlayerCount { get; }
+        public string? GameModeName { get; }
 
         private bool _isSelected;
         public bool IsSelected
@@ -33,11 +50,30 @@ namespace Kairo.ViewModels
             set => SetProperty(ref _isSelected, value);
         }
 
-        public DetectedServerViewModel(LanAnnouncement announcement)
+        /// <summary>
+        /// Constructor for Java Edition server.
+        /// </summary>
+        public DetectedServerViewModel(JavaLanAnnouncement announcement)
         {
+            Edition = MinecraftEdition.Java;
             Motd = announcement.Motd;
             Port = announcement.Port;
             Sender = announcement.Sender;
+        }
+
+        /// <summary>
+        /// Constructor for Bedrock Edition server.
+        /// </summary>
+        public DetectedServerViewModel(BedrockLanAnnouncement announcement)
+        {
+            Edition = MinecraftEdition.Bedrock;
+            Motd = announcement.MotdLine1;
+            Port = announcement.PortV4;
+            Sender = announcement.Sender;
+            VersionName = announcement.VersionName;
+            PlayerCount = announcement.PlayerCount;
+            MaxPlayerCount = announcement.MaxPlayerCount;
+            GameModeName = announcement.GameModeName;
         }
     }
 
@@ -72,9 +108,10 @@ namespace Kairo.ViewModels
 
     public class HostRoomPageViewModel : ViewModelBase, IDisposable
     {
-        private readonly HttpClient _http = new();
+        private readonly ApiClient _api = new();
         private readonly RelayCommand _pingCommand;
-        private LanDiscoveryListener? _discoveryListener;
+        private JavaLanDiscoveryListener? _javaDiscoveryListener;
+        private BedrockLanDiscoveryListener? _bedrockDiscoveryListener;
         private CancellationTokenSource? _detectionCts;
         private bool _canPing;
         private bool _useEncryption;
@@ -186,7 +223,7 @@ namespace Kairo.ViewModels
         public void Dispose()
         {
             StopDetection();
-            _http.Dispose();
+            _api.Dispose();
         }
 
         /// <summary>
@@ -199,13 +236,25 @@ namespace Kairo.ViewModels
             try
             {
                 _detectionCts?.Cancel();
-                if (_discoveryListener != null)
+                
+                // Stop Java listener
+                if (_javaDiscoveryListener != null)
                 {
-                    _discoveryListener.AnnouncementReceived -= OnAnnouncementReceived;
-                    _ = _discoveryListener.StopAsync();
-                    _ = _discoveryListener.DisposeAsync();
-                    _discoveryListener = null;
+                    _javaDiscoveryListener.AnnouncementReceived -= OnJavaAnnouncementReceived;
+                    _ = _javaDiscoveryListener.StopAsync();
+                    _ = _javaDiscoveryListener.DisposeAsync();
+                    _javaDiscoveryListener = null;
                 }
+                
+                // Stop Bedrock listener
+                if (_bedrockDiscoveryListener != null)
+                {
+                    _bedrockDiscoveryListener.ServerDiscovered -= OnBedrockServerDiscovered;
+                    _ = _bedrockDiscoveryListener.StopAsync();
+                    _ = _bedrockDiscoveryListener.DisposeAsync();
+                    _bedrockDiscoveryListener = null;
+                }
+                
                 _detectionCts?.Dispose();
                 _detectionCts = null;
             }
@@ -251,14 +300,21 @@ namespace Kairo.ViewModels
                 // Don't clear detected servers when resuming - keep existing discoveries
                 OnPropertyChanged(nameof(NoServersDetected));
                 StatusText = DetectedServers.Count > 0 
-                    ? $"继续探测中... (已发现 {DetectedServers.Count} 个服务器)" 
+                    ? $"继续探测服务器... (已发现 {DetectedServers.Count} 个)" 
                     : "正在探测本地 Minecraft 服务器...";
 
                 _detectionCts = new CancellationTokenSource();
-                _discoveryListener = new LanDiscoveryListener();
-                _discoveryListener.AnnouncementReceived += OnAnnouncementReceived;
 
-                await _discoveryListener.StartAsync(_detectionCts.Token);
+                // Start Java listener
+                _javaDiscoveryListener = new JavaLanDiscoveryListener();
+                _javaDiscoveryListener.AnnouncementReceived += OnJavaAnnouncementReceived;
+                await _javaDiscoveryListener.StartAsync(_detectionCts.Token);
+                
+                // Start Bedrock listener
+                _bedrockDiscoveryListener = new BedrockLanDiscoveryListener();
+                _bedrockDiscoveryListener.ServerDiscovered += OnBedrockServerDiscovered;
+                await _bedrockDiscoveryListener.StartAsync(_detectionCts.Token);
+                
                 StatusText = "探测中... 请在 Minecraft 中对局域网开放";
             }
             catch (Exception ex)
@@ -269,7 +325,7 @@ namespace Kairo.ViewModels
             }
         }
 
-        private void OnAnnouncementReceived(object? sender, LanAnnouncement announcement)
+        private void OnJavaAnnouncementReceived(object? sender, JavaLanAnnouncement announcement)
         {
             Dispatcher.UIThread.Post(() =>
             {
@@ -285,7 +341,27 @@ namespace Kairo.ViewModels
                 var vm = new DetectedServerViewModel(announcement);
                 DetectedServers.Add(vm);
                 OnPropertyChanged(nameof(NoServersDetected));
-                StatusText = $"探测到服务器: {announcement.Motd}";
+                StatusText = $"探测到 Java 服务器: {announcement.Motd}";
+            });
+        }
+
+        private void OnBedrockServerDiscovered(object? sender, BedrockLanAnnouncement announcement)
+        {
+            Dispatcher.UIThread.Post(() =>
+            {
+                // Check if already exists by ServerUniqueId or endpoint
+                foreach (var existing in DetectedServers)
+                {
+                    if (existing.Sender.Equals(announcement.Sender) && existing.Port == announcement.PortV4)
+                    {
+                        return; // Already detected
+                    }
+                }
+
+                var vm = new DetectedServerViewModel(announcement);
+                DetectedServers.Add(vm);
+                OnPropertyChanged(nameof(NoServersDetected));
+                StatusText = $"探测到基岩版服务器: {announcement.MotdLine1}";
             });
         }
 
@@ -296,13 +372,23 @@ namespace Kairo.ViewModels
             try
             {
                 _detectionCts?.Cancel();
-                if (_discoveryListener != null)
+                
+                if (_javaDiscoveryListener != null)
                 {
-                    _discoveryListener.AnnouncementReceived -= OnAnnouncementReceived;
-                    _ = _discoveryListener.StopAsync();
-                    _ = _discoveryListener.DisposeAsync();
-                    _discoveryListener = null;
+                    _javaDiscoveryListener.AnnouncementReceived -= OnJavaAnnouncementReceived;
+                    _ = _javaDiscoveryListener.StopAsync();
+                    _ = _javaDiscoveryListener.DisposeAsync();
+                    _javaDiscoveryListener = null;
                 }
+                
+                if (_bedrockDiscoveryListener != null)
+                {
+                    _bedrockDiscoveryListener.ServerDiscovered -= OnBedrockServerDiscovered;
+                    _ = _bedrockDiscoveryListener.StopAsync();
+                    _ = _bedrockDiscoveryListener.DisposeAsync();
+                    _bedrockDiscoveryListener = null;
+                }
+                
                 _detectionCts?.Dispose();
                 _detectionCts = null;
             }
@@ -321,16 +407,14 @@ namespace Kairo.ViewModels
         {
             try
             {
-                if (string.IsNullOrWhiteSpace(Global.Config.AccessToken) || Global.Config.ID == 0)
+                if (!ApiClient.TryEnsureLoggedIn(out var error))
                 {
-                    StatusText = "未登录或令牌缺失";
+                    StatusText = error!;
                     return;
                 }
 
-                using var http = new HttpClient();
-                http.DefaultRequestHeaders.Add("Authorization", $"Bearer {Global.Config.AccessToken}");
-                var url = $"{Global.APIList.GetAllNodes}{Global.Config.ID}";
-                var resp = await http.GetAsyncLogged(url);
+                var url = ApiClient.GetNodesUrl();
+                var resp = await _api.GetAsync(url);
                 var content = await resp.Content.ReadAsStringAsync();
                 var json = JsonNode.Parse(content);
 
@@ -448,16 +532,13 @@ namespace Kairo.ViewModels
                 StatusText = $"隧道创建成功 (ID: {tunnelId})，正在创建房间...";
 
                 // Step 3: Create room via API
-                using var hc = new HttpClient();
-                hc.DefaultRequestHeaders.Add("Authorization", $"Bearer {Global.Config.AccessToken}");
-
                 var content = new FormUrlEncodedContent(new[]
                 {
                     new KeyValuePair<string, string>("user_id", Global.Config.ID.ToString()),
                     new KeyValuePair<string, string>("tunnel_id", tunnelId.ToString())
                 });
 
-                var resp = await hc.PutAsyncLogged($"{Global.API}/game/minecraft/game", content);
+                var resp = await _api.PutAsync($"{Global.API}/game/minecraft/game", content);
                 var body = await resp.Content.ReadAsStringAsync();
                 var json = JsonNode.Parse(body);
 
@@ -492,13 +573,11 @@ namespace Kairo.ViewModels
         {
             try
             {
-                if (string.IsNullOrWhiteSpace(Global.Config.AccessToken) || Global.Config.ID == 0)
+                if (!ApiClient.IsLoggedIn)
                     return 0;
 
-                using var http = new HttpClient();
-                http.DefaultRequestHeaders.Add("Authorization", $"Bearer {Global.Config.AccessToken}");
-                var url = $"{Global.APIList.GetRandomPort}?user_id={Global.Config.ID}&node_id={nodeId}";
-                var resp = await http.GetAsyncLogged(url);
+                var url = ApiClient.GetRandomPortUrl(nodeId);
+                var resp = await _api.GetAsync(url);
                 var content = await resp.Content.ReadAsStringAsync();
                 var json = JsonNode.Parse(content);
 
@@ -517,15 +596,15 @@ namespace Kairo.ViewModels
         {
             try
             {
-                using var http = new HttpClient();
-                http.DefaultRequestHeaders.Add("Authorization", $"Bearer {Global.Config.AccessToken}");
+                // Use UDP for Bedrock, TCP for Java - determine from selected server
+                var tunnelType = SelectedServer?.Edition == MinecraftEdition.Bedrock ? "UDP" : "TCP";
 
                 var form = new List<KeyValuePair<string, string>>
                 {
                     new("user_id", Global.Config.ID.ToString()),
                     new("name", name),
                     new("local_ip", localIp),
-                    new("type", "TCP"),
+                    new("type", tunnelType),
                     new("local_port", localPort.ToString()),
                     new("node_id", nodeId.ToString()),
                     new("remote_port", remotePort.ToString()),
@@ -533,7 +612,7 @@ namespace Kairo.ViewModels
                     new("use_compression", UseCompression.ToString().ToLowerInvariant()),
                 };
 
-                var resp = await http.PutAsyncLogged(Global.APIList.Tunnel, new FormUrlEncodedContent(form));
+                var resp = await _api.PutAsync(Global.APIList.Tunnel, new FormUrlEncodedContent(form));
                 var content = await resp.Content.ReadAsStringAsync();
                 var json = JsonNode.Parse(content);
 

@@ -21,7 +21,7 @@ namespace Kairo.ViewModels
     public class MainWindowViewModel : ViewModelBase
     {
         private static readonly TimeSpan LoginTimeout = TimeSpan.FromSeconds(30);
-        private readonly HttpClient _http = new();
+        private readonly ApiClient _api = new();
         private CancellationTokenSource? _loginTimeoutCts;
         private bool _isLoggingIn;
         private bool _isLoggedIn;
@@ -180,15 +180,13 @@ namespace Kairo.ViewModels
                     IsLoggingIn = false;
                     return;
                 }
-                _http.DefaultRequestHeaders.Remove("User-Agent");
-                _http.DefaultRequestHeaders.Add("User-Agent", $"Kairo-{Global.Version}");
                 var accessUrl = Global.APIList.GetAccessToken;
                 var formContent = new FormUrlEncodedContent(new[]
                 {
                     new KeyValuePair<string, string>("app_id", Global.APPID.ToString()),
                     new KeyValuePair<string, string>("refresh_token", refreshToken)
                 });
-                var response = await _http.PostAsyncLogged(accessUrl, formContent);
+                var response = await _api.PostWithoutAuthAsync(accessUrl, formContent);
                 var accessBody = await response.Content.ReadAsStringAsync();
                 var json = JsonNode.Parse(accessBody);
                 var accessStatus = json? ["status"]?.GetValue<int>() ?? 0;
@@ -208,10 +206,8 @@ namespace Kairo.ViewModels
                 Global.Config.AccessToken = dataNode? ["access_token"]?.GetValue<string>() ?? string.Empty;
                 Global.Config.RefreshToken = refreshToken;
 
-                _http.DefaultRequestHeaders.Remove("Authorization");
-                _http.DefaultRequestHeaders.Add("Authorization", $"Bearer {Global.Config.AccessToken}");
                 var userUrl = $"{Global.APIList.GetUserInfo}?user_id={Global.Config.ID}";
-                var userResp = await _http.GetAsyncLogged(userUrl);
+                var userResp = await _api.GetAsync(userUrl);
                 var userBody = await userResp.Content.ReadAsStringAsync();
                 var userJson = JsonNode.Parse(userBody);
                 var userNode = userJson? ["data"];
@@ -225,7 +221,7 @@ namespace Kairo.ViewModels
                 }
 
                 var frpUrl = $"{Global.APIList.GetFrpToken}?user_id={Global.Config.ID}";
-                var frpResp = await _http.GetAsyncLogged(frpUrl);
+                var frpResp = await _api.GetAsync(frpUrl);
                 var frpBody = await frpResp.Content.ReadAsStringAsync();
                 var frpJson = JsonNode.Parse(frpBody);
                 _userInfo.FrpToken = frpJson? ["data"]? ["token"]?.GetValue<string>();
