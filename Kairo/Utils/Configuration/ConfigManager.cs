@@ -43,7 +43,7 @@ namespace Kairo.Utils.Configuration
                     envDir = null; // fallback
                 }
             }
-            ConfigDirectory = envDir ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Kairo");
+            ConfigDirectory = envDir ?? Path.Combine(EnvironmentDetector.GetApplicationDataPath(), "Kairo");
             SettingsFilePath = Path.Combine(ConfigDirectory, "Settings.json");
             TempSettingsFilePath = SettingsFilePath + ".tmp";
         }

@@ -65,7 +65,7 @@ public class FrpcDownloader
 
             // 准备下载目录
             string workDir = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), 
+                EnvironmentDetector.GetApplicationDataPath(), 
                 "Kairo", "frpc");
             Directory.CreateDirectory(workDir);
 

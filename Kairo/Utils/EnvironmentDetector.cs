@@ -52,6 +52,34 @@ public static class EnvironmentDetector
     }
 
     /// <summary>
+    /// 获取应用程序数据目录（平台相关）
+    /// 在 macOS 上修复可能返回 /var/root 的问题
+    /// </summary>
+    public static string GetApplicationDataPath()
+    {
+        // 在 macOS 上，明确使用用户的主目录来避免权限问题
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+        {
+            // 首先尝试从环境变量获取 HOME
+            string? home = Environment.GetEnvironmentVariable("HOME");
+            if (!string.IsNullOrWhiteSpace(home))
+            {
+                return Path.Combine(home, "Library", "Application Support");
+            }
+            
+            // 备选方案：使用 UserProfile
+            string userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            if (!string.IsNullOrWhiteSpace(userProfile) && userProfile != "/var/root")
+            {
+                return Path.Combine(userProfile, "Library", "Application Support");
+            }
+        }
+
+        // 对于其他平台，使用标准的 ApplicationData
+        return Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+    }
+
+    /// <summary>
     /// 检测是否在容器中运行
     /// </summary>
     private static bool IsRunningInContainer()

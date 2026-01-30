@@ -329,7 +329,7 @@ namespace Kairo.ViewModels
         private async Task DownloadAndExtract(string url, string version, string platform, string arch,
             CancellationToken token, JsonArray assets, string assetName, string releaseName)
         {
-            string workDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Kairo",
+            string workDir = Path.Combine(EnvironmentDetector.GetApplicationDataPath(), "Kairo",
                 "frpc");
             Directory.CreateDirectory(workDir);
             string downloadFileName = string.IsNullOrWhiteSpace(assetName) ? "frpc_download" : assetName;

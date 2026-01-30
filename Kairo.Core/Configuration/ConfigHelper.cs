@@ -39,7 +39,7 @@ public static class ConfigHelper
             catch { envDir = null; }
         }
         _configDirectory = envDir ?? Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Kairo");
+            EnvironmentDetector.GetApplicationDataPath(), "Kairo");
         return _configDirectory;
     }
 
