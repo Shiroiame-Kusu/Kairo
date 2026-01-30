@@ -6,7 +6,7 @@ namespace Kairo.Core;
 public static class AppConstants
 {
     public const string Version = "3.3.0";
-    public const string VersionName = "";
+    public const string VersionName = "Stellar Rhapsody";
     public const string Branch = "Alpha";
     public const int Revision = 4;
     public const string Developer = "Shiroiame-Kusu & Daiyangcheng";
