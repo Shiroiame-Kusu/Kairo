@@ -16,7 +16,7 @@ namespace Kairo.ViewModels
         private readonly ObservableCollection<NodePingRow> _rows = new();
         private readonly DispatcherTimer _timer;
         private readonly bool _useApi;
-        private readonly IEnumerable<int>? _presetNodes;
+        private readonly IEnumerable<string>? _presetNodes;
         private readonly string? _hostPattern;
         private readonly HttpClient _http = new();
         private bool _isPinging;
@@ -24,6 +24,11 @@ namespace Kairo.ViewModels
         private string _statusText = string.Empty;
 
         public ObservableCollection<NodePingRow> Rows => _rows;
+        
+        /// <summary>
+        /// Rows sorted by latency (ascending). Nodes with no latency are at the bottom.
+        /// </summary>
+        public IEnumerable<NodePingRow> SortedRows => _rows.OrderBy(r => r.LatencySort);
 
         public string StatusText
         {
@@ -35,7 +40,7 @@ namespace Kairo.ViewModels
 
         public event Action? RequestClose;
 
-        public NodePingWindowViewModel(IEnumerable<int>? nodes = null, string? hostPattern = null)
+        public NodePingWindowViewModel(IEnumerable<string>? nodes = null, string? hostPattern = null)
         {
             _useApi = nodes == null;
             _presetNodes = nodes;
@@ -87,7 +92,7 @@ namespace Kairo.ViewModels
         {
             _rows.Clear();
             var pattern = string.IsNullOrWhiteSpace(_hostPattern) ? "node{0}.locyanfrp.cn" : _hostPattern;
-            var set = new SortedSet<int>((_presetNodes ?? Enumerable.Empty<int>()).Where(n => n > 0));
+            var set = new SortedSet<string>(_presetNodes ?? Enumerable.Empty<string>());
             foreach (var n in set)
             {
                 _rows.Add(new NodePingRow { Node = n, Host = string.Format(pattern, n), Status = "等待中" });
@@ -129,7 +134,7 @@ namespace Kairo.ViewModels
                     _rows.Clear();
                     foreach (var item in list)
                     {
-                        int id = item?["id"]?.GetValue<int>() ?? 0;
+                        string id = item?["name"]?.GetValue<string>() ?? string.Empty;
                         string ip = item?["ip"]?.GetValue<string>() ?? string.Empty;
                         string host = item?["host"]?.GetValue<string>() ?? string.Empty;
                         string target = !string.IsNullOrWhiteSpace(ip) ? ip : host;
@@ -210,6 +215,7 @@ namespace Kairo.ViewModels
         {
             var ok = _rows.Count(r => r.LatencyMs.HasValue);
             StatusText = $"在线: {ok}/{_rows.Count}";
+            OnPropertyChanged(nameof(SortedRows));
         }
 
         private static bool IsPermissionError(Exception ex)
@@ -225,12 +231,12 @@ namespace Kairo.ViewModels
 
     public class NodePingRow : ViewModelBase
     {
-        private int _node;
+        private string _node = string.Empty;
         private string _host = string.Empty;
         private long? _latencyMs;
         private string _status = string.Empty;
 
-        public int Node
+        public string Node
         {
             get => _node;
             set => SetProperty(ref _node, value);
@@ -250,6 +256,7 @@ namespace Kairo.ViewModels
                 if (SetProperty(ref _latencyMs, value))
                 {
                     OnPropertyChanged(nameof(LatencyDisplay));
+                    OnPropertyChanged(nameof(LatencySort));
                 }
             }
         }
@@ -262,10 +269,14 @@ namespace Kairo.ViewModels
                 if (SetProperty(ref _status, value))
                 {
                     OnPropertyChanged(nameof(LatencyDisplay));
+                    OnPropertyChanged(nameof(LatencySort));
                 }
             }
         }
 
         public string LatencyDisplay => LatencyMs.HasValue ? LatencyMs.Value.ToString() : Status;
+
+        // Used for numeric sorting in DataGrid; null latency sorts to bottom.
+        public long LatencySort => LatencyMs ?? long.MaxValue;
     }
 }

@@ -12,7 +12,7 @@ public partial class NodePingWindow : Window
 
     public NodePingWindow() : this(null, null) { }
 
-    public NodePingWindow(IEnumerable<int>? nodes = null, string? hostPattern = null)
+    public NodePingWindow(IEnumerable<string>? nodes = null, string? hostPattern = null)
     {
         InitializeComponent();
         _viewModel = new NodePingWindowViewModel(nodes, hostPattern);

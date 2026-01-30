@@ -8,6 +8,7 @@
         <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
         <GenerateAssemblyInfo>false</GenerateAssemblyInfo> <!-- custom assembly info -->
         <ApplicationIcon>Assets/kairo.ico</ApplicationIcon>
+        <AllowMissingPrunePackageData>true</AllowMissingPrunePackageData>
     </PropertyGroup>
 
     <!-- AOT/Trimming only for Release builds to allow Designer to work in Debug -->

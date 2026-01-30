@@ -1,196 +1,30 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="clr-namespace:Kairo.ViewModels"
+             xmlns:fa="using:FluentAvalonia.UI.Controls"
              x:Class="Kairo.Components.DashBoard.LanPartyLobbyPage"
              x:DataType="vm:LanPartyLobbyPageViewModel"
              VerticalAlignment="Stretch">
-    <UserControl.Styles>
-        <!-- Detected server card style -->
-        <Style Selector="Border.server-card">
-            <Setter Property="BorderBrush" Value="{DynamicResource ControlStrokeColorDefaultBrush}" />
-            <Setter Property="BorderThickness" Value="2" />
-            <Setter Property="CornerRadius" Value="8" />
-            <Setter Property="Padding" Value="12" />
-            <Setter Property="Margin" Value="6,0,6,10" />
-            <Setter Property="Background" Value="{DynamicResource LayerFillColorDefaultBrush}" />
-            <Setter Property="MinWidth" Value="200" />
-            <Setter Property="UseLayoutRounding" Value="True" />
-            <Setter Property="Transitions">
-                <Transitions>
-                    <BrushTransition Property="BorderBrush" Duration="0:0:0.18" />
-                    <BrushTransition Property="Background" Duration="0:0:0.18" />
-                </Transitions>
-            </Setter>
-        </Style>
-        <Style Selector="Border.server-card:pointerover">
-            <Setter Property="BorderBrush" Value="{DynamicResource AccentStrokeColorDefaultBrush}" />
-            <Setter Property="Background" Value="{DynamicResource LayerFillColorAltBrush}" />
-        </Style>
-        <Style Selector="Border.server-card.selected">
-            <Setter Property="BorderBrush" Value="{DynamicResource AccentFillColorDefaultBrush}" />
-        </Style>
-        <!-- Room card style -->
-        <Style Selector="Border.room-card">
-            <Setter Property="BorderBrush" Value="{DynamicResource ControlStrokeColorDefaultBrush}" />
-            <Setter Property="BorderThickness" Value="2" />
-            <Setter Property="CornerRadius" Value="8" />
-            <Setter Property="Padding" Value="12" />
-            <Setter Property="Margin" Value="6,0,6,10" />
-            <Setter Property="Background" Value="{DynamicResource LayerFillColorDefaultBrush}" />
-            <Setter Property="MinWidth" Value="200" />
-            <Setter Property="UseLayoutRounding" Value="True" />
-        </Style>
-        <Style Selector="Border.room-card:pointerover">
-            <Setter Property="BorderBrush" Value="{DynamicResource AccentStrokeColorDefaultBrush}" />
-            <Setter Property="Background" Value="{DynamicResource LayerFillColorAltBrush}" />
-        </Style>
-    </UserControl.Styles>
-    
-    <Grid RowDefinitions="Auto,*,70" Margin="12">
-        <!-- Header -->
-        <Border Grid.Row="0" CornerRadius="8" Padding="12,0" Background="{DynamicResource LayerFillColorDefaultBrush}"
-                HorizontalAlignment="Left">
-            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="12">
-                <TextBlock VerticalAlignment="Center" FontSize="24" Text="Minecraft 联机大厅" Margin="0,12,0,12" />
-                <!-- Tab-like toggle -->
-                <ToggleButton IsChecked="{Binding IsHostMode}" Content="创建房间" Margin="8,0,0,0" />
-                <ToggleButton IsChecked="{Binding IsJoinMode}" Content="加入房间" />
-            </StackPanel>
-        </Border>
-
-        <!-- Content area -->
-        <Border Grid.Row="1" CornerRadius="8" Padding="12" Background="{DynamicResource LayerFillColorDefaultBrush}"
-                Margin="0,12,0,0">
-            <Grid>
-                <!-- Host Mode Panel -->
-                <Grid IsVisible="{Binding IsHostMode}" RowDefinitions="Auto,Auto,*">
-                    <!-- Instructions -->
-                    <TextBlock Grid.Row="0" Text="在 Minecraft 中开启局域网联机后，这里会自动探测到您的服务器。选择一个服务器后点击下方的「创建房间」。" 
-                               TextWrapping="Wrap" Margin="0,0,0,12" />
-                    
-                    <!-- Tunnel selection -->
-                    <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8" Margin="0,0,0,12">
-                        <TextBlock Text="选择隧道:" VerticalAlignment="Center" />
-                        <ComboBox ItemsSource="{Binding AvailableTunnels}" 
-                                  SelectedItem="{Binding SelectedTunnel}"
-                                  MinWidth="200"
-                                  PlaceholderText="请选择隧道">
-                            <ComboBox.ItemTemplate>
-                                <DataTemplate>
-                                    <TextBlock Text="{Binding DisplayName}" />
-                                </DataTemplate>
-                            </ComboBox.ItemTemplate>
-                        </ComboBox>
-                        <Button Content="刷新隧道" Command="{Binding RefreshTunnelsCommand}" />
-                    </StackPanel>
-                    
-                    <!-- Detected servers list -->
-                    <ScrollViewer Grid.Row="2">
-                        <StackPanel>
-                            <TextBlock Text="探测到的本地服务器:" FontWeight="SemiBold" Margin="0,0,0,8" />
-                            <ItemsControl ItemsSource="{Binding DetectedServers}">
-                                <ItemsControl.ItemsPanel>
-                                    <ItemsPanelTemplate>
-                                        <WrapPanel />
-                                    </ItemsPanelTemplate>
-                                </ItemsControl.ItemsPanel>
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <Border Classes="server-card" 
-                                                Classes.selected="{Binding IsSelected}"
-                                                PointerPressed="OnServerCardPressed">
-                                            <StackPanel Spacing="4">
-                                                <TextBlock Text="{Binding Motd}" FontWeight="SemiBold" />
-                                                <TextBlock Text="{Binding AddressDisplay}" FontSize="12" Opacity="0.7" />
-                                            </StackPanel>
-                                        </Border>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                            <TextBlock Text="暂未探测到本地服务器，请在 Minecraft 中按 Esc → 对局域网开放" 
-                                       IsVisible="{Binding NoServersDetected}" 
-                                       Opacity="0.6" Margin="0,8,0,0" />
-                        </StackPanel>
-                    </ScrollViewer>
-                </Grid>
-                
-                <!-- Join Mode Panel -->
-                <Grid IsVisible="{Binding IsJoinMode}" RowDefinitions="Auto,Auto,*">
-                    <!-- Instructions -->
-                    <TextBlock Grid.Row="0" Text="输入房间代码加入好友的游戏，或者查看您已创建的房间。" 
-                               TextWrapping="Wrap" Margin="0,0,0,12" />
-                    
-                    <!-- Join room input -->
-                    <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8" Margin="0,0,0,12">
-                        <TextBox Text="{Binding JoinRoomCode}" 
-                                 Watermark="输入房间代码" 
-                                 MinWidth="200" />
-                        <Button Content="加入房间" Command="{Binding JoinRoomCommand}" />
-                        <Button Content="刷新我的房间" Command="{Binding RefreshMyRoomsCommand}" />
-                    </StackPanel>
-                    
-                    <!-- My rooms list -->
-                    <ScrollViewer Grid.Row="2">
-                        <StackPanel>
-                            <TextBlock Text="我的房间:" FontWeight="SemiBold" Margin="0,0,0,8" />
-                            <ItemsControl ItemsSource="{Binding MyRooms}">
-                                <ItemsControl.ItemsPanel>
-                                    <ItemsPanelTemplate>
-                                        <WrapPanel />
-                                    </ItemsPanelTemplate>
-                                </ItemsControl.ItemsPanel>
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <Border Classes="room-card">
-                                            <Grid ColumnDefinitions="*,Auto">
-                                                <StackPanel Grid.Column="0" Spacing="4">
-                                                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
-                                                    <TextBlock Text="{Binding CodeDisplay}" FontSize="12" Opacity="0.7" />
-                                                </StackPanel>
-                                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                                                    <Button Content="复制" Command="{Binding CopyCodeCommand}" ToolTip.Tip="复制房间代码" />
-                                                    <Button Content="删除" Command="{Binding DeleteCommand}" />
-                                                </StackPanel>
-                                            </Grid>
-                                        </Border>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                            <TextBlock Text="暂无房间" 
-                                       IsVisible="{Binding NoRooms}" 
-                                       Opacity="0.6" Margin="0,8,0,0" />
-                            
-                            <!-- Active forwarder status -->
-                            <Border CornerRadius="8" Padding="12" Margin="0,16,0,0"
-                                    Background="{DynamicResource LayerFillColorAltBrush}"
-                                    IsVisible="{Binding IsForwarderActive}">
-                                <StackPanel Spacing="8">
-                                    <TextBlock Text="当前正在转发:" FontWeight="SemiBold" />
-                                    <TextBlock Text="{Binding ForwarderStatus}" />
-                                    <Button Content="停止转发" Command="{Binding StopForwarderCommand}" HorizontalAlignment="Left" />
-                                </StackPanel>
-                            </Border>
-                        </StackPanel>
-                    </ScrollViewer>
-                </Grid>
-            </Grid>
-        </Border>
-        
-        <!-- Footer controls -->
-        <Grid Grid.Row="2" ColumnDefinitions="Auto,Auto,Auto,*" Margin="0,12,0,0" ColumnSpacing="12">
-            <!-- Host mode buttons -->
-            <Button Grid.Column="0" Content="开始探测" Command="{Binding StartDetectionCommand}" 
-                    IsVisible="{Binding IsHostMode}" IsEnabled="{Binding !IsDetecting}" />
-            <Button Grid.Column="1" Content="停止探测" Command="{Binding StopDetectionCommand}" 
-                    IsVisible="{Binding IsHostMode}" IsEnabled="{Binding IsDetecting}" />
-            <Button Grid.Column="2" Content="创建房间" Command="{Binding CreateRoomCommand}" 
-                    IsVisible="{Binding IsHostMode}" />
-            
-            <!-- Status text -->
-            <Border Grid.Column="3" VerticalAlignment="Center" Padding="8" CornerRadius="6"
-                    Background="{DynamicResource LayerFillColorDefaultBrush}">
-                <TextBlock Text="{Binding StatusText}" />
-            </Border>
-        </Grid>
+    <Grid Margin="0">
+        <fa:NavigationView x:Name="LobbyNavView"
+                           PaneDisplayMode="Top"
+                           IsSettingsVisible="False"
+                           AlwaysShowHeader="False"
+                           IsBackButtonVisible="False"
+                           SelectionChanged="LobbyNavView_OnSelectionChanged">
+            <fa:NavigationView.MenuItems>
+                <fa:NavigationViewItem x:Name="HostNavItem" Content="创建房间" Tag="host">
+                    <fa:NavigationViewItem.IconSource>
+                        <fa:SymbolIconSource Symbol="Add" />
+                    </fa:NavigationViewItem.IconSource>
+                </fa:NavigationViewItem>
+                <fa:NavigationViewItem Content="加入房间" Tag="join">
+                    <fa:NavigationViewItem.IconSource>
+                        <fa:SymbolIconSource Symbol="People" />
+                    </fa:NavigationViewItem.IconSource>
+                </fa:NavigationViewItem>
+            </fa:NavigationView.MenuItems>
+            <ContentControl x:Name="LobbyContentHost" Margin="12" />
+        </fa:NavigationView>
     </Grid>
 </UserControl>
