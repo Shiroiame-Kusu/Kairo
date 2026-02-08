@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using Kairo.Utils.Logger;
@@ -33,6 +34,53 @@ internal static class FrpcProcessManager
             onFailed?.Invoke("frpc 路径无效");
             return false;
         }
+        
+        // 在 Unix-like 系统上检查执行权限
+        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            try
+            {
+                var fileInfo = new FileInfo(frpcPath);
+                // 尝试检查文件权限，如果无法执行则设置权限
+                var testPsi = new ProcessStartInfo
+                {
+                    FileName = "/bin/sh",
+                    Arguments = $"-c \"test -x '{frpcPath}'\"",
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                };
+                using (var testProc = Process.Start(testPsi))
+                {
+                    testProc?.WaitForExit(1000);
+                    if (testProc?.ExitCode != 0)
+                    {
+                        // 文件没有执行权限，尝试设置
+                        AppLogger.Output(LogType.Warn, FrpcLogDestinations, $"[FRPC] frpc 文件缺少执行权限，正在设置...");
+                        var chmodPsi = new ProcessStartInfo
+                        {
+                            FileName = "/bin/chmod",
+                            Arguments = $"+x \"{frpcPath}\"",
+                            UseShellExecute = false,
+                            CreateNoWindow = true
+                        };
+                        using var chmodProc = Process.Start(chmodPsi);
+                        chmodProc?.WaitForExit(3000);
+                        
+                        if (chmodProc?.ExitCode != 0)
+                        {
+                            onFailed?.Invoke("无法设置 frpc 执行权限");
+                            return false;
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Output(LogType.Warn, FrpcLogDestinations, "检查/设置执行权限时出错", ex);
+                // 继续尝试启动，让系统报告真正的错误
+            }
+        }
+        
         if (IsRunning(proxyId))
         {
             onFailed?.Invoke("该隧道已在运行中");

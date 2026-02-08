@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -401,15 +402,23 @@ namespace Kairo.ViewModels
             if (frpcPath == null) throw new Exception("未找到 frpc 可执行文件");
             string finalPath = Path.Combine(workDir, exeName);
             File.Copy(frpcPath, finalPath, true);
-            try
+            
+            // 设置执行权限
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                try
                 {
-                    System.Diagnostics.Process.Start("/bin/chmod", $"+x {finalPath}");
+                    var psi = new ProcessStartInfo
+                    {
+                        FileName = "/bin/chmod",
+                        Arguments = $"+x \"{finalPath}\"",
+                        UseShellExecute = false,
+                        CreateNoWindow = true
+                    };
+                    using var process = System.Diagnostics.Process.Start(psi);
+                    process?.WaitForExit(3000);
                 }
-            }
-            catch
-            {
+                catch { }
             }
 
             Global.Config.FrpcPath = finalPath;
