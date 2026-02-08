@@ -141,21 +141,26 @@ namespace Updater
         private static string? NormalizeBranch(string? b)
         {
             if (string.IsNullOrWhiteSpace(b)) return null;
-            b = b.Trim().ToLowerInvariant();
-            return b switch { "alpha" => "alpha", "beta" => "beta", "rc" => "releasecandidate", "releasecandidate" => "releasecandidate", "release" => "release", _ => null };
+            return b.Trim().ToLowerInvariant() switch 
+            { 
+                "alpha" => "Alpha", 
+                "beta" => "Beta", 
+                "rc" or "releasecandidate" => "RC", 
+                "release" => "Release", 
+                _ => null 
+            };
         }
 
         private static bool IsBranchMatch(string tag, string? desired)
         {
-            // Tags like v3.1.0-beta.1, v3.1.0-alpha.2, v3.1.0-rc.3, v3.1.0-release.1
-            var lower = tag.ToLowerInvariant();
+            // Tags format: v3.1.0-Alpha.1, v3.1.0-Beta.2, v3.1.0-RC.3, v3.1.0-Release.1
             if (desired == null) return true;
             return desired switch
             {
-                "alpha" => lower.Contains("-alpha."),
-                "beta" => lower.Contains("-beta."),
-                "releasecandidate" => lower.Contains("-rc."),
-                "release" => lower.Contains("-release."),
+                "Alpha" => tag.Contains("-Alpha."),
+                "Beta" => tag.Contains("-Beta."),
+                "RC" => tag.Contains("-RC."),
+                "Release" => tag.Contains("-Release."),
                 _ => true
             };
         }

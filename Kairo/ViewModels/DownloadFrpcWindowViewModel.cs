@@ -422,6 +422,7 @@ namespace Kairo.ViewModels
             }
 
             Global.Config.FrpcPath = finalPath;
+            Global.Config.FrpcVersion = version;
             ConfigManager.Save();
             Dispatcher.UIThread.Post(() =>
                 (Access.DashBoard as Components.DashBoard.DashBoard)?.OpenSnackbar("下载完成", finalPath,

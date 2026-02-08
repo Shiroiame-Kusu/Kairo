@@ -10,8 +10,8 @@ using System.Windows.Input;
 using Avalonia.Controls;
 using Avalonia.Threading;
 using FluentAvalonia.UI.Controls;
-using HakuuLib.Minecraft.Java.Discovery;
-using HakuuLib.Minecraft.Bedrock.Discovery;
+using HakuuLib.MultiplayerLAN.Minecraft.Java.Discovery;
+using HakuuLib.MultiplayerLAN.Minecraft.Bedrock.Discovery;
 using Kairo.Utils;
 
 namespace Kairo.ViewModels

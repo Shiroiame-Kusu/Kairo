@@ -3,8 +3,8 @@ using System.Net;
 using System.Net.NetworkInformation;
 using System.Threading;
 using System.Threading.Tasks;
-using HakuuLib.Minecraft.Java.Discovery;
-using HakuuLib.Minecraft.Java.Forwarding;
+using HakuuLib.MultiplayerLAN.Minecraft.Java.Discovery;
+using HakuuLib.MultiplayerLAN.Minecraft.Java.Forwarding;
 
 namespace Kairo.Utils
 {

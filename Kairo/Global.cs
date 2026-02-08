@@ -60,28 +60,28 @@ namespace Kairo
         public class APIList
         {
             // User & OAuth
-            public const string GetUserInfo = $"{API}/user";
-            public const string GetTheFUCKINGRefreshToken = $"{Dashboard}/auth/oauth/authorize";
-            public const string GetAccessToken = $"{API}/auth/oauth/access-token";
+            public const string GetUserInfo = ApiEndpoints.GetUserInfo;
+            public const string GetTheFUCKINGRefreshToken = ApiEndpoints.GetRefreshToken;
+            public const string GetAccessToken = ApiEndpoints.GetAccessToken;
 
-            public const string GetFrpToken = $"{API}/user/frp/token";
+            public const string GetFrpToken = ApiEndpoints.GetFrpToken;
 
             // Site & sign
-            public const string GetSign = $"{API}/sign"; // GET for status with ?user_id=, POST with form user_id for sign
+            public const string GetSign = ApiEndpoints.GetSign; // GET for status with ?user_id=, POST with form user_id for sign
 
-            public const string GetNotice = $"{API}/site/notice";
+            public const string GetNotice = ApiEndpoints.GetNotice;
 
             // Tunnels & nodes
-            public const string GetAllProxy = $"{API}/tunnels?user_id=";
-            public const string DeleteProxy = $"{API}/tunnel?user_id="; // append user_id and use &tunnel_id=
-            public const string Tunnel = $"{API}/tunnel"; // base for PUT(create)/PATCH(update)
-            public const string GetAllNodes = $"{API}/nodes?user_id=";
+            public const string GetAllProxy = ApiEndpoints.GetAllProxy;
+            public const string DeleteProxy = ApiEndpoints.DeleteProxy; // append user_id and use &tunnel_id=
+            public const string Tunnel = ApiEndpoints.Tunnel; // base for PUT(create)/PATCH(update)
+            public const string GetAllNodes = ApiEndpoints.GetAllNodes;
             // Random port for a node
-            public const string GetRandomPort = $"{API}/node/port"; // GET with ?user_id=&node_id=
+            public const string GetRandomPort = ApiEndpoints.GetRandomPort; // GET with ?user_id=&node_id=
         }
 
         public static int OAuthPort = 10000;
-        public const int APPID = 1;
+        public const int APPID = AppConstants.APPID;
 
         public static void RefreshRuntimeFlags()
         {

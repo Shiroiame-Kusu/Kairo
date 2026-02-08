@@ -28,6 +28,7 @@ namespace Kairo.Components.DashBoard
         private readonly DashBoardViewModel _viewModel;
         private DispatcherTimer? _snackbarTimer; // auto-dismiss timer
         private CustomTitleBar? _titleBar;
+        private bool _frpcUpdateChecked;
 
         public DashBoard()
         {
@@ -71,6 +72,35 @@ namespace Kairo.Components.DashBoard
                 {
                     OpenSnackbar("检测异常", ex.Message, InfoBarSeverity.Warning);
                 }
+            }
+
+            _ = CheckFrpcUpdateAsync();
+        }
+
+        private async Task CheckFrpcUpdateAsync()
+        {
+            if (_frpcUpdateChecked) return;
+            _frpcUpdateChecked = true;
+
+            try
+            {
+                var result = await FrpcUpdateChecker.CheckAsync();
+                if (result.Skipped || !result.UpdateAvailable) return;
+
+                string local = result.LocalVersion ?? "unknown";
+                string remote = result.RemoteVersion ?? "unknown";
+                OpenSnackbar("发现 FRPC 更新", $"当前 {local}, 最新 {remote}");
+
+                if (FrpcUpdateChecker.IsManagedFrpcPath(Global.Config.FrpcPath))
+                {
+                    var win = new DownloadFrpcWindow();
+                    win.Show(this);
+                    OpenSnackbar("更新 FRPC", "已打开下载窗口", InfoBarSeverity.Informational);
+                }
+            }
+            catch
+            {
+                // ignore background update failures
             }
         }
 

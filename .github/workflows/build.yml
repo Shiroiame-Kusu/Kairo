@@ -89,6 +89,18 @@ jobs:
           dotnet publish Kairo.Cli/Kairo.Cli.csproj -c "${{ env.CONFIGURATION }}" -r ${{ matrix.rid }}
           -o publish/cli-${{ matrix.rid }}
 
+      - name: Publish Updater
+        shell: bash
+        run: |
+          dotnet publish Updater/Updater.csproj -c "${{ env.CONFIGURATION }}" -r ${{ matrix.rid }} \
+            -o publish/updater-${{ matrix.rid }}
+          # Copy Updater to GUI directory
+          if [[ "${{ matrix.rid }}" == win-* ]]; then
+            cp publish/updater-${{ matrix.rid }}/Updater.exe publish/gui-${{ matrix.rid }}/
+          else
+            cp publish/updater-${{ matrix.rid }}/Updater publish/gui-${{ matrix.rid }}/
+          fi
+
       - name: Remove debug symbols
         shell: bash
         run: |
