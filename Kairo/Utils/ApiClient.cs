@@ -19,14 +19,23 @@ namespace Kairo.Utils
         public static ApiClient Instance => _instance.Value;
 
         private readonly HttpClient _http;
+        private readonly HttpClient _httpExternal;
         private bool _disposed;
+
+        private const string BrowserUserAgent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36 Edg/144.0.0.0";
 
         /// <summary>
         /// 创建新的 ApiClient 实例
         /// </summary>
         public ApiClient()
         {
+            // For our own API: use Kairo/{version}
             _http = new HttpClient();
+            _http.DefaultRequestHeaders.UserAgent.ParseAdd($"Kairo/{Global.Version}");
+            
+            // For external APIs (GitHub): use browser User-Agent
+            _httpExternal = new HttpClient();
+            _httpExternal.DefaultRequestHeaders.UserAgent.ParseAdd(BrowserUserAgent);
         }
 
         /// <summary>
@@ -103,7 +112,7 @@ namespace Kairo.Utils
         /// </summary>
         public async Task<HttpResponseMessage> GetWithoutAuthAsync(string url, CancellationToken ct = default)
         {
-            return await _http.GetAsyncLogged(url, ct);
+            return await _httpExternal.GetAsyncLogged(url, ct);
         }
 
         /// <summary>
@@ -111,7 +120,7 @@ namespace Kairo.Utils
         /// </summary>
         public async Task<string> GetStringWithoutAuthAsync(string url, CancellationToken ct = default)
         {
-            return await _http.GetStringAsyncLogged(url, ct);
+            return await _httpExternal.GetStringAsyncLogged(url, ct);
         }
 
         /// <summary>
@@ -119,7 +128,7 @@ namespace Kairo.Utils
         /// </summary>
         public async Task<byte[]> GetByteArrayWithoutAuthAsync(string url, CancellationToken ct = default)
         {
-            return await _http.GetByteArrayAsyncLogged(url, ct);
+            return await _httpExternal.GetByteArrayAsyncLogged(url, ct);
         }
 
         #endregion
@@ -140,7 +149,7 @@ namespace Kairo.Utils
         /// </summary>
         public async Task<HttpResponseMessage> PostWithoutAuthAsync(string url, HttpContent? content = null, CancellationToken ct = default)
         {
-            return await _http.PostAsyncLogged(url, content, ct);
+            return await _httpExternal.PostAsyncLogged(url, content, ct);
         }
 
         #endregion
@@ -161,7 +170,7 @@ namespace Kairo.Utils
         /// </summary>
         public async Task<HttpResponseMessage> PutWithoutAuthAsync(string url, HttpContent? content = null, CancellationToken ct = default)
         {
-            return await _http.PutAsyncLogged(url, content, ct);
+            return await _httpExternal.PutAsyncLogged(url, content, ct);
         }
 
         #endregion
@@ -182,7 +191,7 @@ namespace Kairo.Utils
         /// </summary>
         public async Task<HttpResponseMessage> DeleteWithoutAuthAsync(string url, CancellationToken ct = default)
         {
-            return await _http.DeleteAsyncLogged(url, ct);
+            return await _httpExternal.DeleteAsyncLogged(url, ct);
         }
 
         #endregion
@@ -203,7 +212,7 @@ namespace Kairo.Utils
         /// </summary>
         public async Task<HttpResponseMessage> PatchWithoutAuthAsync(string url, HttpContent? content = null, CancellationToken ct = default)
         {
-            return await _http.PatchAsyncLogged(url, content, ct);
+            return await _httpExternal.PatchAsyncLogged(url, content, ct);
         }
 
         #endregion
@@ -251,6 +260,7 @@ namespace Kairo.Utils
             if (_disposed) return;
             _disposed = true;
             _http.Dispose();
+            _httpExternal.Dispose();
         }
 
         #endregion

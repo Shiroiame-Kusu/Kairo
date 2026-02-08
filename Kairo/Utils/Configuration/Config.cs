@@ -13,6 +13,8 @@ namespace Kairo.Utils.Configuration
         //public string Password = "";
         public string FrpToken = "";
         public string FrpcPath = "";
+        public string FrpcVersion = "";
+        public long FrpcLastUpdateCheckUtc = 0;
         public bool DebugMode = false;
         public bool AutoStartUp = false;
         public int AppliedTheme = 0;

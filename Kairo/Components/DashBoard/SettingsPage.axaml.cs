@@ -1,13 +1,11 @@
 using System;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
 using System.Text.Json;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
 using Avalonia.Platform.Storage;
+using Kairo.Core;
 using Kairo.Utils;
 using Kairo.Utils.Configuration;
 using Kairo.ViewModels;
@@ -117,82 +115,63 @@ namespace Kairo.Components.DashBoard
                 (Access.DashBoard as DashBoard)?.OpenSnackbar("检查更新", "正在从 GitHub 获取最新版本...");
                 using var api = new ApiClient();
 
-                var desiredPref = NormalizeBranch(Global.Config.UpdateBranch) ?? Global.Branch;
-                var desired = NormalizeBranch(desiredPref) ?? "Release";
-                bool canSwitchBranch = Global.Branch.Equals("Alpha", StringComparison.OrdinalIgnoreCase) || desired.Equals(Global.Branch, StringComparison.OrdinalIgnoreCase);
+                // Parse current version using AppVersion
+                var currentVersion = AppVersion.FromComponents(Global.Version, Global.Branch, Global.Revision);
 
                 var releasesUrl = "https://api.github.com/repos/Shiroiame-Kusu/Kairo/releases";
                 var resp = await api.GetWithoutAuthAsync(releasesUrl);
                 resp.EnsureSuccessStatusCode();
                 await using var stream = await resp.Content.ReadAsStreamAsync();
                 using var doc = await JsonDocument.ParseAsync(stream);
-                JsonElement? chosen = null;
+                
+                // Find the latest release matching current channel only
+                AppVersion? remoteVersion = null;
                 foreach (var rel in doc.RootElement.EnumerateArray())
                 {
                     var tag = rel.GetProperty("tag_name").GetString() ?? string.Empty;
-                    if (IsBranchMatch(tag, desired)) { chosen = rel; break; }
+                    if (!AppVersion.TryParse(tag, out var parsed)) continue;
+                    if (parsed.Channel == currentVersion.Channel)
+                    {
+                        remoteVersion = parsed;
+                        break;
+                    }
                 }
-                if (chosen == null)
+
+                if (remoteVersion == null)
                 {
-                    (Access.DashBoard as DashBoard)?.OpenSnackbar("未找到版本", $"分支 {desired}");
+                    (Access.DashBoard as DashBoard)?.OpenSnackbar("未找到版本", $"分支 {currentVersion.ChannelName}");
                     return;
                 }
-                var tagName = chosen.Value.GetProperty("tag_name").GetString() ?? string.Empty;
-                var current = new Version(Global.Version);
-                var currentBranch = NormalizeBranch(Global.Branch) ?? "Release";
-                var currentRev = Global.Revision;
-                var (remoteVer, remoteBranch, remoteRev) = ParseTag(tagName);
 
-                bool updateAvailable;
-                if (currentBranch.Equals(remoteBranch, StringComparison.OrdinalIgnoreCase))
-                {
-                    updateAvailable = remoteVer > current || (remoteVer == current && remoteRev > currentRev);
-                }
-                else
-                {
-                    updateAvailable = canSwitchBranch && desired.Equals(remoteBranch, StringComparison.OrdinalIgnoreCase) && !(remoteVer == current && remoteRev == currentRev && currentBranch == remoteBranch);
-                }
+                // Compare versions (same channel guaranteed)
+                bool updateAvailable = remoteVersion.Value > currentVersion;
 
                 if (!updateAvailable)
                 {
-                    (Access.DashBoard as DashBoard)?.OpenSnackbar("已是最新", $"当前 {Global.Version}-{currentBranch}.{currentRev}");
+                    (Access.DashBoard as DashBoard)?.OpenSnackbar("已是最新", $"当前 {currentVersion}");
                     return;
                 }
-                (Access.DashBoard as DashBoard)?.OpenSnackbar("发现新版本", $"将退出并更新到 {remoteVer}-{remoteBranch}.{remoteRev}");
 
-                var baseDir = AppContext.BaseDirectory;
-                var updaterDll = Path.Combine(baseDir, "Updater.dll");
-                var updaterExe = Path.Combine(baseDir, OperatingSystem.IsWindows() ? "Updater.exe" : "Updater");
-                ProcessStartInfo psi;
-                if (File.Exists(updaterExe))
-                {
-                    psi = new ProcessStartInfo(updaterExe)
-                    {
-                        UseShellExecute = false,
-                        WorkingDirectory = baseDir,
-                        Arguments = $"{Process.GetCurrentProcess().Id} Shiroiame-Kusu Kairo {remoteBranch}"
-                    };
-                }
-                else if (File.Exists(updaterDll))
-                {
-                    psi = new ProcessStartInfo("dotnet")
-                    {
-                        UseShellExecute = false,
-                        WorkingDirectory = baseDir,
-                        Arguments = $"\"{updaterDll}\" {Process.GetCurrentProcess().Id} Shiroiame-Kusu Kairo {remoteBranch}"
-                    };
-                }
-                else
+                // Check if updater is available
+                if (!UpdaterHelper.IsUpdaterAvailable())
                 {
                     (Access.DashBoard as DashBoard)?.OpenSnackbar("更新失败", "未找到 Updater 组件");
                     return;
                 }
 
+                (Access.DashBoard as DashBoard)?.OpenSnackbar("发现新版本", $"将退出并更新到 {remoteVersion.Value}");
+
+                // Prepare and launch updater
+                if (!UpdaterHelper.PrepareUpdate(remoteVersion.Value))
+                {
+                    (Access.DashBoard as DashBoard)?.OpenSnackbar("更新失败", "准备更新器失败");
+                    return;
+                }
+
                 try
                 {
-                    Process.Start(psi);
                     (Access.DashBoard as DashBoard)?.OpenSnackbar("正在更新", "程序即将退出并更新");
-                    Environment.Exit(0);
+                    UpdaterHelper.LaunchUpdaterAndExit();
                 }
                 catch (Exception exLaunch)
                 {
@@ -207,96 +186,6 @@ namespace Kairo.Components.DashBoard
             {
                 if (btn != null) btn.IsEnabled = true;
             }
-        }
-
-        private static bool IsBranchMatch(string tag, string desired)
-        {
-            var lower = tag.ToLowerInvariant();
-            return desired switch
-            {
-                "Alpha" => lower.Contains("-alpha."),
-                "Beta" => lower.Contains("-beta."),
-                "ReleaseCandidate" => lower.Contains("-rc."),
-                "Release" => lower.Contains("-release."),
-                _ => true
-            };
-        }
-
-        private static string? NormalizeBranch(string? b)
-        {
-            if (string.IsNullOrWhiteSpace(b)) return null;
-            b = b.Trim();
-            if (b.Equals("alpha", StringComparison.OrdinalIgnoreCase)) return "Alpha";
-            if (b.Equals("beta", StringComparison.OrdinalIgnoreCase)) return "Beta";
-            if (b.Equals("rc", StringComparison.OrdinalIgnoreCase) || b.Equals("releasecandidate", StringComparison.OrdinalIgnoreCase)) return "ReleaseCandidate";
-            if (b.Equals("release", StringComparison.OrdinalIgnoreCase)) return "Release";
-            return null;
-        }
-
-        private static (Version ver, string branch, int revision) ParseTag(string? tag)
-        {
-            tag ??= string.Empty;
-            string t = tag.StartsWith("v", StringComparison.OrdinalIgnoreCase)
-                ? (tag.Length > 1 ? tag[1..] : string.Empty)
-                : tag;
-            string branch = "Release";
-            int rev = 0;
-            var lower = t.ToLowerInvariant();
-            string versionPart = t;
-            if (lower.Contains("-alpha."))
-            {
-                branch = "Alpha";
-                var idx = lower.IndexOf("-alpha.", StringComparison.Ordinal);
-                if (idx >= 0 && idx <= t.Length)
-                {
-                    versionPart = idx == 0 ? string.Empty : t[..idx];
-                    var suffixIndex = idx + "-alpha.".Length;
-                    var rstr = suffixIndex < t.Length ? t[suffixIndex..] : string.Empty;
-                    int.TryParse(new string(rstr.TakeWhile(char.IsDigit).ToArray()), out rev);
-                }
-            }
-            else if (lower.Contains("-beta."))
-            {
-                branch = "Beta";
-                var idx = lower.IndexOf("-beta.", StringComparison.Ordinal);
-                if (idx >= 0 && idx <= t.Length)
-                {
-                    versionPart = idx == 0 ? string.Empty : t[..idx];
-                    var suffixIndex = idx + "-beta.".Length;
-                    var rstr = suffixIndex < t.Length ? t[suffixIndex..] : string.Empty;
-                    int.TryParse(new string(rstr.TakeWhile(char.IsDigit).ToArray()), out rev);
-                }
-            }
-            else if (lower.Contains("-rc."))
-            {
-                branch = "ReleaseCandidate";
-                var idx = lower.IndexOf("-rc.", StringComparison.Ordinal);
-                if (idx >= 0 && idx <= t.Length)
-                {
-                    versionPart = idx == 0 ? string.Empty : t[..idx];
-                    var suffixIndex = idx + "-rc.".Length;
-                    var rstr = suffixIndex < t.Length ? t[suffixIndex..] : string.Empty;
-                    int.TryParse(new string(rstr.TakeWhile(char.IsDigit).ToArray()), out rev);
-                }
-            }
-            else if (lower.Contains("-release."))
-            {
-                branch = "Release";
-                var idx = lower.IndexOf("-release.", StringComparison.Ordinal);
-                if (idx >= 0 && idx <= t.Length)
-                {
-                    versionPart = idx == 0 ? string.Empty : t[..idx];
-                    var suffixIndex = idx + "-release.".Length;
-                    var rstr = suffixIndex < t.Length ? t[suffixIndex..] : string.Empty;
-                    int.TryParse(new string(rstr.TakeWhile(char.IsDigit).ToArray()), out rev);
-                }
-            }
-
-            if (!Version.TryParse(versionPart, out var ver))
-            {
-                ver = new Version(0, 0, 0);
-            }
-            return (ver, branch, rev);
         }
     }
 }

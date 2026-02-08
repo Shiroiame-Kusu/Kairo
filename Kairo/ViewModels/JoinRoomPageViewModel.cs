@@ -6,8 +6,8 @@ using System.Threading.Tasks;
 using System.Windows.Input;
 using Avalonia.Controls;
 using FluentAvalonia.UI.Controls;
-using HakuuLib.Minecraft.Java.Forwarding;
-using HakuuLib.Minecraft.Bedrock.Forwarding;
+using HakuuLib.MultiplayerLAN.Minecraft.Java.Forwarding;
+using HakuuLib.MultiplayerLAN.Minecraft.Bedrock.Forwarding;
 using Kairo.Utils;
 
 namespace Kairo.ViewModels

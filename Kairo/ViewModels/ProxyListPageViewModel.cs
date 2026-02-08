@@ -4,6 +4,7 @@ using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 using FluentAvalonia.UI.Controls;
 using Avalonia.Threading;
+using Avalonia.Controls;
 using Kairo.Components.DashBoard;
 using Kairo.Utils;
 using Kairo.Utils.Serialization;
@@ -151,9 +152,62 @@ namespace Kairo.ViewModels
                 _ =>
                 {
                     vm.IsRunning = true;
-                    AccessSnackbar("启动成功", vm.Proxy.ProxyName, InfoBarSeverity.Success);
+                    
+                    // Build connection address and copy to clipboard
+                    var connAddr = GetConnectionAddress(vm.Proxy);
+                    if (!string.IsNullOrEmpty(connAddr))
+                    {
+                        CopyToClipboardAsync(connAddr);
+                        AccessSnackbar("启动成功", $"{vm.Proxy.ProxyName} - 已复制 {connAddr}", InfoBarSeverity.Success);
+                    }
+                    else
+                    {
+                        AccessSnackbar("启动成功", vm.Proxy.ProxyName, InfoBarSeverity.Success);
+                    }
                 },
                 err => { AccessSnackbar("启动失败", err, InfoBarSeverity.Error); });
+        }
+
+        private static string? GetConnectionAddress(Components.Proxy proxy)
+        {
+            var type = proxy.ProxyType?.ToLowerInvariant();
+            
+            // HTTP/HTTPS use domain
+            if (type is "http" or "https")
+            {
+                if (!string.IsNullOrWhiteSpace(proxy.Domain))
+                    return proxy.Domain;
+            }
+            
+            // TCP/UDP use host:port
+            if (type is "tcp" or "udp")
+            {
+                var host = proxy.NodeInfo?.Host ?? proxy.NodeInfo?.Ip;
+                var port = proxy.RemotePort;
+                if (!string.IsNullOrWhiteSpace(host) && port.HasValue)
+                    return $"{host}:{port}";
+            }
+            
+            return null;
+        }
+
+        private static async void CopyToClipboardAsync(string text)
+        {
+            try
+            {
+                await Dispatcher.UIThread.InvokeAsync(async () =>
+                {
+                    var clipboard = TopLevel.GetTopLevel(Access.DashBoard)?.Clipboard;
+                    if (clipboard != null)
+                    {
+                        await clipboard.SetTextAsync(text);
+                    }
+                });
+            }
+            catch
+            {
+                // Ignore clipboard errors
+            }
         }
 
         public void StopProxy(ProxyCardViewModel vm)
