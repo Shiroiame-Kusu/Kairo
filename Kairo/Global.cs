@@ -61,7 +61,8 @@ namespace Kairo
         {
             // User & OAuth
             public const string GetUserInfo = ApiEndpoints.GetUserInfo;
-            public const string GetTheFUCKINGRefreshToken = ApiEndpoints.GetRefreshToken;
+            public const string GetTheFUCKINGRefreshToken = ApiEndpoints.OAuthAuthorize; 
+            // Yes, this is really the endpoint for getting refresh token, not a typo in the name. GET with ?user_id= for status, POST with form user_id for get new refresh token
             public const string GetAccessToken = ApiEndpoints.GetAccessToken;
 
             public const string GetFrpToken = ApiEndpoints.GetFrpToken;

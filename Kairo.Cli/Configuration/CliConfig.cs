@@ -12,6 +12,16 @@ public class CliConfig : BaseConfig
     /// 自动启动的隧道 ID 列表
     /// </summary>
     public List<int> AutoLaunch { get; set; } = new();
+    
+    /// <summary>
+    /// 是否默认启用调试日志
+    /// </summary>
+    public bool DebugMode { get; set; } = false;
+    
+    /// <summary>
+    /// 是否将日志写入文件
+    /// </summary>
+    public bool LogToFile { get; set; } = false;
 }
 
 /// <summary>

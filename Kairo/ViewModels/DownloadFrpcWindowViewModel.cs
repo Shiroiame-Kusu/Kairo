@@ -141,7 +141,7 @@ namespace Kairo.ViewModels
                 CanClose = false;
                 IsIndeterminate = true;
                 SetStatus("正在获取版本信息...");
-                string apiMirror = "https://hub.locyan.cloud/repos/LoCyan-Team/LocyanFrpPureApp/releases/latest";
+                string apiMirror = $"https://{Global.GithubMirror}/repos/LoCyan-Team/LocyanFrpPureApp/releases/latest";
                 string apiOrigin = "https://api.github.com/repos/LoCyan-Team/LocyanFrpPureApp/releases/latest";
                 JsonObject release = await TryFetch(apiMirror) ??
                                      await TryFetch(apiOrigin) ?? throw new Exception("无法获取版本信息");

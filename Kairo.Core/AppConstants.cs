@@ -8,7 +8,7 @@ public static class AppConstants
     public const string Version = "3.3.0";
     public const string VersionName = "Voyaging Star";
     public const string Branch = "Beta";
-    public const int Revision = 1;
+    public const int Revision = 2;
     public const string Developer = "Shiroiame-Kusu & Daiyangcheng";
     public const string Copyright = "Copyright © Shiroiame-Kusu All Rights Reserved";
 
@@ -16,7 +16,7 @@ public static class AppConstants
     public const string API = "https://api.locyanfrp.cn/v3";
     public const string Dashboard = "https://dashboard.locyanfrp.cn";
     public const string UpdateCheckerAPI = "https://kairo.nyat.icu/api";
-    public const string GithubMirror = "https://hub.locyan.cloud/";
+    public const string GithubMirror = "https://hub.locyancs.cn";
 
     public const int APPID = 1;
 

@@ -21,7 +21,7 @@ namespace Kairo.Utils
     internal static class FrpcUpdateChecker
     {
         private static readonly TimeSpan CheckInterval = TimeSpan.FromHours(24);
-        private const string ApiMirror = "https://hub.locyan.cloud/repos/LoCyan-Team/LocyanFrpPureApp/releases/latest";
+        private const string ApiMirror = $"https://{Global.GithubMirror}/repos/LoCyan-Team/LocyanFrpPureApp/releases/latest";
         private const string ApiOrigin = "https://api.github.com/repos/LoCyan-Team/LocyanFrpPureApp/releases/latest";
 
         public static bool ShouldCheckNow()
