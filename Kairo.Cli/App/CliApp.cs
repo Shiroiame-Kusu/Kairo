@@ -17,11 +17,14 @@ public class CliApp : IDisposable
     private ApiClient? _apiClient;
     private bool _disposed;
     private bool _cancelKeyRegistered;
+    private readonly List<Process> _frpcProcesses = new();
 
     public CliApp(string[] args)
     {
         _args = args;
         Logger.Debug($"CliApp 实例创建，参数数量: {args.Length}");
+        // Ensure frpc child processes are killed on any exit path (SIGTERM, etc.)
+        AppDomain.CurrentDomain.ProcessExit += (_, _) => KillAllFrpcProcesses();
     }
 
     public void Dispose()
@@ -29,8 +32,35 @@ public class CliApp : IDisposable
         if (_disposed) return;
         _disposed = true;
         Logger.Debug("CliApp Dispose 调用");
+        KillAllFrpcProcesses();
         _apiClient?.Dispose();
         _cts.Dispose();
+    }
+
+    private void KillAllFrpcProcesses()
+    {
+        List<Process> snapshot;
+        lock (_frpcProcesses)
+        {
+            snapshot = new List<Process>(_frpcProcesses);
+            _frpcProcesses.Clear();
+        }
+        foreach (var proc in snapshot)
+        {
+            try
+            {
+                if (!proc.HasExited)
+                {
+                    proc.Kill(true);
+                    proc.WaitForExit(3000);
+                }
+            }
+            catch { }
+            finally
+            {
+                try { proc.Dispose(); } catch { }
+            }
+        }
     }
 
     public async Task<int> RunAsync()
@@ -536,7 +566,7 @@ public class CliApp : IDisposable
             };
         }
 
-        var processes = new List<Process>();
+        var processes = _frpcProcesses;
 
         foreach (var proxyId in proxyIds)
         {
@@ -544,7 +574,10 @@ public class CliApp : IDisposable
             var process = StartFrpcProcess(frpcPath, frpToken, proxyId);
             if (process != null)
             {
-                processes.Add(process);
+                lock (_frpcProcesses)
+                {
+                    processes.Add(process);
+                }
                 Logger.Info($"隧道 {proxyId} 启动成功，PID: {process.Id}");
                 Console.WriteLine($"[成功] 隧道 {proxyId} 已启动 (PID: {process.Id})");
             }
@@ -586,33 +619,8 @@ public class CliApp : IDisposable
         }
 
         Logger.Debug("开始终止所有进程");
-        foreach (var proc in processes)
-        {
-            try
-            {
-                if (!proc.HasExited)
-                {
-                    Logger.Debug($"终止进程 PID: {proc.Id}");
-                    proc.Kill(true);
-                    proc.WaitForExit(3000);
-                    Logger.ProcessExit(proc.Id, proc.ExitCode);
-                    Console.WriteLine($"[信息] 已停止进程 PID: {proc.Id}");
-                }
-                else
-                {
-                    Logger.Debug($"进程 {proc.Id} 已自行退出，ExitCode: {proc.ExitCode}");
-                }
-            }
-            catch (Exception ex)
-            {
-                Logger.Exception(ex, $"终止进程 {proc.Id} 时出错");
-            }
-            finally
-            {
-                // 确保释放进程资源
-                try { proc.Dispose(); } catch { }
-            }
-        }
+        // Use KillAllFrpcProcesses for centralized cleanup (also clears the list)
+        KillAllFrpcProcesses();
 
         Logger.Info("所有隧道已停止");
         Console.WriteLine("[信息] 所有隧道已停止");
