@@ -100,8 +100,8 @@ public static class UpdaterHelper
             throw;
         }
 
-        // Stop all frpc processes before exiting
-        try { FrpcProcessManager.StopAll(); } catch { }
+        // Disconnect from daemon (frpc continues running independently)
+        try { FrpcProcessManager.Disconnect(); } catch { }
         
         // Flush any pending I/O
         try { ConfigManager.Save(); } catch { }

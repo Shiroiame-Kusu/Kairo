@@ -1,3 +1,4 @@
+using System;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
@@ -20,11 +21,10 @@ public partial class App : Application
             return;
         }
         CrashInterception.Init(); // already hooks AppDomain + TaskScheduler
-        // Ensure frpc child processes are killed on ANY exit path
-        // (SIGTERM, Environment.Exit, updater, etc.)
+        // Disconnect from daemon (but don't kill frpc) on any exit path
         AppDomain.CurrentDomain.ProcessExit += (_, _) =>
         {
-            try { FrpcProcessManager.StopAll(); } catch { }
+            try { FrpcProcessManager.Disconnect(); } catch { }
         };
         ConfigManager.Init();
         OAuthCallbackHandler.Init();
@@ -50,10 +50,16 @@ public partial class App : Application
         {
             desktop.MainWindow = new MainWindow();
             Access.MainWindow = desktop.MainWindow; // store reference for Logger dialogs
+            
+            // Initialize daemon connection (async, non-blocking)
+            _ = FrpcProcessManager.InitializeAsync();
+            
             desktop.Exit += async (_, __) =>
             {
                 try { await OAuthCallbackHandler.StopAsync(); } catch { }
-                try { FrpcProcessManager.StopAll(); } catch { }
+                // Disconnect from daemon, but do NOT stop frpc processes —
+                // they survive app exit and can be recovered on next launch
+                try { FrpcProcessManager.Disconnect(); } catch { }
             };
         }
 

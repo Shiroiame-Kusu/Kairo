@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using Kairo.Core;
+using Kairo.Core.Daemon;
 using Kairo.Core.Models;
 using Kairo.Cli.Configuration;
 using Kairo.Cli.Services;
@@ -17,14 +18,13 @@ public class CliApp : IDisposable
     private ApiClient? _apiClient;
     private bool _disposed;
     private bool _cancelKeyRegistered;
-    private readonly List<Process> _frpcProcesses = new();
+    private DaemonClient? _daemon;
+    private readonly List<int> _startedProxyIds = new();
 
     public CliApp(string[] args)
     {
         _args = args;
         Logger.Debug($"CliApp 实例创建，参数数量: {args.Length}");
-        // Ensure frpc child processes are killed on any exit path (SIGTERM, etc.)
-        AppDomain.CurrentDomain.ProcessExit += (_, _) => KillAllFrpcProcesses();
     }
 
     public void Dispose()
@@ -32,35 +32,10 @@ public class CliApp : IDisposable
         if (_disposed) return;
         _disposed = true;
         Logger.Debug("CliApp Dispose 调用");
-        KillAllFrpcProcesses();
+        // Disconnect from daemon (don't kill frpc!)
+        try { _daemon?.Dispose(); } catch { }
         _apiClient?.Dispose();
         _cts.Dispose();
-    }
-
-    private void KillAllFrpcProcesses()
-    {
-        List<Process> snapshot;
-        lock (_frpcProcesses)
-        {
-            snapshot = new List<Process>(_frpcProcesses);
-            _frpcProcesses.Clear();
-        }
-        foreach (var proc in snapshot)
-        {
-            try
-            {
-                if (!proc.HasExited)
-                {
-                    proc.Kill(true);
-                    proc.WaitForExit(3000);
-                }
-            }
-            catch { }
-            finally
-            {
-                try { proc.Dispose(); } catch { }
-            }
-        }
     }
 
     public async Task<int> RunAsync()
@@ -548,9 +523,42 @@ public class CliApp : IDisposable
         Logger.MethodEntry($"frpcPath={frpcPath}, proxyIds.Count={proxyIds.Count}");
         
         Console.WriteLine();
-        Console.WriteLine($"[信息] 正在启动 {proxyIds.Count} 个隧道...");
+        Console.WriteLine($"[信息] 正在连接 daemon 并启动 {proxyIds.Count} 个隧道...");
         Console.WriteLine("[信息] 按 Ctrl+C 停止所有隧道");
         Console.WriteLine();
+
+        // 连接 daemon
+        _daemon = new DaemonClient();
+        try
+        {
+            await _daemon.ConnectAsync(ct: _cts.Token);
+            Logger.Info("已连接到 daemon");
+        }
+        catch (Exception ex)
+        {
+            Logger.Exception(ex, "连接 daemon 失败");
+            Console.WriteLine($"[错误] 连接 daemon 失败: {ex.Message}");
+            return 1;
+        }
+
+        // 订阅日志事件
+        _daemon.LogReceived += line =>
+        {
+            if (line.IsError)
+                Console.WriteLine($"[隧道 {line.ProxyId} 错误] {line.Text}");
+            else
+                Console.WriteLine($"[隧道 {line.ProxyId}] {line.Text}");
+        };
+
+        // 订阅隧道退出事件
+        _daemon.ProxyExited += proxyId =>
+        {
+            Console.WriteLine($"[信息] 隧道 {proxyId} 已退出");
+            lock (_startedProxyIds)
+            {
+                _startedProxyIds.Remove(proxyId);
+            }
+        };
 
         // 防止重复注册事件处理器
         if (!_cancelKeyRegistered)
@@ -566,31 +574,32 @@ public class CliApp : IDisposable
             };
         }
 
-        var processes = _frpcProcesses;
-
+        int successCount = 0;
         foreach (var proxyId in proxyIds)
         {
             Logger.Debug($"启动隧道 ID: {proxyId}");
-            var process = StartFrpcProcess(frpcPath, frpToken, proxyId);
-            if (process != null)
+            try
             {
-                lock (_frpcProcesses)
-                {
-                    processes.Add(process);
-                }
-                Logger.Info($"隧道 {proxyId} 启动成功，PID: {process.Id}");
-                Console.WriteLine($"[成功] 隧道 {proxyId} 已启动 (PID: {process.Id})");
+                var state = await _daemon.StartProxyAsync(proxyId, frpcPath, frpToken, _cts.Token);
+                lock (_startedProxyIds) { _startedProxyIds.Add(proxyId); }
+
+                // 订阅该隧道的日志
+                try { await _daemon.SubscribeLogsAsync(proxyId, _cts.Token); } catch { }
+
+                Logger.Info($"隧道 {proxyId} 启动成功，PID: {state.Pid}");
+                Console.WriteLine($"[成功] 隧道 {proxyId} 已启动 (PID: {state.Pid})");
+                successCount++;
             }
-            else
+            catch (Exception ex)
             {
-                Logger.Error($"隧道 {proxyId} 启动失败");
-                Console.WriteLine($"[错误] 隧道 {proxyId} 启动失败");
+                Logger.Error($"隧道 {proxyId} 启动失败: {ex.Message}");
+                Console.WriteLine($"[错误] 隧道 {proxyId} 启动失败: {ex.Message}");
             }
         }
 
-        Logger.Info($"成功启动 {processes.Count}/{proxyIds.Count} 个隧道");
+        Logger.Info($"成功启动 {successCount}/{proxyIds.Count} 个隧道");
 
-        if (processes.Count == 0)
+        if (successCount == 0)
         {
             Logger.Error("没有成功启动的隧道");
             Console.WriteLine("[错误] 没有成功启动的隧道");
@@ -598,12 +607,17 @@ public class CliApp : IDisposable
             return 1;
         }
 
+        // 监控循环：等待所有隧道退出或用户取消
         Logger.Debug("进入隧道监控循环");
         try
         {
             while (!_cts.IsCancellationRequested)
             {
-                bool allExited = processes.All(p => p.HasExited);
+                bool allExited;
+                lock (_startedProxyIds)
+                {
+                    allExited = _startedProxyIds.Count == 0;
+                }
                 if (allExited)
                 {
                     Logger.Info("所有隧道进程已退出");
@@ -618,73 +632,31 @@ public class CliApp : IDisposable
             Logger.Debug("监控循环被取消");
         }
 
-        Logger.Debug("开始终止所有进程");
-        // Use KillAllFrpcProcesses for centralized cleanup (also clears the list)
-        KillAllFrpcProcesses();
+        // 用户按 Ctrl+C 时停止所有通过本次 CLI 启动的隧道
+        Logger.Debug("开始停止所有隧道");
+        List<int> idsToStop;
+        lock (_startedProxyIds)
+        {
+            idsToStop = new List<int>(_startedProxyIds);
+            _startedProxyIds.Clear();
+        }
+        foreach (var id in idsToStop)
+        {
+            try
+            {
+                await _daemon.StopProxyAsync(id);
+                Console.WriteLine($"[信息] 已停止隧道 {id}");
+            }
+            catch (Exception ex)
+            {
+                Logger.Exception(ex, $"停止隧道 {id} 失败");
+            }
+        }
 
         Logger.Info("所有隧道已停止");
         Console.WriteLine("[信息] 所有隧道已停止");
         Logger.MethodExit("0");
         return 0;
-    }
-
-    private Process? StartFrpcProcess(string frpcPath, string frpToken, int proxyId)
-    {
-        Logger.MethodEntry($"proxyId={proxyId}");
-        try
-        {
-            var arguments = $"-u {frpToken} -t {proxyId}";
-            Logger.ProcessStart(frpcPath, arguments);
-            
-            var psi = new ProcessStartInfo
-            {
-                FileName = frpcPath,
-                Arguments = arguments,
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                CreateNoWindow = true
-            };
-
-            var process = new Process { StartInfo = psi };
-            process.OutputDataReceived += (_, e) =>
-            {
-                if (!string.IsNullOrEmpty(e.Data))
-                {
-                    Logger.Debug($"[隧道 {proxyId} stdout] {e.Data}");
-                    Console.WriteLine($"[隧道 {proxyId}] {e.Data}");
-                }
-            };
-            process.ErrorDataReceived += (_, e) =>
-            {
-                if (!string.IsNullOrEmpty(e.Data))
-                {
-                    Logger.Warning($"[隧道 {proxyId} stderr] {e.Data}");
-                    Console.WriteLine($"[隧道 {proxyId} 错误] {e.Data}");
-                }
-            };
-
-            if (!process.Start())
-            {
-                Logger.Error($"进程启动返回 false");
-                Logger.MethodExit("null");
-                return null;
-            }
-
-            Logger.Debug($"frpc 进程已启动，PID: {process.Id}");
-            process.BeginOutputReadLine();
-            process.BeginErrorReadLine();
-
-            Logger.MethodExit($"PID={process.Id}");
-            return process;
-        }
-        catch (Exception ex)
-        {
-            Logger.Exception(ex, $"启动 frpc 失败 (proxyId={proxyId})");
-            Console.WriteLine($"[错误] 启动 frpc 失败: {ex.Message}");
-            Logger.MethodExit("null (exception)");
-            return null;
-        }
     }
 
     private CliOptions ParseArguments()

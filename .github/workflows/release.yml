@@ -174,6 +174,24 @@ jobs:
             cp publish/updater-${{ matrix.rid }}/Updater publish/gui-${{ matrix.rid }}/
           fi
 
+      # Build Daemon
+      - name: Publish Daemon
+        shell: bash
+        run: |
+          dotnet publish Kairo.Daemon/Kairo.Daemon.csproj -c ${{ env.CONFIGURATION }} -r ${{ matrix.rid }} \
+            /p:Version=${{ needs.prepare.outputs.version }} \
+            /p:AssemblyVersion=${{ needs.prepare.outputs.assembly_version }} \
+            /p:FileVersion=${{ needs.prepare.outputs.assembly_version }} \
+            -o publish/daemon-${{ matrix.rid }}
+          # Copy Daemon to GUI and CLI directories
+          if [[ "${{ matrix.rid }}" == win-* ]]; then
+            cp publish/daemon-${{ matrix.rid }}/kairo-daemon.exe publish/gui-${{ matrix.rid }}/
+            cp publish/daemon-${{ matrix.rid }}/kairo-daemon.exe publish/cli-${{ matrix.rid }}/
+          else
+            cp publish/daemon-${{ matrix.rid }}/kairo-daemon publish/gui-${{ matrix.rid }}/
+            cp publish/daemon-${{ matrix.rid }}/kairo-daemon publish/cli-${{ matrix.rid }}/
+          fi
+
       # Remove debug symbols
       - name: Remove debug symbols
         shell: bash
