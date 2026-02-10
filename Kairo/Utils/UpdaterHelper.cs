@@ -100,23 +100,14 @@ public static class UpdaterHelper
             throw;
         }
 
+        // Stop all frpc processes before exiting
+        try { FrpcProcessManager.StopAll(); } catch { }
+        
+        // Flush any pending I/O
+        try { ConfigManager.Save(); } catch { }
+
         // Exit the application
-        // On Windows, Environment.Exit is more reliable for ensuring complete shutdown
-        // before the updater tries to replace files
-        if (OperatingSystem.IsWindows())
-        {
-            // Flush any pending I/O
-            try { ConfigManager.Save(); } catch { }
-            
-            // Use Environment.Exit for immediate termination
-            Environment.Exit(0);
-        }
-        else
-        {
-            // On Linux/macOS, we can use the normal shutdown path
-            try { ConfigManager.Save(); } catch { }
-            Environment.Exit(0);
-        }
+        Environment.Exit(0);
     }
 
     /// <summary>
