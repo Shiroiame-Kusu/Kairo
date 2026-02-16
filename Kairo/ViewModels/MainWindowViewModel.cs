@@ -251,6 +251,9 @@ namespace Kairo.ViewModels
         {
             var limit = userInfo.Limit;
             SessionState.AvatarUrl = ComputeAvatarUrl(userInfo.Email);
+            SessionState.UserEmail = userInfo.Email;
+            SessionState.UserQQ = userInfo.QQ;
+            SessionState.UserRegTime = userInfo.RegTime;
             SessionState.Inbound = limit?.Inbound ?? userInfo.Inbound;
             SessionState.Outbound = limit?.Outbound ?? userInfo.Outbound;
             SessionState.Traffic = userInfo.Traffic;

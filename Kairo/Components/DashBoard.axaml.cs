@@ -19,6 +19,7 @@ namespace Kairo.Components.DashBoard
     public partial class DashBoard : Window
     {
         public static Bitmap? Avatar = null;
+        public static event Action<Bitmap?>? AvatarChanged;
         private HomePage? _homePage;
         private ProxyListPage? _proxyListPage;
         private LanPartyLobbyPage? _lanPartyLobbyPage;
@@ -121,6 +122,7 @@ namespace Kairo.Components.DashBoard
                 Dispatcher.UIThread.Post(() =>
                 {
                     _titleBar?.RefreshAvatar();
+                    AvatarChanged?.Invoke(Avatar);
                 });
             }
             catch { }

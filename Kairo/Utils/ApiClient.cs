@@ -35,7 +35,7 @@ namespace Kairo.Utils
             
             // For external APIs (GitHub): use browser User-Agent
             _httpExternal = new HttpClient();
-            _httpExternal.DefaultRequestHeaders.UserAgent.ParseAdd(BrowserUserAgent);
+            _httpExternal.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent",BrowserUserAgent);
         }
 
         /// <summary>

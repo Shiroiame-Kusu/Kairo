@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:fa="using:FluentAvalonia.UI.Controls"
              xmlns:vm="clr-namespace:Kairo.ViewModels"
              xmlns:local="clr-namespace:Kairo.Components.DashBoard"
              x:Class="Kairo.Components.DashBoard.ProxyListPage"
@@ -44,11 +45,18 @@
             <Setter Property="BorderBrush" Value="{DynamicResource AccentFillColorSecondaryBrush}" />
         </Style>
     </UserControl.Styles>
-    <Grid RowDefinitions="Auto,*,70" Margin="12">
-        <Border Grid.Row="0" CornerRadius="8" Padding="12,0" Background="{DynamicResource LayerFillColorDefaultBrush}" HorizontalAlignment="Left">
-            <TextBlock VerticalAlignment="Center" FontSize="24" Text="隧道列表" Margin="0,12,0,12" />
+    <Grid RowDefinitions="Auto,*,Auto" RowSpacing="12" Margin="12">
+        <Border Grid.Row="0" CornerRadius="8" Padding="14,10" Background="{DynamicResource LayerFillColorDefaultBrush}">
+            <StackPanel Spacing="4">
+                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                    <fa:SymbolIcon Symbol="List" FontSize="22" />
+                    <TextBlock VerticalAlignment="Center" FontSize="24" Text="隧道列表" />
+                </StackPanel>
+                <TextBlock Text="管理并快速操作你的隧道" Opacity="0.8" />
+            </StackPanel>
         </Border>
-        <Border Grid.Row="1" CornerRadius="8" Padding="12" Background="{DynamicResource LayerFillColorDefaultBrush}" Margin="0,12,0,0">
+
+        <Border Grid.Row="1" CornerRadius="8" Padding="12" Background="{DynamicResource LayerFillColorDefaultBrush}">
             <ScrollViewer>
                 <ItemsControl ItemsSource="{Binding Proxies}">
                     <ItemsControl.ItemsPanel>
@@ -64,15 +72,17 @@
                 </ItemsControl>
             </ScrollViewer>
         </Border>
-        <!-- Controls row: add a new button before '创建新隧道' -->
-        <Grid Grid.Row="2" ColumnDefinitions="Auto,Auto,Auto,*" Margin="0,12,0,0" ColumnSpacing="12">
-            <Button Grid.Column="0" Content="节点延迟" Command="{Binding NodePingCommand}" />
-            <Button Grid.Column="1" Content="创建新隧道" Command="{Binding CreateCommand}" />
-            <Button Grid.Column="2" Content="刷新" Command="{Binding RefreshCommand}" />
-            <Border Grid.Column="3" VerticalAlignment="Center" Padding="8" CornerRadius="6"
-                    Background="{DynamicResource LayerFillColorDefaultBrush}">
-                <TextBlock Text="PS:右键隧道可以打开菜单哦喵~" />
-            </Border>
-        </Grid>
+
+        <Border Grid.Row="2" CornerRadius="8" Padding="12" Background="{DynamicResource LayerFillColorDefaultBrush}">
+            <Grid ColumnDefinitions="Auto,Auto,Auto,*" ColumnSpacing="12">
+                <Button Grid.Column="0" Content="节点延迟" Command="{Binding NodePingCommand}" />
+                <Button Grid.Column="1" Content="创建新隧道" Command="{Binding CreateCommand}" />
+                <Button Grid.Column="2" Content="刷新" Command="{Binding RefreshCommand}" />
+                <Border Grid.Column="3" VerticalAlignment="Center" Padding="8" CornerRadius="6"
+                        Background="{DynamicResource LayerFillColorAltBrush}">
+                    <TextBlock Text="PS:右键隧道可以打开菜单哦喵~" />
+                </Border>
+            </Grid>
+        </Border>
     </Grid>
 </UserControl>

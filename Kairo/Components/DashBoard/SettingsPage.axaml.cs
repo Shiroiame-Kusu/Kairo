@@ -2,6 +2,7 @@ using System;
 using System.Text.Json;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
 using Avalonia.Platform.Storage;
@@ -15,6 +16,17 @@ namespace Kairo.Components.DashBoard
     public partial class SettingsPage : UserControl
     {
         private int _easterCount;
+        private ScrollViewer? _contentScrollViewer;
+        private Border? _navGeneral;
+        private Border? _navAppearance;
+        private Border? _navUpdate;
+        private Border? _navAccount;
+        private Border? _navAbout;
+        private Border? _sectionGeneral;
+        private Border? _sectionAppearance;
+        private Border? _sectionUpdate;
+        private Border? _sectionAccount;
+        private bool _isProgrammaticScrolling;
 
         public SettingsPage()
         {
@@ -26,6 +38,21 @@ namespace Kairo.Components.DashBoard
         private void InitializeComponent()
         {
             AvaloniaXamlLoader.Load(this);
+            _contentScrollViewer = this.FindControl<ScrollViewer>("ContentScrollViewer");
+            _navGeneral = this.FindControl<Border>("NavGeneral");
+            _navAppearance = this.FindControl<Border>("NavAppearance");
+            _navUpdate = this.FindControl<Border>("NavUpdate");
+            _navAccount = this.FindControl<Border>("NavAccount");
+            _navAbout = this.FindControl<Border>("NavAbout");
+            _sectionGeneral = this.FindControl<Border>("SectionGeneral");
+            _sectionAppearance = this.FindControl<Border>("SectionAppearance");
+            _sectionUpdate = this.FindControl<Border>("SectionUpdate");
+            _sectionAccount = this.FindControl<Border>("SectionAccount");
+
+            if (_contentScrollViewer != null)
+            {
+                _contentScrollViewer.ScrollChanged += ContentScrollViewer_OnScrollChanged;
+            }
         }
 
         private void OnLoaded(object? sender, RoutedEventArgs e)
@@ -44,6 +71,141 @@ namespace Kairo.Components.DashBoard
             }
 
             vm.LoadFromConfig();
+            UpdateActiveNavByScrollPosition();
+        }
+
+        private void ContentScrollViewer_OnScrollChanged(object? sender, ScrollChangedEventArgs e)
+        {
+            if (_isProgrammaticScrolling) return;
+            UpdateActiveNavByScrollPosition();
+        }
+
+        private void NavItem_OnPointerPressed(object? sender, PointerPressedEventArgs e)
+        {
+            if (sender is not Border nav || nav.Tag is not string tag) return;
+
+            switch (tag)
+            {
+                case "general":
+                    ScrollToSection(_sectionGeneral);
+                    break;
+                case "appearance":
+                    ScrollToSection(_sectionAppearance);
+                    break;
+                case "update":
+                    ScrollToSection(_sectionUpdate);
+                    break;
+                case "account":
+                    ScrollToSection(_sectionAccount);
+                    break;
+                case "about":
+                    ScrollToBottom();
+                    break;
+            }
+
+            SetActiveNav(tag);
+        }
+
+        private void ScrollToSection(Control? section)
+        {
+            if (_contentScrollViewer == null || section == null) return;
+
+            var point = section.TranslatePoint(new Point(0, 0), _contentScrollViewer);
+            if (point == null) return;
+
+            var maxOffset = Math.Max(0, _contentScrollViewer.Extent.Height - _contentScrollViewer.Viewport.Height);
+            var targetY = Math.Clamp(_contentScrollViewer.Offset.Y + point.Value.Y - 4, 0, maxOffset);
+
+            _isProgrammaticScrolling = true;
+            _contentScrollViewer.Offset = new Vector(_contentScrollViewer.Offset.X, targetY);
+            _isProgrammaticScrolling = false;
+            UpdateActiveNavByScrollPosition();
+        }
+
+        private void ScrollToBottom()
+        {
+            if (_contentScrollViewer == null) return;
+
+            var maxOffset = Math.Max(0, _contentScrollViewer.Extent.Height - _contentScrollViewer.Viewport.Height);
+            _isProgrammaticScrolling = true;
+            _contentScrollViewer.Offset = new Vector(_contentScrollViewer.Offset.X, maxOffset);
+            _isProgrammaticScrolling = false;
+            UpdateActiveNavByScrollPosition(forceAboutWhenBottom: true);
+        }
+
+        private void UpdateActiveNavByScrollPosition(bool forceAboutWhenBottom = false)
+        {
+            if (_contentScrollViewer == null)
+            {
+                SetActiveNav("general");
+                return;
+            }
+
+            var maxOffset = Math.Max(0, _contentScrollViewer.Extent.Height - _contentScrollViewer.Viewport.Height);
+            var currentY = _contentScrollViewer.Offset.Y;
+            var isBottom = maxOffset > 0 && currentY >= maxOffset - 6;
+
+            if (forceAboutWhenBottom || isBottom)
+            {
+                SetActiveNav("about");
+                return;
+            }
+
+            var activeTag = GetNearestSectionTag();
+            SetActiveNav(activeTag);
+        }
+
+        private string GetNearestSectionTag()
+        {
+            if (_contentScrollViewer == null) return "general";
+
+            var anchorY = 10.0;
+            var bestTag = "general";
+            var bestDistance = double.MaxValue;
+
+            TryPickNearest(_sectionGeneral, "general", anchorY, ref bestTag, ref bestDistance);
+            TryPickNearest(_sectionAppearance, "appearance", anchorY, ref bestTag, ref bestDistance);
+            TryPickNearest(_sectionUpdate, "update", anchorY, ref bestTag, ref bestDistance);
+            TryPickNearest(_sectionAccount, "account", anchorY, ref bestTag, ref bestDistance);
+
+            return bestTag;
+        }
+
+        private void TryPickNearest(Control? section, string tag, double anchorY, ref string bestTag, ref double bestDistance)
+        {
+            if (_contentScrollViewer == null || section == null) return;
+
+            var point = section.TranslatePoint(new Point(0, 0), _contentScrollViewer);
+            if (point == null) return;
+
+            var distance = Math.Abs(point.Value.Y - anchorY);
+            if (distance < bestDistance)
+            {
+                bestDistance = distance;
+                bestTag = tag;
+            }
+        }
+
+        private void SetActiveNav(string tag)
+        {
+            SetNavActive(_navGeneral, tag == "general");
+            SetNavActive(_navAppearance, tag == "appearance");
+            SetNavActive(_navUpdate, tag == "update");
+            SetNavActive(_navAccount, tag == "account");
+            SetNavActive(_navAbout, tag == "about");
+        }
+
+        private static void SetNavActive(Border? border, bool isActive)
+        {
+            if (border == null) return;
+            if (isActive)
+            {
+                if (!border.Classes.Contains("active")) border.Classes.Add("active");
+            }
+            else
+            {
+                border.Classes.Remove("active");
+            }
         }
 
         private async void SelectFile_OnClick(object? sender, RoutedEventArgs e)

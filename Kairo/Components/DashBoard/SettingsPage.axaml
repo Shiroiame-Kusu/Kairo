@@ -1,60 +1,205 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:fa="using:FluentAvalonia.UI.Controls"
              xmlns:vm="clr-namespace:Kairo.ViewModels"
              x:Class="Kairo.Components.DashBoard.SettingsPage"
              x:DataType="vm:SettingsPageViewModel"
              VerticalAlignment="Stretch">
-  <Grid Margin="12" RowDefinitions="*,Auto">
-    <!-- Scrollable settings content -->
-    <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-      <StackPanel Spacing="16">
-        <TextBlock Text="Frpc路径" FontSize="12"/>
-        <Grid ColumnDefinitions="*,Auto" >
-          <TextBox IsReadOnly="True" Text="{Binding FrpcPath}"/>
-          <Button Grid.Column="1" Margin="8,0,0,0" Content="选择文件" Click="SelectFile_OnClick"/>
-        </Grid>
-        <TextBlock Text="功能" FontSize="12"/>
-        <Border  Background="{DynamicResource LayerFillColorDefaultBrush}" Padding="12" CornerRadius="8">
-          <WrapPanel ScrollViewer.AllowAutoHide="True">
-            <StackPanel Width="140" Spacing="8">
-              <ToggleSwitch Content="跟随系统主题" IsChecked="{Binding FollowSystem, Mode=TwoWay}"/>
-              <ToggleSwitch Content="使用深色主题" IsEnabled="{Binding CanToggleDarkTheme}" IsChecked="{Binding DarkTheme, Mode=TwoWay}"/>
-              <ToggleSwitch Content="调试模式" IsVisible="False" IsChecked="{Binding DebugMode, Mode=TwoWay}"/>
-              <!-- <ToggleSwitch x:Name="AutoStartSwitch" Content="开机自动启动" IsCheckedChanged="AutoStartSwitch_OnChanged"/> -->
-            </StackPanel>
-            <StackPanel Width="140" Spacing="8">
-              <ToggleSwitch Content="国内镜像" IsChecked="{Binding UseMirror, Mode=TwoWay}"/>
-              <Button x:Name="DownloadFrpcBtn"  Content="下载FRPC" Click="DownloadFrpcBtn_OnClick"/>
-            </StackPanel>
-            <StackPanel Width="140" Spacing="8">
-              <Button x:Name="CopyTokenBtn" Content="复制Token" Click="CopyTokenBtn_OnClick"/>
-              <Button x:Name="SignOutBtn" Content="退出登录" Click="SignOutBtn_OnClick"/>
-              <Button x:Name="CheckUpdateBtn" Content="检查更新" Click="CheckUpdateBtn_OnClick"/>
-            </StackPanel>
-            <StackPanel Width="180" Spacing="8" IsVisible="False">
-              <TextBlock Text="更新分支"/>
-              <ComboBox SelectedIndex="{Binding UpdateBranchIndex, Mode=TwoWay}">
-                <ComboBoxItem Content="Release"/>
-                <ComboBoxItem Content="ReleaseCandidate"/>
-                <ComboBoxItem Content="Beta"/>
-                <ComboBoxItem Content="Alpha"/>
-              </ComboBox>
-              <TextBlock FontSize="11" Foreground="Gray" Text="Alpha 可切换至任意分支"/>
-            </StackPanel>
-            <StackPanel Width="200" Spacing="8" HorizontalAlignment="Left" IsVisible="False">
-              <Button x:Name="EasterEggBtn" Content="不要点击这个按钮哦" Click="EasterEggBtn_OnClick" HorizontalAlignment="Center"/>
-              <TextBlock Text="会有意想不到的后果" HorizontalAlignment="Center"/>
-            </StackPanel>
-          </WrapPanel>
-        </Border>
-      </StackPanel>
-    </ScrollViewer>
+  <UserControl.Styles>
+    <Style Selector="Border.settings-nav-item">
+      <Setter Property="CornerRadius" Value="6" />
+      <Setter Property="Padding" Value="10,8" />
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="Border.settings-nav-item.active">
+      <Setter Property="Background" Value="{DynamicResource LayerFillColorAltBrush}" />
+    </Style>
+    <Style Selector="Border.settings-card">
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="Padding" Value="14" />
+      <Setter Property="Background" Value="{DynamicResource LayerFillColorDefaultBrush}" />
+    </Style>
+    <Style Selector="Border.settings-item">
+      <Setter Property="CornerRadius" Value="6" />
+      <Setter Property="Padding" Value="10" />
+      <Setter Property="Background" Value="{DynamicResource LayerFillColorAltBrush}" />
+    </Style>
+  </UserControl.Styles>
 
-    <!-- Fixed bottom build info -->
-    <Border Grid.Row="1" CornerRadius="8" Background="Transparent" Padding="12" Margin="0,16,0,0">
-      <Grid ColumnDefinitions="*,Auto" >
+  <Grid Margin="12" RowDefinitions="Auto,*,Auto" RowSpacing="12">
+    <Border Grid.Row="0" CornerRadius="8" Padding="14,10" Background="{DynamicResource LayerFillColorDefaultBrush}">
+      <StackPanel Spacing="4">
+        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+          <fa:SymbolIcon Symbol="Settings" FontSize="22" />
+          <TextBlock Text="设置" FontSize="26" VerticalAlignment="Center" />
+        </StackPanel>
+        <TextBlock Text="管理客户端、外观与账号" Opacity="0.8" />
+      </StackPanel>
+    </Border>
+
+    <Grid Grid.Row="1" ColumnDefinitions="auto,*" ColumnSpacing="12">
+      <Border Grid.Column="0" Classes="settings-card" VerticalAlignment="Stretch">
+        <StackPanel Spacing="4">
+          <Border x:Name="NavGeneral" Tag="general" Classes="settings-nav-item active" PointerPressed="NavItem_OnPointerPressed">
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+              <fa:SymbolIcon Symbol="Home" FontSize="14" />
+              <TextBlock Grid.Column="1" Text="常规" VerticalAlignment="Center" />
+            </Grid>
+          </Border>
+          <Border x:Name="NavAppearance" Tag="appearance" Classes="settings-nav-item" PointerPressed="NavItem_OnPointerPressed">
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+              <fa:SymbolIcon Symbol="Settings" FontSize="14" />
+              <TextBlock Grid.Column="1" Text="外观" VerticalAlignment="Center" />
+            </Grid>
+          </Border>
+          <Border x:Name="NavUpdate" Tag="update" Classes="settings-nav-item" PointerPressed="NavItem_OnPointerPressed">
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+              <fa:SymbolIcon Symbol="Add" FontSize="14" />
+              <TextBlock Grid.Column="1" Text="下载与更新" VerticalAlignment="Center" />
+            </Grid>
+          </Border>
+          <Border x:Name="NavAccount" Tag="account" Classes="settings-nav-item" PointerPressed="NavItem_OnPointerPressed">
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+              <fa:SymbolIcon Symbol="People" FontSize="14" />
+              <TextBlock Grid.Column="1" Text="账号" VerticalAlignment="Center" />
+            </Grid>
+          </Border>
+          <Border x:Name="NavAbout" Tag="about" Classes="settings-nav-item" PointerPressed="NavItem_OnPointerPressed">
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+              <fa:SymbolIcon Symbol="Code" FontSize="14" />
+              <TextBlock Grid.Column="1" Text="关于" VerticalAlignment="Center" />
+            </Grid>
+          </Border>
+        </StackPanel>
+      </Border>
+
+      <ScrollViewer x:Name="ContentScrollViewer" Grid.Column="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Spacing="12">
+          <Border x:Name="SectionGeneral" Classes="settings-card">
+            <StackPanel Spacing="10">
+              <TextBlock Text="常规" FontSize="18" />
+              <Border Classes="settings-item">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12" VerticalAlignment="Center">
+                  <StackPanel Spacing="2">
+                    <TextBlock Text="Frpc 路径" />
+                    <TextBlock Text="选择本地 frpc 可执行文件" FontSize="12" Opacity="0.75" />
+                  </StackPanel>
+                  <Grid Grid.Column="1" ColumnDefinitions="280,Auto" ColumnSpacing="8">
+                    <TextBox IsReadOnly="True" Text="{Binding FrpcPath}" Width="280" />
+                    <Button Grid.Column="1" Content="选择文件" Click="SelectFile_OnClick" />
+                  </Grid>
+                </Grid>
+              </Border>
+              <Border Classes="settings-item">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12" VerticalAlignment="Center">
+                  <StackPanel Spacing="2">
+                    <TextBlock Text="国内镜像" />
+                    <TextBlock Text="下载 frpc 时优先使用国内镜像" FontSize="12" Opacity="0.75" />
+                  </StackPanel>
+                  <ToggleSwitch Grid.Column="1" IsChecked="{Binding UseMirror, Mode=TwoWay}" />
+                </Grid>
+              </Border>
+            </StackPanel>
+          </Border>
+
+          <Border x:Name="SectionAppearance" Classes="settings-card">
+            <StackPanel Spacing="10">
+              <TextBlock Text="外观" FontSize="18" />
+              <Border Classes="settings-item">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12" VerticalAlignment="Center">
+                  <StackPanel Spacing="2">
+                    <TextBlock Text="跟随系统主题" />
+                    <TextBlock Text="自动匹配系统浅色/深色" FontSize="12" Opacity="0.75" />
+                  </StackPanel>
+                  <ToggleSwitch Grid.Column="1" IsChecked="{Binding FollowSystem, Mode=TwoWay}" />
+                </Grid>
+              </Border>
+              <Border Classes="settings-item">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12" VerticalAlignment="Center">
+                  <StackPanel Spacing="2">
+                    <TextBlock Text="使用深色主题" />
+                    <TextBlock Text="仅在关闭“跟随系统”后可手动设置" FontSize="12" Opacity="0.75" />
+                  </StackPanel>
+                  <ToggleSwitch Grid.Column="1" IsEnabled="{Binding CanToggleDarkTheme}" IsChecked="{Binding DarkTheme, Mode=TwoWay}" />
+                </Grid>
+              </Border>
+            </StackPanel>
+          </Border>
+
+          <Border x:Name="SectionUpdate" Classes="settings-card">
+            <StackPanel Spacing="10">
+              <TextBlock Text="下载与更新" FontSize="18" />
+              <Border Classes="settings-item">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12" VerticalAlignment="Center">
+                  <StackPanel Spacing="2">
+                    <TextBlock Text="FRPC" />
+                    <TextBlock Text="从发行源下载并配置 frpc" FontSize="12" Opacity="0.75" />
+                  </StackPanel>
+                  <Button Grid.Column="1" x:Name="DownloadFrpcBtn" Content="下载 FRPC" Click="DownloadFrpcBtn_OnClick" />
+                </Grid>
+              </Border>
+              <Border Classes="settings-item">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12" VerticalAlignment="Center">
+                  <StackPanel Spacing="2">
+                    <TextBlock Text="应用更新" />
+                    <TextBlock Text="检查当前分支是否有新版本" FontSize="12" Opacity="0.75" />
+                  </StackPanel>
+                  <Button Grid.Column="1" x:Name="CheckUpdateBtn" Content="检查更新" Click="CheckUpdateBtn_OnClick" />
+                </Grid>
+              </Border>
+              <Border Classes="settings-item" IsVisible="False">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12" VerticalAlignment="Center">
+                  <StackPanel Spacing="2">
+                    <TextBlock Text="更新分支" />
+                    <TextBlock Text="Alpha 可切换到任意分支" FontSize="12" Opacity="0.75" />
+                  </StackPanel>
+                  <ComboBox Grid.Column="1" Width="200" SelectedIndex="{Binding UpdateBranchIndex, Mode=TwoWay}">
+                    <ComboBoxItem Content="Release"/>
+                    <ComboBoxItem Content="ReleaseCandidate"/>
+                    <ComboBoxItem Content="Beta"/>
+                    <ComboBoxItem Content="Alpha"/>
+                  </ComboBox>
+                </Grid>
+              </Border>
+            </StackPanel>
+          </Border>
+
+          <Border x:Name="SectionAccount" Classes="settings-card">
+            <StackPanel Spacing="10">
+              <TextBlock Text="账号" FontSize="18" />
+              <Border Classes="settings-item">
+                <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8" VerticalAlignment="Center">
+                  <StackPanel Spacing="2">
+                    <TextBlock Text="安全" />
+                    <TextBlock Text="复制 Token 或退出登录" FontSize="12" Opacity="0.75" />
+                  </StackPanel>
+                  <Button Grid.Column="1" x:Name="CopyTokenBtn" Content="复制 Token" Click="CopyTokenBtn_OnClick" />
+                  <Button Grid.Column="2" x:Name="SignOutBtn" Content="退出登录" Click="SignOutBtn_OnClick" />
+                </Grid>
+              </Border>
+              <Border Classes="settings-item" IsVisible="False">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12" VerticalAlignment="Center">
+                  <StackPanel Spacing="2">
+                    <TextBlock Text="调试模式" />
+                    <TextBlock Text="启用更多日志与调试能力" FontSize="12" Opacity="0.75" />
+                  </StackPanel>
+                  <ToggleSwitch Grid.Column="1" IsChecked="{Binding DebugMode, Mode=TwoWay}" />
+                </Grid>
+              </Border>
+              <StackPanel Spacing="8" IsVisible="False">
+                <Button x:Name="EasterEggBtn" Content="不要点击这个按钮哦" Click="EasterEggBtn_OnClick" HorizontalAlignment="Left"/>
+                <TextBlock Text="会有意想不到的后果"/>
+              </StackPanel>
+            </StackPanel>
+          </Border>
+        </StackPanel>
+      </ScrollViewer>
+    </Grid>
+
+    <Border x:Name="SectionAbout" Grid.Row="2" Classes="settings-card" Padding="12" Margin="0,0,0,0">
+      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
         <TextBlock Text="{Binding BuildInfoText}" FontSize="12" TextWrapping="Wrap"/>
-        <StackPanel Grid.Column="1" Margin="24,0,0,0" Spacing="4">
+        <StackPanel Grid.Column="1" Spacing="4">
           <TextBlock Text="{Binding VersionText}" FontSize="12"/>
           <TextBlock Text="{Binding DeveloperText}" FontSize="12"/>
           <TextBlock Text="{Binding CopyrightText}" FontSize="12"/>
