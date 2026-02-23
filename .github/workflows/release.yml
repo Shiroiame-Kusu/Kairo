@@ -145,9 +145,9 @@ jobs:
         shell: bash
         run: |
           dotnet publish Kairo/Kairo.csproj -c ${{ env.CONFIGURATION }} -r ${{ matrix.rid }} \
-            /p:Version=${{ needs.prepare.outputs.version }} \
-            /p:AssemblyVersion=${{ needs.prepare.outputs.assembly_version }} \
-            /p:FileVersion=${{ needs.prepare.outputs.assembly_version }} \
+            -p:Version=${{ needs.prepare.outputs.version }} \
+            -p:AssemblyVersion=${{ needs.prepare.outputs.assembly_version }} \
+            -p:FileVersion=${{ needs.prepare.outputs.assembly_version }} \
             -o publish/gui-${{ matrix.rid }}
 
       # Build CLI
@@ -155,9 +155,9 @@ jobs:
         shell: bash
         run: |
           dotnet publish Kairo.Cli/Kairo.Cli.csproj -c ${{ env.CONFIGURATION }} -r ${{ matrix.rid }} \
-            /p:Version=${{ needs.prepare.outputs.version }} \
-            /p:AssemblyVersion=${{ needs.prepare.outputs.assembly_version }} \
-            /p:FileVersion=${{ needs.prepare.outputs.assembly_version }} \
+            -p:Version=${{ needs.prepare.outputs.version }} \
+            -p:AssemblyVersion=${{ needs.prepare.outputs.assembly_version }} \
+            -p:FileVersion=${{ needs.prepare.outputs.assembly_version }} \
             -o publish/cli-${{ matrix.rid }}
 
       # Build Updater
@@ -165,7 +165,7 @@ jobs:
         shell: bash
         run: |
           dotnet publish Updater/Updater.csproj -c ${{ env.CONFIGURATION }} -r ${{ matrix.rid }} \
-            /p:Version=${{ needs.prepare.outputs.version }} \
+            -p:Version=${{ needs.prepare.outputs.version }} \
             -o publish/updater-${{ matrix.rid }}
           # Copy Updater to GUI directory
           if [[ "${{ matrix.rid }}" == win-* ]]; then
@@ -230,9 +230,9 @@ jobs:
         shell: bash
         run: |
           dotnet publish Kairo.Launcher/Kairo.Launcher.csproj -c ${{ env.CONFIGURATION }} -r ${{ matrix.rid }} \
-            /p:Version=${{ needs.prepare.outputs.version }} \
-            /p:AssemblyVersion=${{ needs.prepare.outputs.assembly_version }} \
-            /p:FileVersion=${{ needs.prepare.outputs.assembly_version }} \
+            -p:Version=${{ needs.prepare.outputs.version }} \
+            -p:AssemblyVersion=${{ needs.prepare.outputs.assembly_version }} \
+            -p:FileVersion=${{ needs.prepare.outputs.assembly_version }} \
             -o publish/launcher-${{ matrix.rid }}
 
       - name: Remove Launcher debug symbols

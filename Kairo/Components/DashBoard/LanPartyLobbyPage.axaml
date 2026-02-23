@@ -5,8 +5,15 @@
              x:Class="Kairo.Components.DashBoard.LanPartyLobbyPage"
              x:DataType="vm:LanPartyLobbyPageViewModel"
              VerticalAlignment="Stretch">
-    <Grid Margin="0">
-        <fa:NavigationView x:Name="LobbyNavView"
+    <Grid Margin="0" RowDefinitions="Auto,*">
+        <fa:InfoBar Grid.Row="0"
+                    IsOpen="True"
+                    IsClosable="False"
+                    Severity="Error"
+                    Title="联机房间功能尚未完全实现"
+                    Message="此页面目前仅作为界面展示，相关功能暂不可用。"
+                    Margin="0,0,0,8" />
+        <fa:NavigationView Grid.Row="1" x:Name="LobbyNavView"
                            PaneDisplayMode="Top"
                            IsSettingsVisible="False"
                            AlwaysShowHeader="False"
