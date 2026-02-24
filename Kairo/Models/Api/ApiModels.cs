@@ -192,6 +192,13 @@ public class AddDomainData
     [JsonPropertyName("verification_token")] public string VerificationToken { get; set; } = string.Empty;
 }
 
+/// <summary>POST /user/domain — request body</summary>
+public class AddDomainRequest
+{
+    [JsonPropertyName("domain")] public string Domain { get; set; } = string.Empty;
+    [JsonPropertyName("remark")] public string Remark { get; set; } = string.Empty;
+}
+
 /// <summary>POST /user/domain/verify — response data</summary>
 public class VerifyDomainData
 {
@@ -199,6 +206,12 @@ public class VerifyDomainData
     [JsonPropertyName("is_verified")] public bool IsVerified { get; set; }
     [JsonPropertyName("status")] public string Status { get; set; } = string.Empty;
     [JsonPropertyName("verified_at")] public string VerifiedAt { get; set; } = string.Empty;
+}
+
+/// <summary>POST /user/domain/verify — request body</summary>
+public class VerifyDomainRequest
+{
+    [JsonPropertyName("domain")] public string Domain { get; set; } = string.Empty;
 }
 
 // ──────────────────────────  Nodes  ──────────────────────────

@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using Kairo.Models;
 using Kairo.Models.Api;
 using Kairo.Utils.Logger;
+using Kairo.Utils.Serialization;
 
 namespace Kairo.Utils;
 
@@ -31,13 +32,50 @@ internal static class LoliaApiClient
         Timeout = TimeSpan.FromSeconds(30),
     };
 
-    // JSON serialiser options reused everywhere
-    private static readonly JsonSerializerOptions JsonOpts = new()
-    {
-        PropertyNameCaseInsensitive = true,
-    };
-
     // ──────────────────────────  Helpers  ──────────────────────────
+
+    private static string SerializeBody(object body)
+        => body switch
+        {
+            CreateTunnelRequest req => JsonSerializer.Serialize(req, AppJsonContext.Default.CreateTunnelRequest),
+            CreateOAuthAppRequest req => JsonSerializer.Serialize(req, AppJsonContext.Default.CreateOAuthAppRequest),
+            OAuthApproveRequest req => JsonSerializer.Serialize(req, AppJsonContext.Default.OAuthApproveRequest),
+            AddDomainRequest req => JsonSerializer.Serialize(req, AppJsonContext.Default.AddDomainRequest),
+            VerifyDomainRequest req => JsonSerializer.Serialize(req, AppJsonContext.Default.VerifyDomainRequest),
+            JsonNode node => node.ToJsonString(),
+            _ => throw new NotSupportedException($"Unsupported JSON body type: {body.GetType().FullName}"),
+        };
+
+    private static T? DeserializeTyped<T>(string json)
+    {
+        object? value = typeof(T) switch
+        {
+            var t when t == typeof(UserInfoData) => JsonSerializer.Deserialize(json, AppJsonContext.Default.UserInfoData),
+            var t when t == typeof(TunnelRealtimeData) => JsonSerializer.Deserialize(json, AppJsonContext.Default.TunnelRealtimeData),
+            var t when t == typeof(TrafficStatsData) => JsonSerializer.Deserialize(json, AppJsonContext.Default.TrafficStatsData),
+            var t when t == typeof(DailyTrafficData) => JsonSerializer.Deserialize(json, AppJsonContext.Default.DailyTrafficData),
+            var t when t == typeof(TunnelTrafficListData) => JsonSerializer.Deserialize(json, AppJsonContext.Default.TunnelTrafficListData),
+            var t when t == typeof(TunnelListData) => JsonSerializer.Deserialize(json, AppJsonContext.Default.TunnelListData),
+            var t when t == typeof(TunnelDetailData) => JsonSerializer.Deserialize(json, AppJsonContext.Default.TunnelDetailData),
+            var t when t == typeof(DeleteTunnelData) => JsonSerializer.Deserialize(json, AppJsonContext.Default.DeleteTunnelData),
+            var t when t == typeof(FrpcConfigData) => JsonSerializer.Deserialize(json, AppJsonContext.Default.FrpcConfigData),
+            var t when t == typeof(FrpcConfigByTokenData) => JsonSerializer.Deserialize(json, AppJsonContext.Default.FrpcConfigByTokenData),
+            var t when t == typeof(DomainListData) => JsonSerializer.Deserialize(json, AppJsonContext.Default.DomainListData),
+            var t when t == typeof(AddDomainData) => JsonSerializer.Deserialize(json, AppJsonContext.Default.AddDomainData),
+            var t when t == typeof(VerifyDomainData) => JsonSerializer.Deserialize(json, AppJsonContext.Default.VerifyDomainData),
+            var t when t == typeof(NodeListData) => JsonSerializer.Deserialize(json, AppJsonContext.Default.NodeListData),
+            var t when t == typeof(OAuthAppListData) => JsonSerializer.Deserialize(json, AppJsonContext.Default.OAuthAppListData),
+            var t when t == typeof(OAuthAppDetailData) => JsonSerializer.Deserialize(json, AppJsonContext.Default.OAuthAppDetailData),
+            var t when t == typeof(OAuthApproveData) => JsonSerializer.Deserialize(json, AppJsonContext.Default.OAuthApproveData),
+            var t when t == typeof(OAuthTokenData) => JsonSerializer.Deserialize(json, AppJsonContext.Default.OAuthTokenData),
+            var t when t == typeof(ClientVersionData) => JsonSerializer.Deserialize(json, AppJsonContext.Default.ClientVersionData),
+            var t when t == typeof(JsonNode) => JsonNode.Parse(json),
+            _ => null,
+        };
+
+        if (value is null) return default;
+        return (T)value;
+    }
 
     /// <summary>Ensure the Authorization header is current.</summary>
     private static void ApplyAuth()
@@ -61,7 +99,7 @@ internal static class LoliaApiClient
         ApplyAuth();
         var content = body is null
             ? null
-            : new StringContent(JsonSerializer.Serialize(body, JsonOpts), Encoding.UTF8, "application/json");
+            : new StringContent(SerializeBody(body), Encoding.UTF8, "application/json");
         var resp = await Http.PostAsyncLogged(path, content, ct);
         return await ParseAsync<T>(resp, ct);
     }
@@ -91,7 +129,7 @@ internal static class LoliaApiClient
         ApplyAuth();
         var content = body is null
             ? null
-            : new StringContent(JsonSerializer.Serialize(body, JsonOpts), Encoding.UTF8, "application/json");
+            : new StringContent(SerializeBody(body), Encoding.UTF8, "application/json");
         var resp = await Http.PutAsyncLogged(path, content, ct);
         return await ParseAsync<T>(resp, ct);
     }
@@ -114,24 +152,6 @@ internal static class LoliaApiClient
             ? "ok"
             : $"HTTP {(int)resp.StatusCode}: {resp.ReasonPhrase}";
 
-        // Fast path: try to fully deserialise the envelope
-        try
-        {
-            var result = JsonSerializer.Deserialize<ApiResponse<T>>(raw, JsonOpts);
-            if (result is not null)
-            {
-                // Only return immediately for true code-based envelopes.
-                // status-based envelopes (without `code`) deserialize to Code=0
-                // and must continue to JsonNode fallback to map status -> Code.
-                if (result.Code != 0)
-                    return result;
-            }
-        }
-        catch
-        {
-            // Fall through to manual parsing
-        }
-
         // Fallback: parse via JsonNode so we can support both
         // { code,msg,data } and { status,msg,data } envelopes, and still handle
         // data shape mismatches gracefully.
@@ -148,7 +168,7 @@ internal static class LoliaApiClient
             {
                 try
                 {
-                    var direct = JsonSerializer.Deserialize<T>(raw, JsonOpts);
+                    var direct = DeserializeTyped<T>(raw);
                     if (direct is not null)
                     {
                         return new ApiResponse<T>
@@ -173,7 +193,7 @@ internal static class LoliaApiClient
             T? data = default;
             if (dataNode is not null)
             {
-                try { data = JsonSerializer.Deserialize<T>(dataNode.ToJsonString(), JsonOpts); }
+                try { data = DeserializeTyped<T>(dataNode.ToJsonString()); }
                 catch { /* best effort */ }
             }
 
@@ -185,7 +205,7 @@ internal static class LoliaApiClient
             // of an envelope. Try direct deserialization as the final fallback.
             try
             {
-                var direct = JsonSerializer.Deserialize<T>(raw, JsonOpts);
+                var direct = DeserializeTyped<T>(raw);
                 if (direct is not null)
                 {
                     return new ApiResponse<T>
@@ -282,13 +302,13 @@ internal static class LoliaApiClient
     public static Task<ApiResponse<AddDomainData>> AddDomainAsync(string domain, string remark = "",
         CancellationToken ct = default)
         => PostJsonAsync<AddDomainData>("user/domain",
-            new { domain, remark }, ct);
+            new AddDomainRequest { Domain = domain, Remark = remark }, ct);
 
     /// <summary>验证域名 — POST /user/domain/verify</summary>
     public static Task<ApiResponse<VerifyDomainData>> VerifyDomainAsync(string domain,
         CancellationToken ct = default)
         => PostJsonAsync<VerifyDomainData>("user/domain/verify",
-            new { domain }, ct);
+            new VerifyDomainRequest { Domain = domain }, ct);
 
     /// <summary>删除域名 — DELETE /user/domain/{domainId}</summary>
     public static Task<ApiResponse<JsonNode>> DeleteDomainAsync(string domainId,
@@ -323,7 +343,7 @@ internal static class LoliaApiClient
         => DeleteAsync<JsonNode>($"user/oauth/app/{Uri.EscapeDataString(id)}", ct);
 
     /// <summary>更新应用 — PUT /user/oauth/app/{id}</summary>
-    public static Task<ApiResponse<JsonNode>> UpdateOAuthAppAsync(string id, object body,
+    public static Task<ApiResponse<JsonNode>> UpdateOAuthAppAsync(string id, JsonNode body,
         CancellationToken ct = default)
         => PutJsonAsync<JsonNode>($"user/oauth/app/{Uri.EscapeDataString(id)}", body, ct);
 
