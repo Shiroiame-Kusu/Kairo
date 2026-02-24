@@ -18,7 +18,6 @@ public partial class App : Application
     private static void CleanupBackgroundProcesses()
     {
         if (Interlocked.Exchange(ref _cleanupDone, 1) == 1) return;
-        try { OAuthCallbackHandler.Stop(); } catch { }
         try { FrpcProcessManager.StopAll(); } catch { }
     }
 

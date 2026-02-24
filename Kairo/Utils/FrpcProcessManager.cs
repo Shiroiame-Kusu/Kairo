@@ -193,29 +193,34 @@ internal static class FrpcProcessManager
 
     public static bool StopProxy(int proxyId)
     {
+        ProcInfo? info;
         lock (_processes)
         {
-            if (_processes.TryGetValue(proxyId, out var info))
+            _processes.TryGetValue(proxyId, out info);
+        }
+
+        if (info is null) return false;
+
+        try
+        {
+            if (!info.Process.HasExited)
             {
-                try
-                {
-                    if (!info.Process.HasExited)
-                    {
-                        info.Process.Kill(true);
-                        info.Process.WaitForExit(3000);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    AppLogger.Output(LogType.Error, FrpcLogDestinations, "结束隧道失败", ex);
-                    return false;
-                }
-                _processes.Remove(proxyId);
-                AppLogger.Output(LogType.Info, FrpcLogDestinations, $"[FRPC] 已结束隧道 {proxyId}");
-                return true;
+                info.Process.Kill(true);
+                info.Process.WaitForExit(3000);
             }
         }
-        return false;
+        catch (Exception ex)
+        {
+            AppLogger.Output(LogType.Error, FrpcLogDestinations, "结束隧道失败", ex);
+            return false;
+        }
+
+        lock (_processes)
+        {
+            _processes.Remove(proxyId);
+        }
+        AppLogger.Output(LogType.Info, FrpcLogDestinations, $"[FRPC] 已结束隧道 {proxyId}");
+        return true;
     }
 
     public static int StopAll()
