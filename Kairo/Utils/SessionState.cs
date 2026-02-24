@@ -1,5 +1,3 @@
-using ExtendedNumerics;
-
 namespace Kairo.Utils
 {
     /// <summary>
@@ -9,17 +7,26 @@ namespace Kairo.Utils
     {
         public static bool IsLoggedIn { get; set; }
         public static string? AvatarUrl { get; set; }
-        public static int Inbound { get; set; }
-        public static int Outbound { get; set; }
-        public static BigDecimal Traffic { get; set; }
+        public static int BandwidthLimit { get; set; }
+        public static long TrafficLimit { get; set; }
+        public static long TrafficUsed { get; set; }
+        public static long TrafficRemaining => TrafficLimit - TrafficUsed;
+        public static string Username { get; set; } = string.Empty;
+        public static string Role { get; set; } = string.Empty;
+        public static bool TodayChecked { get; set; }
+        public static int MaxTunnelCount { get; set; }
 
         public static void Reset()
         {
             IsLoggedIn = false;
             AvatarUrl = null;
-            Inbound = 0;
-            Outbound = 0;
-            Traffic = 0;
+            BandwidthLimit = 0;
+            TrafficLimit = 0;
+            TrafficUsed = 0;
+            Username = string.Empty;
+            Role = string.Empty;
+            TodayChecked = false;
+            MaxTunnelCount = 0;
         }
     }
 }

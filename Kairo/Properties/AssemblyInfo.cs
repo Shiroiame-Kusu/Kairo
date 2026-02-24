@@ -7,7 +7,7 @@ using Kairo; // to access Global constants
 
 [assembly: AssemblyTitle("Kairo")]
 [assembly: AssemblyProduct("Kairo")]
-[assembly: AssemblyDescription("A tool which can launch LocyanFrp's proxies.")]
+[assembly: AssemblyDescription("A tool which can launch LoliaFrp's proxies.")]
 [assembly: AssemblyCompany(Global.Developer)] // using Developer string as company/author line
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]

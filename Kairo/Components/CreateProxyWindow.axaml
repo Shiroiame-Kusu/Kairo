@@ -9,8 +9,8 @@
     <TextBlock Text="填写信息以创建新隧道"/>
     <ScrollViewer Grid.Row="1">
       <StackPanel Spacing="10">
-        <TextBlock Text="隧道名称"/>
-        <TextBox Text="{Binding Name, Mode=TwoWay}"/>
+        <TextBlock Text="隧道备注"/>
+        <TextBox Text="{Binding Remark, Mode=TwoWay}"/>
 
         <TextBlock Text="协议类型"/>
         <ComboBox ItemsSource="{Binding Types}" SelectedItem="{Binding SelectedType, Mode=TwoWay}" SelectedIndex="0"/>
@@ -47,25 +47,11 @@
                 <Run Text="{Binding DisplayName, TargetNullValue=—}"/>
               </TextBlock>
               <TextBlock TextWrapping="Wrap">
-                <Run Text="端口范围："/>
-                <Run Text="{Binding PortRangeDisplay, TargetNullValue=—}"/>
-              </TextBlock>
-              <TextBlock TextWrapping="Wrap">
                 <Run Text="描述："/>
                 <Run Text="{Binding DescriptionDisplay, TargetNullValue=暂无}"/>
               </TextBlock>
             </StackPanel>
           </Border>
-        </StackPanel>
-
-        <StackPanel Orientation="Horizontal" Spacing="20">
-          <CheckBox Content="启用加密" IsChecked="{Binding UseEncryption}"/>
-          <CheckBox Content="启用压缩" IsChecked="{Binding UseCompression}"/>
-        </StackPanel>
-
-        <StackPanel IsVisible="{Binding NeedSecretKey}">
-          <TextBlock Text="访问密钥 (xtcp/stcp 需要)"/>
-          <TextBox Text="{Binding SecretKey, Mode=TwoWay}"/>
         </StackPanel>
 
         <StackPanel IsVisible="{Binding NeedDomain}">

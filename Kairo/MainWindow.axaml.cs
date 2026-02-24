@@ -5,7 +5,7 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Threading;
 using FluentAvalonia.UI.Controls;
 using Kairo.Components.DashBoard;
-using Kairo.Models;
+using Kairo.Models.Api;
 using Kairo.Utils;
 using Kairo.ViewModels;
 
@@ -36,7 +36,7 @@ public partial class MainWindow : Window
         _viewModel.LoginFailed += (_, msg) => _viewModel.ShowSnackbar("登录失败", msg, InfoBarSeverity.Error);
     }
 
-    private async void OnLoginSucceeded(object? sender, UserInfo user)
+    private async void OnLoginSucceeded(object? sender, UserInfoData user)
     {
         EnsureDashboard().Show();
         Hide();
@@ -55,9 +55,9 @@ public partial class MainWindow : Window
         return db;
     }
 
-    public async Task AcceptOAuthRefreshToken(string refreshToken)
+    public async Task AcceptOAuthCode(string code)
     {
-        await _viewModel.AcceptOAuthRefreshTokenAsync(refreshToken);
+        await _viewModel.AcceptOAuthCodeAsync(code);
     }
 
     private void SetupTrayIcon()
@@ -89,6 +89,7 @@ public partial class MainWindow : Window
     private void ShutdownApplication()
     {
         DisposeTrayIcon();
+        try { FrpcProcessManager.StopAll(); } catch { }
         try
         {
             (Application.Current?.ApplicationLifetime as Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime)?.Shutdown();

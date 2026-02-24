@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Kairo.Utils.Logger;
 using AppLogger = Kairo.Utils.Logger.Logger;
@@ -26,11 +27,16 @@ internal static class FrpcProcessManager
 
     public static bool IsRunning(int proxyId) => _processes.ContainsKey(proxyId);
 
-    public static bool StartProxy(int proxyId, string frpcPath, string frpToken, Action<string>? onStarted = null, Action<string>? onFailed = null)
+    public static async Task<bool> StartProxyAsync(int proxyId, string tunnelName, string frpcPath, Action<string>? onStarted = null, Action<string>? onFailed = null)
     {
         if (string.IsNullOrWhiteSpace(frpcPath) || !File.Exists(frpcPath))
         {
             onFailed?.Invoke("frpc 路径无效");
+            return false;
+        }
+        if (string.IsNullOrWhiteSpace(tunnelName))
+        {
+            onFailed?.Invoke("隧道名称无效");
             return false;
         }
         if (IsRunning(proxyId))
@@ -40,10 +46,17 @@ internal static class FrpcProcessManager
         }
         try
         {
+            var tunnelToken = await GetTunnelTokenAsync(proxyId, tunnelName);
+            if (string.IsNullOrWhiteSpace(tunnelToken))
+            {
+                onFailed?.Invoke("无法获取隧道 token");
+                return false;
+            }
+
             var psi = new ProcessStartInfo
             {
                 FileName = frpcPath,
-                Arguments = $" -u {frpToken} -t {proxyId}",
+                Arguments = $" -t {proxyId}:{tunnelToken}",
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
@@ -51,6 +64,9 @@ internal static class FrpcProcessManager
                 StandardOutputEncoding = Encoding.UTF8,
                 StandardErrorEncoding = Encoding.UTF8
             };
+
+            AppLogger.Output(LogType.Info, FrpcLogDestinations,
+                $"[FRPC] 启动命令: \"{psi.FileName}\"{psi.Arguments}");
             
             var proc = new Process { StartInfo = psi, EnableRaisingEvents = true };
             proc.OutputDataReceived += (_, e) =>
@@ -93,6 +109,86 @@ internal static class FrpcProcessManager
             onFailed?.Invoke(ex.Message);
             return false;
         }
+    }
+
+    private static async Task<string?> GetTunnelTokenAsync(int proxyId, string tunnelName)
+    {
+        var result = await LoliaApiClient.GetFrpcConfigAsync(tunnelName);
+        if (!result.IsSuccess || result.Data == null || string.IsNullOrWhiteSpace(result.Data.Config))
+        {
+            AppLogger.Output(LogType.Error, FrpcLogDestinations,
+                $"[FRPC] 获取隧道配置失败: id={proxyId}, name={tunnelName}, msg={result.Msg}");
+            return null;
+        }
+
+        var toml = DecodeBase64String(result.Data.Config);
+        if (string.IsNullOrWhiteSpace(toml))
+        {
+            AppLogger.Output(LogType.Error, FrpcLogDestinations,
+                $"[FRPC] 解码隧道 {proxyId} 配置失败");
+            return null;
+        }
+
+        var token = ExtractMetadataToken(toml);
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            AppLogger.Output(LogType.Error, FrpcLogDestinations,
+                $"[FRPC] 未在 [metadatas] 中找到 token，隧道={proxyId}");
+            return null;
+        }
+
+        return token;
+    }
+
+    private static string? DecodeBase64String(string encoded)
+    {
+        try
+        {
+            var normalized = encoded.Trim();
+            normalized = normalized.Replace('-', '+').Replace('_', '/');
+            int mod = normalized.Length % 4;
+            if (mod > 0)
+                normalized = normalized.PadRight(normalized.Length + (4 - mod), '=');
+            var bytes = Convert.FromBase64String(normalized);
+            return Encoding.UTF8.GetString(bytes);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static string? ExtractMetadataToken(string toml)
+    {
+        bool inMetadatas = false;
+        foreach (var raw in toml.Split('\n'))
+        {
+            var line = raw.Trim();
+            if (string.IsNullOrWhiteSpace(line) || line.StartsWith('#'))
+                continue;
+
+            if (line.StartsWith("[") && line.EndsWith("]"))
+            {
+                inMetadatas = string.Equals(line, "[metadatas]", StringComparison.OrdinalIgnoreCase);
+                continue;
+            }
+
+            if (!inMetadatas)
+                continue;
+
+            var m = Regex.Match(line, "^token\\s*=\\s*\"(?<val>[^\"]+)\"\\s*$", RegexOptions.IgnoreCase);
+            if (m.Success)
+                return m.Groups["val"].Value;
+
+            var mSingle = Regex.Match(line, "^token\\s*=\\s*'(?<val>[^']+)'\\s*$", RegexOptions.IgnoreCase);
+            if (mSingle.Success)
+                return mSingle.Groups["val"].Value;
+
+            var m2 = Regex.Match(line, "^token\\s*=\\s*(?<val>\\S+)\\s*$", RegexOptions.IgnoreCase);
+            if (m2.Success)
+                return m2.Groups["val"].Value.Trim('"', '\'');
+        }
+        return null;
     }
 
     public static bool StopProxy(int proxyId)

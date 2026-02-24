@@ -28,13 +28,13 @@
   <Border Background="{DynamicResource LayerFillColorDefaultBrush}" Padding="12,0,8,0">
     <Grid ColumnDefinitions="Auto,8,*,Auto,Auto,Auto,Auto" Height="36">
       <!-- App Icon -->
-      <Image Source="avares://Kairo/Assets/kairo.ico" Width="20" Height="20" VerticalAlignment="Center"/> 
+      <Image Source="avares://Kairo/Assets/logo.png" Width="20" Height="20" VerticalAlignment="Center"/> 
       <!-- Title -->
       <TextBlock Grid.Column="2" Text="{Binding Title, ElementName=Root}" VerticalAlignment="Center" FontSize="14" FontWeight="SemiBold" />
       <!-- User Avatar and Name (optional, controlled by ShowUserInfo) -->
       <StackPanel x:Name="UserInfoPanel" Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center" Spacing="8" Margin="0,0,12,0" IsVisible="False">
         <Border Height="24" Width="24" CornerRadius="12" ClipToBounds="True">
-          <Image x:Name="UserAvatar" Source="avares://Kairo/Assets/kairo.ico" Stretch="UniformToFill"/>
+          <Image x:Name="UserAvatar" Source="avares://Kairo/Assets/logo.png" Stretch="UniformToFill"/>
         </Border>
         <TextBlock x:Name="UserNameText" Text="" VerticalAlignment="Center" FontSize="12"/>
       </StackPanel>

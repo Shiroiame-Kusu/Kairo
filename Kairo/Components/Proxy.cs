@@ -7,6 +7,9 @@ namespace Kairo.Components
     {
         public int Id { get; set; }
 
+        [JsonIgnore]
+        public string TunnelName { get; set; } = string.Empty;
+
         [JsonPropertyName("name")]
         public string ProxyName { get; set; } = string.Empty;
 

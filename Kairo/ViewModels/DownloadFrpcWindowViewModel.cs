@@ -141,10 +141,8 @@ namespace Kairo.ViewModels
                 IsIndeterminate = true;
                 SetStatus("正在获取版本信息...");
                 _http.DefaultRequestHeaders.UserAgent.ParseAdd($"Kairo-{Global.Version}");
-                string apiMirror = "https://hub.locyan.cloud/repos/LoCyan-Team/LocyanFrpPureApp/releases/latest";
-                string apiOrigin = "https://api.github.com/repos/LoCyan-Team/LocyanFrpPureApp/releases/latest";
-                JsonObject release = await TryFetch(apiMirror) ??
-                                     await TryFetch(apiOrigin) ?? throw new Exception("无法获取版本信息");
+                string apiOrigin = "https://api.github.com/repos/Lolia-FRP/lolia-frp/releases/latest";
+                JsonObject release = await TryFetch(apiOrigin) ?? throw new Exception("无法获取版本信息");
                 var (version, assets, asset, assetName, platform, arch) = SelectBestAsset(release);
                 SetStatus($"最新版本: {version} 体系结构: {platform}-{arch}");
 
@@ -152,13 +150,7 @@ namespace Kairo.ViewModels
                 if (string.IsNullOrWhiteSpace(downloadUrl)) throw new Exception("下载地址缺失");
                 if (Global.Config.UsingDownloadMirror)
                 {
-                    string releaseName = GetNodeString(release["name"]);
-                    if (string.IsNullOrWhiteSpace(releaseName))
-                        releaseName = GetNodeString(release["tag_name"]);
-                    if (string.IsNullOrWhiteSpace(releaseName))
-                        releaseName = version;
-                    downloadUrl = "https://mirrors.locyan.cn/github-release/LoCyan-Team/LoCyanFrpPureApp/" +
-                                  Uri.EscapeDataString(releaseName) + "/" + Uri.EscapeDataString(assetName);
+                    downloadUrl = $"{Global.GithubMirror}{downloadUrl}";
                 }
 
                 Logger.Output(LogType.Info, "[FRPC] Using download URL:", downloadUrl);
@@ -484,9 +476,7 @@ namespace Kairo.ViewModels
 
             if (Global.Config.UsingDownloadMirror)
             {
-                string checksumFileName = GetAssetName(checksumAsset);
-                checksumUrl = "https://mirrors.locyan.cn/github-release/LoCyan-Team/LoCyanFrpPureApp/" +
-                              Uri.EscapeDataString(releaseName) + "/" + Uri.EscapeDataString(checksumFileName);
+                checksumUrl = $"{Global.GithubMirror}{checksumUrl}";
             }
 
             string checksumContent = await _http.GetStringAsyncLogged(checksumUrl, token);

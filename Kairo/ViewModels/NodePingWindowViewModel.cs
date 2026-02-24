@@ -2,12 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using System.Net.Http;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 using Avalonia.Threading;
-using Kairo.Utils.Logger;
+using Kairo.Utils;
 
 namespace Kairo.ViewModels
 {
@@ -18,7 +17,6 @@ namespace Kairo.ViewModels
         private readonly bool _useApi;
         private readonly IEnumerable<int>? _presetNodes;
         private readonly string? _hostPattern;
-        private readonly HttpClient _http = new();
         private bool _isPinging;
         private bool _permissionWarned;
         private string _statusText = string.Empty;
@@ -54,8 +52,6 @@ namespace Kairo.ViewModels
             catch
             {
             }
-
-            _http.Dispose();
         }
 
         public async Task OnOpenedAsync()
@@ -86,7 +82,7 @@ namespace Kairo.ViewModels
         private void PopulatePresetNodes()
         {
             _rows.Clear();
-            var pattern = string.IsNullOrWhiteSpace(_hostPattern) ? "node{0}.locyanfrp.cn" : _hostPattern;
+            var pattern = string.IsNullOrWhiteSpace(_hostPattern) ? "node{0}.lolia.link" : _hostPattern;
             var set = new SortedSet<int>((_presetNodes ?? Enumerable.Empty<int>()).Where(n => n > 0));
             foreach (var n in set)
             {
@@ -99,26 +95,21 @@ namespace Kairo.ViewModels
         {
             try
             {
-                if (string.IsNullOrWhiteSpace(Global.Config.AccessToken) || Global.Config.ID == 0)
+                if (string.IsNullOrWhiteSpace(Global.Config.AccessToken))
                 {
                     StatusText = "未登录或令牌缺失";
                     return;
                 }
 
-                _http.DefaultRequestHeaders.Remove("Authorization");
-                _http.DefaultRequestHeaders.Add("Authorization", $"Bearer {Global.Config.AccessToken}");
-                var url = $"{Global.APIList.GetAllNodes}{Global.Config.ID}";
-                var resp = await _http.GetAsyncLogged(url);
-                var content = await resp.Content.ReadAsStringAsync();
-                var json = System.Text.Json.Nodes.JsonNode.Parse(content);
-                if (json?["status"]?.GetValue<int>() != 200)
+                var result = await LoliaApiClient.GetNodeListAsync();
+                if (!result.IsSuccess)
                 {
-                    StatusText = $"获取节点失败: {json?["message"]?.GetValue<string>()}";
+                    StatusText = $"获取节点失败: {result.Msg}";
                     return;
                 }
 
-                var list = json?["data"]?["list"] as System.Text.Json.Nodes.JsonArray;
-                if (list == null || list.Count == 0)
+                var nodes = result.Data?.Nodes;
+                if (nodes == null || nodes.Count == 0)
                 {
                     StatusText = "没有可用节点";
                     return;
@@ -127,14 +118,11 @@ namespace Kairo.ViewModels
                 await Dispatcher.UIThread.InvokeAsync(() =>
                 {
                     _rows.Clear();
-                    foreach (var item in list)
+                    foreach (var n in nodes)
                     {
-                        int id = item?["id"]?.GetValue<int>() ?? 0;
-                        string ip = item?["ip"]?.GetValue<string>() ?? string.Empty;
-                        string host = item?["host"]?.GetValue<string>() ?? string.Empty;
-                        string target = !string.IsNullOrWhiteSpace(ip) ? ip : host;
+                        string target = !string.IsNullOrWhiteSpace(n.IpAddress) ? n.IpAddress : n.Name;
                         if (string.IsNullOrWhiteSpace(target)) continue;
-                        _rows.Add(new NodePingRow { Node = id, Host = target, Status = "等待中" });
+                        _rows.Add(new NodePingRow { Node = n.Id, Host = target, Status = "等待中" });
                     }
                     UpdateStatus();
                 });

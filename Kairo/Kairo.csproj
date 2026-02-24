@@ -7,7 +7,7 @@
         <ApplicationManifest>app.manifest</ApplicationManifest>
         <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
         <GenerateAssemblyInfo>false</GenerateAssemblyInfo> <!-- custom assembly info -->
-        <ApplicationIcon>Assets/kairo.ico</ApplicationIcon>
+        <ApplicationIcon>Assets/logo.ico</ApplicationIcon>
     </PropertyGroup>
 
     <!-- AOT/Trimming only for Release builds to allow Designer to work in Debug -->
@@ -47,7 +47,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <Resource Include="Assets/kairo.ico"/>
+        <Resource Include="Assets/logo.png"/>
     </ItemGroup>
     
     <ItemGroup>

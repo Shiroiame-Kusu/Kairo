@@ -11,8 +11,6 @@ namespace Kairo.ViewModels
 {
     public class HomePageViewModel : ViewModelBase
     {
-        private readonly HttpClient _http = new();
-
         private string _welcomeText = "欢迎回来，";
         private string _bandwidthText = "上行/下行带宽: -/-";
         private string _trafficText = "剩余流量: -";
@@ -47,7 +45,13 @@ namespace Kairo.ViewModels
         public bool SignButtonVisible
         {
             get => _signButtonVisible;
-            set => SetProperty(ref _signButtonVisible, value);
+            set
+            {
+                if (SetProperty(ref _signButtonVisible, value))
+                {
+                    SignCommand.RaiseCanExecuteChanged();
+                }
+            }
         }
 
         public bool SignedBorderVisible
@@ -65,38 +69,49 @@ namespace Kairo.ViewModels
 
         public async Task InitializeAsync()
         {
-            WelcomeText = $"欢迎回来，{Global.Config.Username ?? string.Empty}";
-            BandwidthText = $"上行/下行带宽: {SessionState.Inbound * 8 / 1024}/{SessionState.Outbound * 8 / 1024}Mbps";
-            var trafficGb = SessionState.Traffic / 1024d;
-            TrafficText = $"剩余流量: {trafficGb:0.00}GB";
+            WelcomeText = $"欢迎回来，{SessionState.Username}";
+            BandwidthText = $"带宽限制: {SessionState.BandwidthLimit}Mbps";
+            UpdateTrafficDisplay();
 
             _ = RefreshAnnouncementAsync();
-            await CheckSignedAsync();
+
+            // Use today_checked from the user info to determine sign status
+            if (SessionState.TodayChecked)
+            {
+                SignButtonVisible = false;
+                SignedBorderVisible = true;
+            }
+        }
+
+        private void UpdateTrafficDisplay()
+        {
+            var remainingGb = SessionState.TrafficRemaining / (1024.0 * 1024 * 1024);
+            TrafficText = $"剩余流量: {remainingGb:0.00}GB";
         }
 
         public async Task RefreshAnnouncementAsync()
         {
             try
             {
-                var resp = await _http.GetAsync(Global.APIList.GetNotice);
-                if (!resp.IsSuccessStatusCode)
-                {
-                    Announcement = $"获取公告失败: HTTP {(int)resp.StatusCode}";
-                    return;
-                }
+                // The notice API is not in the new Lolia v1 docs yet.
+                // For now, use a direct GET call. When available, switch to LoliaApiClient.
+                using var http = new HttpClient();
+                http.DefaultRequestHeaders.Add("Authorization", $"Bearer {Global.Config.AccessToken}");
+                var resp = await http.GetAsyncLogged($"{Global.LoliaApi}/site/notice");
                 var content = await resp.Content.ReadAsStringAsync();
                 if (string.IsNullOrWhiteSpace(content)) { Announcement = "暂无公告"; return; }
                 JsonNode? json;
                 try { json = JsonNode.Parse(content); }
                 catch { Announcement = "公告格式错误"; return; }
-                if (json?["status"]?.GetValue<int>() == 200)
+                var code = json?["code"]?.GetValue<int>() ?? 0;
+                if (code == 200)
                 {
                     var raw = json?["data"]?["broadcast"]?.GetValue<string>();
                     Announcement = string.IsNullOrWhiteSpace(raw) ? "暂无公告" : raw;
                 }
                 else
                 {
-                    Announcement = json?["message"]?.GetValue<string>() ?? "获取公告失败";
+                    Announcement = json?["msg"]?.GetValue<string>() ?? "获取公告失败";
                 }
             }
             catch (Exception ex)
@@ -105,82 +120,68 @@ namespace Kairo.ViewModels
             }
         }
 
-        private async Task CheckSignedAsync()
-        {
-            try
-            {
-                var token = Global.Config.AccessToken;
-                if (string.IsNullOrWhiteSpace(token) || Global.Config.ID == 0)
-                {
-                    SignButtonVisible = false;
-                    SignedBorderVisible = false;
-                    return;
-                }
-                using var hc = new HttpClient();
-                hc.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
-                var url = $"{Global.APIList.GetSign}?user_id={Global.Config.ID}";
-                var resp = await hc.GetAsync(url);
-                var body = await resp.Content.ReadAsStringAsync();
-                if (string.IsNullOrWhiteSpace(body)) return;
-                JsonNode? json; try { json = JsonNode.Parse(body); } catch { return; }
-                int status = json?["status"]?.GetValue<int>() ?? 0;
-                bool signed = json?["data"]?["status"]?.GetValue<bool>() ?? false;
-                if (status == 200 && signed)
-                {
-                    SignButtonVisible = false;
-                    SignedBorderVisible = true;
-                }
-            }
-            catch
-            {
-            }
-        }
-
         private async Task SignAsync()
         {
             if (!SignButtonVisible) return;
             try
             {
-                using HttpClient hc = new();
-                hc.DefaultRequestHeaders.Add("Authorization", $"Bearer {Global.Config.AccessToken}");
-                var resp = await hc.PostAsync(Global.APIList.GetSign, new FormUrlEncodedContent(new[] { new KeyValuePair<string, string>("user_id", Global.Config.ID.ToString()) }));
+                using var http = new HttpClient();
+                http.DefaultRequestHeaders.Add("Authorization", $"Bearer {Global.Config.AccessToken}");
+                var resp = await http.PostAsyncLogged($"{Global.LoliaApi}/sign", null);
                 var body = await resp.Content.ReadAsStringAsync();
                 if (string.IsNullOrWhiteSpace(body))
                 {
-                    (Access.DashBoard as Components.DashBoard.DashBoard)?.OpenSnackbar("签到失败", "空响应", InfoBarSeverity.Error);
+                    AccessSnackbar("签到失败", "空响应", InfoBarSeverity.Error);
                     return;
                 }
-                JsonNode? json; try { json = JsonNode.Parse(body); } catch { (Access.DashBoard as Components.DashBoard.DashBoard)?.OpenSnackbar("签到失败", "响应格式错误", InfoBarSeverity.Error); return; }
-                int status = json?["status"]?.GetValue<int>() ?? 0;
-                string? message = json?["message"]?.GetValue<string>();
-                int gained = json?["data"]?["get_traffic"]?.GetValue<int>() ?? 0;
-                if (status == 200)
+                JsonNode? json;
+                try { json = JsonNode.Parse(body); }
+                catch { AccessSnackbar("签到失败", "响应格式错误", InfoBarSeverity.Error); return; }
+                int code = json?["code"]?.GetValue<int>() ?? 0;
+                string? message = json?["msg"]?.GetValue<string>();
+                if (code == 200)
                 {
-                    SessionState.Traffic += gained * 1024; // traffic is MB-like
-                    TrafficText = $"剩余流量: {(SessionState.Traffic / 1024):0.00}GB";
+                    // Refresh traffic stats after sign
+                    var statsResult = await LoliaApiClient.GetTrafficStatsAsync();
+                    if (statsResult.IsSuccess && statsResult.Data != null)
+                    {
+                        SessionState.TrafficLimit = statsResult.Data.TrafficLimit;
+                        SessionState.TrafficUsed = statsResult.Data.TrafficUsed;
+                    }
+                    UpdateTrafficDisplay();
                     SignButtonVisible = false;
                     SignedBorderVisible = true;
-                    (Access.DashBoard as Components.DashBoard.DashBoard)?.OpenSnackbar("签到成功", $"获得 {gained:0.00}GB 流量", InfoBarSeverity.Success);
-                }
-                else if (status == 403 && message == "你今天已经签到过了")
-                {
-                    SignButtonVisible = false;
-                    SignedBorderVisible = true;
-                    (Access.DashBoard as Components.DashBoard.DashBoard)?.OpenSnackbar("提示", "你今天已经签到过了", InfoBarSeverity.Informational);
+                    SessionState.TodayChecked = true;
+                    AccessSnackbar("签到成功", message ?? "签到成功", InfoBarSeverity.Success);
                 }
                 else
                 {
-                    (Access.DashBoard as Components.DashBoard.DashBoard)?.OpenSnackbar("签到失败", message ?? "未知错误", InfoBarSeverity.Error);
+                    if (message?.Contains("已经签到") == true)
+                    {
+                        SignButtonVisible = false;
+                        SignedBorderVisible = true;
+                        SessionState.TodayChecked = true;
+                        AccessSnackbar("提示", message, InfoBarSeverity.Informational);
+                    }
+                    else
+                    {
+                        AccessSnackbar("签到失败", message ?? "未知错误", InfoBarSeverity.Error);
+                    }
                 }
             }
             catch (Exception ex)
             {
-                (Access.DashBoard as Components.DashBoard.DashBoard)?.OpenSnackbar("签到异常", ex.Message, InfoBarSeverity.Error);
+                AccessSnackbar("签到异常", ex.Message, InfoBarSeverity.Error);
             }
             finally
             {
                 SignCommand.RaiseCanExecuteChanged();
             }
+        }
+
+        private static void AccessSnackbar(string title, string? message, InfoBarSeverity severity)
+        {
+            (Access.DashBoard as Components.DashBoard.DashBoard)?.OpenSnackbar(title, message, severity);
         }
     }
 }

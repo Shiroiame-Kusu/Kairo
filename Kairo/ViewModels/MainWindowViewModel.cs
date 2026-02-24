@@ -1,27 +1,19 @@
 using System;
-using System.Collections.Generic;
-using System.Net.Http;
-using System.Text;
-using System.Text.Json;
-using System.Text.Json.Nodes;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Diagnostics;
-using System.Security.Cryptography;
 using Avalonia.Threading;
 using FluentAvalonia.UI.Controls;
-using Kairo.Models;
+using Kairo.Models.Api;
 using Kairo.Utils;
 using Kairo.Utils.Configuration;
 using Kairo.Utils.Logger;
-using Kairo.Utils.Serialization;
 
 namespace Kairo.ViewModels
 {
     public class MainWindowViewModel : ViewModelBase
     {
         private static readonly TimeSpan LoginTimeout = TimeSpan.FromSeconds(30);
-        private readonly HttpClient _http = new();
         private CancellationTokenSource? _loginTimeoutCts;
         private bool _isLoggingIn;
         private bool _isLoggedIn;
@@ -30,7 +22,7 @@ namespace Kairo.ViewModels
         private string _snackbarMessage = string.Empty;
         private InfoBarSeverity _snackbarSeverity = InfoBarSeverity.Informational;
         private bool _isSnackbarOpen;
-        private UserInfo? _userInfo;
+        private UserInfoData? _userInfo;
 
         public RelayCommand StartOAuthCommand { get; }
 
@@ -114,7 +106,7 @@ namespace Kairo.ViewModels
             private set => SetProperty(ref _isSnackbarOpen, value);
         }
 
-        public event EventHandler<UserInfo>? LoginSucceeded;
+        public event EventHandler<UserInfoData>? LoginSucceeded;
         public event EventHandler<string>? LoginFailed;
 
         public MainWindowViewModel()
@@ -140,7 +132,9 @@ namespace Kairo.ViewModels
         public void StartOAuthFlow()
         {
             if (IsLoggingIn) return;
-            var url = $"{Global.APIList.GetTheFUCKINGRefreshToken}?client_id={Global.APPID}&scopes=User,Node,Tunnel,Sign&redirect_uri={Uri.EscapeDataString($"{Global.Dashboard}/auth/oauth/redirect-localhost?port={Global.OAuthPort}&ssl=false&path=/oauth/callback")}&mode=callback";
+            var redirectUri = $"http://127.0.0.1:{Global.OAuthPort}/oauth/callback";
+            var url = LoliaApiClient.BuildOAuth2AuthorizeUrl(
+                Global.ClientId, redirectUri);
             try
             {
                 Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
@@ -156,87 +150,40 @@ namespace Kairo.ViewModels
             }
         }
 
-        public async Task AcceptOAuthRefreshTokenAsync(string refreshToken)
+        public async Task AcceptOAuthCodeAsync(string code)
         {
             CancelLoginTimeout();
-            if (string.IsNullOrWhiteSpace(refreshToken))
+            if (string.IsNullOrWhiteSpace(code))
             {
-                Logger.Output(LogType.Warn, "[Login] OAuth 回调提供的刷新令牌为空");
-                ShowSnackbar("无效令牌", "提供的刷新令牌为空", InfoBarSeverity.Warning);
+                Logger.Output(LogType.Warn, "[Login] OAuth 回调提供的授权码为空");
+                ShowSnackbar("无效授权码", "提供的授权码为空", InfoBarSeverity.Warning);
                 IsLoggingIn = false;
                 return;
             }
-            await LoginWithRefreshTokenAsync(refreshToken);
+            await LoginWithCodeAsync(code);
         }
 
-        public async Task LoginWithRefreshTokenAsync(string refreshToken, bool auto = false)
+        private async Task LoginWithCodeAsync(string code)
         {
             if (IsLoggedIn) return;
             IsLoggingIn = true;
             try
             {
-                if (string.IsNullOrWhiteSpace(refreshToken))
+                var redirectUri = $"http://127.0.0.1:{Global.OAuthPort}/oauth/callback";
+                var tokenResult = await LoliaApiClient.ExchangeCodeForTokenAsync(
+                    code, redirectUri, Global.ClientId, Global.ClientSecret);
+                if (!tokenResult.IsSuccess || tokenResult.Data == null)
                 {
-                    IsLoggingIn = false;
-                    return;
-                }
-                _http.DefaultRequestHeaders.Remove("User-Agent");
-                _http.DefaultRequestHeaders.Add("User-Agent", $"Kairo-{Global.Version}");
-                var accessUrl = Global.APIList.GetAccessToken;
-                var formContent = new FormUrlEncodedContent(new[]
-                {
-                    new KeyValuePair<string, string>("app_id", Global.APPID.ToString()),
-                    new KeyValuePair<string, string>("refresh_token", refreshToken)
-                });
-                var response = await _http.PostAsyncLogged(accessUrl, formContent);
-                var accessBody = await response.Content.ReadAsStringAsync();
-                var json = JsonNode.Parse(accessBody);
-                var accessStatus = json? ["status"]?.GetValue<int>() ?? 0;
-                if (accessStatus != 200)
-                {
-                    var message = json? ["message"]?.GetValue<string>() ?? "未知错误";
-                    Logger.Output(LogType.Error, $"[Login] 获取 AccessToken 失败: API状态={accessStatus}, 消息={message}");
-                    if (!auto) ShowSnackbar("登录失败", $"API状态: {accessStatus} {message}", InfoBarSeverity.Error);
-                    Global.Config.RefreshToken = string.Empty;
-                    Global.Config.AccessToken = string.Empty;
-                    Global.Config.ID = 0;
-                    IsLoggingIn = false;
-                    return;
-                }
-                var dataNode = json? ["data"];
-                Global.Config.ID = dataNode? ["user_id"]?.GetValue<int>() ?? 0;
-                Global.Config.AccessToken = dataNode? ["access_token"]?.GetValue<string>() ?? string.Empty;
-                Global.Config.RefreshToken = refreshToken;
-
-                _http.DefaultRequestHeaders.Remove("Authorization");
-                _http.DefaultRequestHeaders.Add("Authorization", $"Bearer {Global.Config.AccessToken}");
-                var userUrl = $"{Global.APIList.GetUserInfo}?user_id={Global.Config.ID}";
-                var userResp = await _http.GetAsyncLogged(userUrl);
-                var userBody = await userResp.Content.ReadAsStringAsync();
-                var userJson = JsonNode.Parse(userBody);
-                var userNode = userJson? ["data"];
-                _userInfo = userNode == null ? null : JsonSerializer.Deserialize(userNode.ToJsonString(), AppJsonContext.Default.UserInfo);
-                if (_userInfo == null)
-                {
-                    Logger.Output(LogType.Error, "[Login] 解析用户信息失败, userNode:", userNode?.ToJsonString() ?? "null");
-                    ShowSnackbar("错误", "解析用户信息失败", InfoBarSeverity.Error);
+                    var msg = tokenResult.Msg ?? "未知错误";
+                    Logger.Output(LogType.Error, $"[Login] 换取令牌失败: {msg}");
+                    ShowSnackbar("登录失败", msg, InfoBarSeverity.Error);
                     IsLoggingIn = false;
                     return;
                 }
 
-                var frpUrl = $"{Global.APIList.GetFrpToken}?user_id={Global.Config.ID}";
-                var frpResp = await _http.GetAsyncLogged(frpUrl);
-                var frpBody = await frpResp.Content.ReadAsStringAsync();
-                var frpJson = JsonNode.Parse(frpBody);
-                _userInfo.FrpToken = frpJson? ["data"]? ["token"]?.GetValue<string>();
-                Global.Config.Username = _userInfo.Username;
-                Global.Config.FrpToken = _userInfo.FrpToken ?? string.Empty;
-                ApplyUserInfoToSession(_userInfo);
-                IsLoggedIn = true;
-                SessionState.IsLoggedIn = true;
-                ConfigManager.Save();
-                ShowSnackbar("登录成功", $"欢迎 {_userInfo.Username}", InfoBarSeverity.Success);
-                RunOnUi(() => LoginSucceeded?.Invoke(this, _userInfo));
+                Global.Config.AccessToken = tokenResult.Data.AccessToken;
+                Global.Config.RefreshToken = tokenResult.Data.RefreshToken;
+                await FetchUserAndFinishLogin();
             }
             catch (Exception ex)
             {
@@ -251,22 +198,82 @@ namespace Kairo.ViewModels
             }
         }
 
-        private static void ApplyUserInfoToSession(UserInfo userInfo)
+        public async Task LoginWithRefreshTokenAsync(string refreshToken, bool auto = false)
         {
-            var limit = userInfo.Limit;
-            SessionState.AvatarUrl = ComputeAvatarUrl(userInfo.Email);
-            SessionState.Inbound = limit?.Inbound ?? userInfo.Inbound;
-            SessionState.Outbound = limit?.Outbound ?? userInfo.Outbound;
-            SessionState.Traffic = userInfo.Traffic;
+            if (IsLoggedIn) return;
+            IsLoggingIn = true;
+            try
+            {
+                if (string.IsNullOrWhiteSpace(refreshToken))
+                {
+                    IsLoggingIn = false;
+                    return;
+                }
+
+                // Exchange refresh_token for new tokens via the Lolia OAuth2 token endpoint
+                var tokenResult = await LoliaApiClient.RefreshTokenAsync(
+                    refreshToken, Global.ClientId, Global.ClientSecret);
+                if (!tokenResult.IsSuccess || tokenResult.Data == null)
+                {
+                    var message = tokenResult.Msg ?? "未知错误";
+                    Logger.Output(LogType.Error, $"[Login] 刷新令牌失败: {message}");
+                    if (!auto) ShowSnackbar("登录失败", message, InfoBarSeverity.Error);
+                    Global.Config.RefreshToken = string.Empty;
+                    Global.Config.AccessToken = string.Empty;
+                    IsLoggingIn = false;
+                    return;
+                }
+
+                Global.Config.AccessToken = tokenResult.Data.AccessToken;
+                if (!string.IsNullOrWhiteSpace(tokenResult.Data.RefreshToken))
+                    Global.Config.RefreshToken = tokenResult.Data.RefreshToken;
+
+                await FetchUserAndFinishLogin();
+            }
+            catch (Exception ex)
+            {
+                Logger.Output(LogType.Error, "[Login] 登录异常:", ex);
+                ShowSnackbar("异常", ex.Message, InfoBarSeverity.Error);
+                RunOnUi(() => LoginFailed?.Invoke(this, ex.Message));
+            }
+            finally
+            {
+                IsLoggingIn = false;
+                CancelLoginTimeout();
+            }
         }
 
-        private static string ComputeAvatarUrl(string email)
+        private async Task FetchUserAndFinishLogin()
         {
-            if (string.IsNullOrWhiteSpace(email)) return string.Empty;
-            var sb = new StringBuilder();
-            foreach (byte b in MD5.HashData(Encoding.UTF8.GetBytes(email.ToLower())))
-                sb.Append(b.ToString("x2"));
-            return $"https://cravatar.cn/avatar/{sb}";
+            // Fetch user info via centralized client
+            var userResult = await LoliaApiClient.GetUserInfoAsync();
+            if (!userResult.IsSuccess || userResult.Data == null)
+            {
+                Logger.Output(LogType.Error, $"[Login] 获取用户信息失败: {userResult.Msg}");
+                ShowSnackbar("错误", $"获取用户信息失败: {userResult.Msg}", InfoBarSeverity.Error);
+                return;
+            }
+            _userInfo = userResult.Data;
+
+            Global.Config.Username = _userInfo.Username;
+            ApplyUserInfoToSession(_userInfo);
+            IsLoggedIn = true;
+            SessionState.IsLoggedIn = true;
+            ConfigManager.Save();
+            ShowSnackbar("登录成功", $"欢迎 {_userInfo.Username}", InfoBarSeverity.Success);
+            RunOnUi(() => LoginSucceeded?.Invoke(this, _userInfo));
+        }
+
+        private static void ApplyUserInfoToSession(UserInfoData userInfo)
+        {
+            SessionState.AvatarUrl = userInfo.Avatar;
+            SessionState.BandwidthLimit = userInfo.BandwidthLimit;
+            SessionState.TrafficLimit = userInfo.TrafficLimit;
+            SessionState.TrafficUsed = userInfo.TrafficUsed;
+            SessionState.Username = userInfo.Username;
+            SessionState.Role = userInfo.Role;
+            SessionState.TodayChecked = userInfo.TodayChecked;
+            SessionState.MaxTunnelCount = userInfo.MaxTunnelCount;
         }
 
         public void ShowSnackbar(string title, string? message, InfoBarSeverity severity)

@@ -358,11 +358,6 @@ namespace Kairo.Utils.Configuration
 
         private static bool Validate(Config cfg, out string? error)
         {
-            if (cfg.OAuthPort <= 0 || cfg.OAuthPort > 65535)
-            {
-                error = "OAuthPort out of range";
-                return false;
-            }
             error = null;
             return true;
         }
