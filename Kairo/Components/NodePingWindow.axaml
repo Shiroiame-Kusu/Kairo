@@ -4,18 +4,19 @@
         x:Class="Kairo.Components.NodePingWindow"
         x:CompileBindings="True"
         x:DataType="vm:NodePingWindowViewModel"
-        Title="节点延迟" Width="550" Height="480" WindowStartupLocation="CenterOwner">
+        Title="节点延迟" Width="650" Height="480" WindowStartupLocation="CenterOwner">
   <Grid RowDefinitions="Auto,*,Auto" Margin="12">
     <TextBlock Text="每秒刷新一次各节点的延迟值" Margin="0,0,0,8"/>
-    <DataGrid Grid.Row="1" AutoGenerateColumns="False"
-              HeadersVisibility="Column" IsReadOnly="True" ItemsSource="{Binding Rows}">
+    <DataGrid x:Name="PingDataGrid" Grid.Row="1" AutoGenerateColumns="False"
+              HeadersVisibility="Column" IsReadOnly="True" ItemsSource="{Binding SortedRows}">
       <DataGrid.Columns>
-        <DataGridTextColumn Header="节点" Binding="{Binding Node}" Width="80"
+        <DataGridTextColumn Header="节点" Binding="{Binding Node}" Width="160"
                              x:DataType="vm:NodePingRow"/>
         <DataGridTextColumn Header="主机" Binding="{Binding Host}" Width="*"
                              x:DataType="vm:NodePingRow"/>
         <DataGridTextColumn Header="延迟(ms)" Binding="{Binding LatencyDisplay}" Width="120"
-                             x:DataType="vm:NodePingRow"/>
+                 SortMemberPath="LatencySort"
+                 x:DataType="vm:NodePingRow"/>
         <DataGridTextColumn Header="状态" Binding="{Binding Status}" Width="120"
                              x:DataType="vm:NodePingRow"/>
       </DataGrid.Columns>

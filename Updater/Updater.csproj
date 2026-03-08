@@ -1,15 +1,20 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <!-- Place Updater next to Kairo outputs so runtime can run 'dotnet Updater.dll' -->
-    <OutputPath>../Kairo/bin/$(Configuration)/net9.0/</OutputPath>
+    <!-- For Debug: Place Updater next to Kairo outputs -->
+    <OutputPath>../Kairo/bin/$(Configuration)/net10.0/</OutputPath>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
     <AssemblyName>Updater</AssemblyName>
     <RootNamespace>Updater</RootNamespace>
-    <PublishSingleFile>false</PublishSingleFile>
+  </PropertyGroup>
+
+  <!-- Release: self-contained single file for distribution -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <PublishSingleFile>true</PublishSingleFile>
+    <PublishAot>true</PublishAot>
   </PropertyGroup>
 </Project>

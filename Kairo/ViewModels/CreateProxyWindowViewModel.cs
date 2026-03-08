@@ -7,7 +7,7 @@ using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
-using Kairo.Utils.Logger;
+using Kairo.Utils;
 
 namespace Kairo.ViewModels
 {
@@ -173,16 +173,15 @@ namespace Kairo.ViewModels
                     return;
                 }
 
-                if (string.IsNullOrWhiteSpace(Global.Config.AccessToken) || Global.Config.ID == 0)
+                if (!ApiClient.TryEnsureLoggedIn(out var error))
                 {
-                    StatusText = "未登录或令牌缺失";
+                    StatusText = error!;
                     return;
                 }
 
-                using var http = new HttpClient();
-                http.DefaultRequestHeaders.Add("Authorization", $"Bearer {Global.Config.AccessToken}");
-                var url = $"{Global.APIList.GetAllNodes}{Global.Config.ID}";
-                var resp = await http.GetAsyncLogged(url);
+                using var api = new ApiClient();
+                var url = ApiClient.GetNodesUrl();
+                var resp = await api.GetAsync(url);
                 var content = await resp.Content.ReadAsStringAsync();
                 var json = JsonNode.Parse(content);
                 if (json?["status"]?.GetValue<int>() != 200)
@@ -292,14 +291,13 @@ namespace Kairo.ViewModels
                 if (needSecret && string.IsNullOrWhiteSpace(secret)) { StatusText = "请输入访问密钥"; return; }
                 if (needDomain && string.IsNullOrWhiteSpace(domain)) { StatusText = "请输入域名"; return; }
 
-                if (string.IsNullOrWhiteSpace(Global.Config.AccessToken) || Global.Config.ID == 0)
+                if (!ApiClient.TryEnsureLoggedIn(out var err))
                 {
-                    StatusText = "未登录或令牌缺失";
+                    StatusText = err!;
                     return;
                 }
 
-                using var http = new HttpClient();
-                http.DefaultRequestHeaders.Add("Authorization", $"Bearer {Global.Config.AccessToken}");
+                using var api = new ApiClient();
                 var form = new List<KeyValuePair<string, string>>
                 {
                     new("user_id", Global.Config.ID.ToString()),
@@ -318,7 +316,7 @@ namespace Kairo.ViewModels
                 if (needDomain)
                     form.Add(new("domain", domain ?? string.Empty));
 
-                var resp = await http.PutAsyncLogged(Global.APIList.Tunnel, new FormUrlEncodedContent(form));
+                var resp = await api.PutAsync(Global.APIList.Tunnel, new FormUrlEncodedContent(form));
                 var content = await resp.Content.ReadAsStringAsync();
                 JsonNode? json;
                 try { json = JsonNode.Parse(content); }
@@ -345,12 +343,11 @@ namespace Kairo.ViewModels
         {
             try
             {
-                if (string.IsNullOrWhiteSpace(Global.Config.AccessToken) || Global.Config.ID == 0)
+                if (!ApiClient.IsLoggedIn)
                     return 0;
-                using var http = new HttpClient();
-                http.DefaultRequestHeaders.Add("Authorization", $"Bearer {Global.Config.AccessToken}");
-                var url = $"{Global.APIList.GetRandomPort}?user_id={Global.Config.ID}&node_id={nodeId}";
-                var resp = await http.GetAsyncLogged(url);
+                using var api = new ApiClient();
+                var url = ApiClient.GetRandomPortUrl(nodeId);
+                var resp = await api.GetAsync(url);
                 var content = await resp.Content.ReadAsStringAsync();
                 var json = JsonNode.Parse(content);
                 if (json?["status"]?.GetValue<int>() != 200)

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Kairo.Components;
+using Kairo.Core;
 using Kairo.Utils.Configuration;
 using Kairo.Utils;
 
@@ -10,13 +11,13 @@ namespace Kairo
     {
         public static readonly DateTime StartTime = DateTime.Now;
         public static bool LoginedByConsole = false;
-        public const string Version = "3.2.1";
-        public const string VersionName = "Sonetto";
-        public const string Branch = "Release";
-        public const int Revision = 1;
+        public const string Version = AppConstants.Version;
+        public const string VersionName = AppConstants.VersionName;
+        public const ReleaseChannel Branch = AppConstants.Branch;
+        public const int Revision = AppConstants.Revision;
         public static readonly BuildInfo BuildInfo = new();
-        public const string Developer = "Shiroiame-Kusu & Daiyangcheng";
-        public const string Copyright = "Copyright © Shiroiame-Kusu All Rights Reserved";
+        public const string Developer = AppConstants.Developer;
+        public const string Copyright = AppConstants.Copyright;
         public static Config Config = new();
         public static bool isDarkThemeEnabled;
         public static bool DebugMode { get; private set; }
@@ -50,37 +51,38 @@ namespace Kairo
         };
 
         // API v3 base
-        public const string API = "https://api.locyanfrp.cn/v3";
-        public const string Dashboard = "https://dashboard.locyanfrp.cn";
+        public const string API = AppConstants.API;
+        public const string Dashboard = AppConstants.Dashboard;
         //public const string UpdateCheckerAPI = "http://localhost:5043/api";
-        public const string UpdateCheckerAPI = "https://kairo.nyat.icu/api";
-        public const string GithubMirror = "https://hub.locyan.cloud/";
+        public const string UpdateCheckerAPI = AppConstants.UpdateCheckerAPI;
+        public const string GithubMirror = AppConstants.GithubMirror;
 
         public class APIList
         {
             // User & OAuth
-            public const string GetUserInfo = $"{API}/user";
-            public const string GetTheFUCKINGRefreshToken = $"{Dashboard}/auth/oauth/authorize";
-            public const string GetAccessToken = $"{API}/auth/oauth/access-token";
+            public const string GetUserInfo = ApiEndpoints.GetUserInfo;
+            public const string GetTheFUCKINGRefreshToken = ApiEndpoints.OAuthAuthorize; 
+            // Yes, this is really the endpoint for getting refresh token, not a typo in the name. GET with ?user_id= for status, POST with form user_id for get new refresh token
+            public const string GetAccessToken = ApiEndpoints.GetAccessToken;
 
-            public const string GetFrpToken = $"{API}/user/frp/token";
+            public const string GetFrpToken = ApiEndpoints.GetFrpToken;
 
             // Site & sign
-            public const string GetSign = $"{API}/sign"; // GET for status with ?user_id=, POST with form user_id for sign
+            public const string GetSign = ApiEndpoints.GetSign; // GET for status with ?user_id=, POST with form user_id for sign
 
-            public const string GetNotice = $"{API}/site/notice";
+            public const string GetNotice = ApiEndpoints.GetNotice;
 
             // Tunnels & nodes
-            public const string GetAllProxy = $"{API}/tunnels?user_id=";
-            public const string DeleteProxy = $"{API}/tunnel?user_id="; // append user_id and use &tunnel_id=
-            public const string Tunnel = $"{API}/tunnel"; // base for PUT(create)/PATCH(update)
-            public const string GetAllNodes = $"{API}/nodes?user_id=";
+            public const string GetAllProxy = ApiEndpoints.GetAllProxy;
+            public const string DeleteProxy = ApiEndpoints.DeleteProxy; // append user_id and use &tunnel_id=
+            public const string Tunnel = ApiEndpoints.Tunnel; // base for PUT(create)/PATCH(update)
+            public const string GetAllNodes = ApiEndpoints.GetAllNodes;
             // Random port for a node
-            public const string GetRandomPort = $"{API}/node/port"; // GET with ?user_id=&node_id=
+            public const string GetRandomPort = ApiEndpoints.GetRandomPort; // GET with ?user_id=&node_id=
         }
 
         public static int OAuthPort = 10000;
-        public const int APPID = 1;
+        public const int APPID = AppConstants.APPID;
 
         public static void RefreshRuntimeFlags()
         {

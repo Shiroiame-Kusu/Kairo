@@ -53,6 +53,18 @@ namespace Kairo.Utils.Logger
             return resp;
         }
 
+        public static async Task<HttpResponseMessage> PatchAsyncLogged(this HttpClient client, string requestUri, HttpContent? content, CancellationToken ct = default)
+        {
+            using var req = new HttpRequestMessage(HttpMethod.Patch, requestUri)
+            {
+                Content = content
+            };
+            await LogRequestAsync(client, req, content, ct);
+            var resp = await client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, ct);
+            await LogResponseAsync(resp, ct);
+            return resp;
+        }
+
         public static async Task<string> GetStringAsyncLogged(this HttpClient client, string requestUri, CancellationToken ct = default)
         {
             using var req = new HttpRequestMessage(HttpMethod.Get, requestUri);

@@ -1,0 +1,126 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:Kairo.ViewModels"
+             x:Class="Kairo.Components.DashBoard.LanParty.HostRoomPage"
+             x:DataType="vm:HostRoomPageViewModel">
+    <UserControl.Styles>
+        <!-- Detected server card style -->
+        <Style Selector="Border.server-card">
+            <Setter Property="BorderBrush" Value="{DynamicResource ControlStrokeColorDefaultBrush}" />
+            <Setter Property="BorderThickness" Value="2" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Padding" Value="12" />
+            <Setter Property="Margin" Value="0" />
+            <Setter Property="Background" Value="{DynamicResource LayerFillColorDefaultBrush}" />
+            <Setter Property="MinWidth" Value="200" />
+            <Setter Property="UseLayoutRounding" Value="True" />
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="BorderBrush" Duration="0:0:0.18" />
+                    <BrushTransition Property="Background" Duration="0:0:0.18" />
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Border.server-card:pointerover">
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentStrokeColorDefaultBrush}" />
+            <Setter Property="Background" Value="{DynamicResource LayerFillColorAltBrush}" />
+        </Style>
+        <Style Selector="Border.server-card.selected">
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentFillColorDefaultBrush}" />
+        </Style>
+    </UserControl.Styles>
+    
+    <StackPanel Spacing="10">
+        <TextBlock Text="在 Minecraft 中开启局域网联机后，这里会自动探测到您的服务器。选择一个服务器和节点后点击「创建房间」。" TextWrapping="Wrap" />
+        <!-- Detected servers section -->
+        <TextBlock Text="探测到的本地服务器:" FontWeight="SemiBold" />
+        <TextBlock Text="请在 Minecraft 中对局域网开放 (Esc → 对局域网开放)" Opacity="0.6" FontSize="12" Margin="0,-6,0,0" />
+        <Border Height="90" CornerRadius="8" Padding="8" Background="{DynamicResource LayerFillColorAltBrush}">
+            <StackPanel>
+                    <ItemsControl ItemsSource="{Binding DetectedServers}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Classes="server-card" 
+                                        Classes.selected="{Binding IsSelected}"
+                                        PointerPressed="OnServerCardPressed">
+                                    <StackPanel Spacing="4">
+                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                            <TextBlock Text="{Binding Motd}" FontWeight="SemiBold" />
+                                            <Border Background="{DynamicResource AccentFillColorDefaultBrush}" 
+                                                    CornerRadius="4" Padding="4,1">
+                                                <TextBlock Text="{Binding EditionDisplay}" FontSize="10" 
+                                                           Foreground="White" VerticalAlignment="Center" />
+                                            </Border>
+                                        </StackPanel>
+                                        <TextBlock Text="{Binding AddressDisplay}" FontSize="12" Opacity="0.7" />
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <TextBlock Text="暂未探测到本地服务器，请在 Minecraft 中按 Esc → 对局域网开放" 
+                               IsVisible="{Binding NoServersDetected}" 
+                               Opacity="0.6" Margin="0,8,0,0" />
+                </StackPanel>
+            </Border>
+            
+            <!-- Node selection section (ComboBox style like CreateProxyWindow) -->
+            <TextBlock Text="节点" FontWeight="SemiBold" />
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <ComboBox ItemsSource="{Binding Nodes}" SelectedItem="{Binding SelectedNode, Mode=TwoWay}" MinWidth="260">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="vm:NodeViewModel">
+                            <TextBlock Text="{Binding DisplayLabel}"/>
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+                <Button Content="测试延迟" Command="{Binding PingCommand}" IsEnabled="{Binding CanPing}" />
+                <Button Content="刷新节点" Command="{Binding RefreshNodesCommand}" />
+            </StackPanel>
+            
+            <!-- Node info display -->
+            <StackPanel Spacing="4" DataContext="{Binding SelectedNode}">
+                <Border Padding="10" CornerRadius="6" Background="{DynamicResource LayerFillColorAltBrush}">
+                    <StackPanel Spacing="4" x:DataType="vm:NodeViewModel">
+                        <TextBlock TextWrapping="Wrap">
+                            <Run Text="名称："/>
+                            <Run Text="{Binding Name, TargetNullValue=—}"/>
+                        </TextBlock>
+                        <TextBlock TextWrapping="Wrap">
+                            <Run Text="端口范围："/>
+                            <Run Text="{Binding PortRangeDisplay, TargetNullValue=—}"/>
+                        </TextBlock>
+                        <TextBlock TextWrapping="Wrap">
+                            <Run Text="描述："/>
+                            <Run Text="{Binding Description, TargetNullValue=暂无}"/>
+                        </TextBlock>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+            
+            <!-- Advanced options -->
+            <!-- <TextBlock Text="高级选项" FontWeight="SemiBold" /> -->
+            <!-- <StackPanel Orientation="Horizontal" Spacing="20"> -->
+            <!--     <CheckBox Content="启用加密" IsChecked="{Binding UseEncryption}" /> -->
+            <!--     <CheckBox Content="启用压缩" IsChecked="{Binding UseCompression}" /> -->
+            <!-- </StackPanel> -->
+            
+            <!-- Footer controls -->
+            <Grid ColumnDefinitions="Auto,*" Margin="0,0,0,0">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <Button Content="开始探测" Command="{Binding StartDetectionCommand}" IsEnabled="{Binding !IsDetecting}" />
+                    <Button Content="停止探测" Command="{Binding StopDetectionCommand}" IsEnabled="{Binding IsDetecting}" />
+                    <Button Content="创建房间" Command="{Binding CreateRoomCommand}" />
+                </StackPanel>
+                <Border Grid.Column="1" VerticalAlignment="Center" Padding="8" CornerRadius="6" Margin="12,0,0,0"
+                        Background="{DynamicResource LayerFillColorDefaultBrush}">
+                    <TextBlock Text="{Binding StatusText}" />
+                </Border>
+            </Grid>
+        </StackPanel>
+</UserControl>

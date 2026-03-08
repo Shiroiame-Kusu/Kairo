@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -22,7 +23,7 @@ namespace Kairo.ViewModels
 {
     public class DownloadFrpcWindowViewModel : ViewModelBase, IDisposable
     {
-        private readonly HttpClient _http = new();
+        private readonly ApiClient _api = new();
         private CancellationTokenSource _cts = new();
         private DownloadService? _downloadService;
         private string? _tempFile;
@@ -123,7 +124,7 @@ namespace Kairo.ViewModels
             }
 
             _cts.Cancel();
-            _http.Dispose();
+            _api.Dispose();
         }
 
         public async Task StartAsync()
@@ -140,8 +141,7 @@ namespace Kairo.ViewModels
                 CanClose = false;
                 IsIndeterminate = true;
                 SetStatus("正在获取版本信息...");
-                _http.DefaultRequestHeaders.UserAgent.ParseAdd($"Kairo-{Global.Version}");
-                string apiMirror = "https://hub.locyan.cloud/repos/LoCyan-Team/LocyanFrpPureApp/releases/latest";
+                string apiMirror = $"https://{Global.GithubMirror}/repos/LoCyan-Team/LocyanFrpPureApp/releases/latest";
                 string apiOrigin = "https://api.github.com/repos/LoCyan-Team/LocyanFrpPureApp/releases/latest";
                 JsonObject release = await TryFetch(apiMirror) ??
                                      await TryFetch(apiOrigin) ?? throw new Exception("无法获取版本信息");
@@ -251,7 +251,7 @@ namespace Kairo.ViewModels
             try
             {
                 using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(8));
-                using var resp = await _http.GetAsyncLogged(url, cts.Token);
+                using var resp = await _api.GetWithoutAuthAsync(url, cts.Token);
                 var text = await resp.Content.ReadAsStringAsync(cts.Token);
                 return JsonNode.Parse(text) as JsonObject;
             }
@@ -330,7 +330,7 @@ namespace Kairo.ViewModels
         private async Task DownloadAndExtract(string url, string version, string platform, string arch,
             CancellationToken token, JsonArray assets, string assetName, string releaseName)
         {
-            string workDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Kairo",
+            string workDir = Path.Combine(EnvironmentDetector.GetApplicationDataPath(), "Kairo",
                 "frpc");
             Directory.CreateDirectory(workDir);
             string downloadFileName = string.IsNullOrWhiteSpace(assetName) ? "frpc_download" : assetName;
@@ -343,7 +343,7 @@ namespace Kairo.ViewModels
                 ChunkCount = Math.Clamp(Environment.ProcessorCount, 4, 12),
                 ParallelDownload = true,
                 ParallelCount = Math.Clamp(Environment.ProcessorCount, 4, 12),
-                Timeout = 5000,
+                HttpClientTimeout = 5000,
                 MaxTryAgainOnFailure = 3
             };
             _downloadService = new DownloadService(config);
@@ -402,18 +402,27 @@ namespace Kairo.ViewModels
             if (frpcPath == null) throw new Exception("未找到 frpc 可执行文件");
             string finalPath = Path.Combine(workDir, exeName);
             File.Copy(frpcPath, finalPath, true);
-            try
+            
+            // 设置执行权限
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                try
                 {
-                    System.Diagnostics.Process.Start("/bin/chmod", $"+x {finalPath}");
+                    var psi = new ProcessStartInfo
+                    {
+                        FileName = "/bin/chmod",
+                        Arguments = $"+x \"{finalPath}\"",
+                        UseShellExecute = false,
+                        CreateNoWindow = true
+                    };
+                    using var process = System.Diagnostics.Process.Start(psi);
+                    process?.WaitForExit(3000);
                 }
-            }
-            catch
-            {
+                catch { }
             }
 
             Global.Config.FrpcPath = finalPath;
+            Global.Config.FrpcVersion = version;
             ConfigManager.Save();
             Dispatcher.UIThread.Post(() =>
                 (Access.DashBoard as Components.DashBoard.DashBoard)?.OpenSnackbar("下载完成", finalPath,
@@ -489,7 +498,7 @@ namespace Kairo.ViewModels
                               Uri.EscapeDataString(releaseName) + "/" + Uri.EscapeDataString(checksumFileName);
             }
 
-            string checksumContent = await _http.GetStringAsyncLogged(checksumUrl, token);
+            string checksumContent = await _api.GetStringWithoutAuthAsync(checksumUrl, token);
             string? expectedHash = null;
             bool sha256 = false;
             foreach (var line in checksumContent.Split('\n'))

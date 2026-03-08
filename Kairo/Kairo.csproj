@@ -8,6 +8,7 @@
         <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
         <GenerateAssemblyInfo>false</GenerateAssemblyInfo> <!-- custom assembly info -->
         <ApplicationIcon>Assets/kairo.ico</ApplicationIcon>
+        <AllowMissingPrunePackageData>true</AllowMissingPrunePackageData>
     </PropertyGroup>
 
     <!-- AOT/Trimming only for Release builds to allow Designer to work in Debug -->
@@ -42,8 +43,9 @@
         </PackageReference>
         <PackageReference Include="ExtendedNumerics.BigDecimal" Version="3003.0.0.346" />
         <PackageReference Include="FluentAvaloniaUI" Version="2.5.0" />
+        <PackageReference Include="HakuuLib.MultiplayerLAN" Version="0.1.5" />
         <PackageReference Include="MessageBox.Avalonia" Version="3.3.1.1" />
-        <PackageReference Include="Downloader" Version="4.0.3"/>
+        <PackageReference Include="Downloader" Version="4.1.1" />
     </ItemGroup>
 
     <ItemGroup>
@@ -72,6 +74,15 @@
     <ItemGroup>
         <FrameworkReference Include="Microsoft.AspNetCore.App"/>
     </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\Kairo.Core\Kairo.Core.csproj"/>
+        <!-- Updater is built alongside Kairo and outputs to same bin folder -->
+        <ProjectReference Include="..\Updater\Updater.csproj">
+            <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+        </ProjectReference>
+    </ItemGroup>
+
     <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
         <Exec Command="bash ./Components/BuildInfo.sh"/>
     </Target>

@@ -1,17 +1,17 @@
 using System;
 using System.IO; // added for File.Exists
-using System.Net.Http;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
+using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using FluentAvalonia.UI.Controls;
 using Kairo.Controls;
 using Kairo.Utils;
 using Avalonia.Threading; // added for DispatcherTimer
-using Kairo.Utils.Logger;
 using Kairo.ViewModels;
 
 namespace Kairo.Components.DashBoard
@@ -19,14 +19,17 @@ namespace Kairo.Components.DashBoard
     public partial class DashBoard : Window
     {
         public static Bitmap? Avatar = null;
+        public static event Action<Bitmap?>? AvatarChanged;
         private HomePage? _homePage;
         private ProxyListPage? _proxyListPage;
+        private LanPartyLobbyPage? _lanPartyLobbyPage;
         private StatusPage? _statusPage;
         private SettingsPage? _settingsPage;
 
         private readonly DashBoardViewModel _viewModel;
         private DispatcherTimer? _snackbarTimer; // auto-dismiss timer
         private CustomTitleBar? _titleBar;
+        private bool _frpcUpdateChecked;
 
         public DashBoard()
         {
@@ -34,11 +37,26 @@ namespace Kairo.Components.DashBoard
             _viewModel = new DashBoardViewModel();
             DataContext = _viewModel;
             Access.DashBoard = this;
+            SetupPlatformWindowStyle();
             NavView.SelectedItem = HomeNavItem;
             _titleBar = this.FindControl<CustomTitleBar>("TitleBar");
             this.Opened += OnDashBoardOpened;
             this.Deactivated += OnDashBoardDeactivated;
             _ = LoadAvatar();
+        }
+
+        /// <summary>
+        /// 根据平台设置窗口样式（边距和阴影）
+        /// Windows: 无边距无阴影（避免透明边框问题）
+        /// Linux/macOS: 有边距有阴影
+        /// </summary>
+        private void SetupPlatformWindowStyle()
+        {
+            var windowBorder = this.FindControl<Border>("WindowBorder");
+            if (windowBorder == null) return;
+            windowBorder.Margin = new Thickness(0);
+            windowBorder.BoxShadow = new BoxShadows();
+            
         }
 
         private void OnDashBoardOpened(object? sender, EventArgs e)
@@ -56,6 +74,35 @@ namespace Kairo.Components.DashBoard
                     OpenSnackbar("检测异常", ex.Message, InfoBarSeverity.Warning);
                 }
             }
+
+            _ = CheckFrpcUpdateAsync();
+        }
+
+        private async Task CheckFrpcUpdateAsync()
+        {
+            if (_frpcUpdateChecked) return;
+            _frpcUpdateChecked = true;
+
+            try
+            {
+                var result = await FrpcUpdateChecker.CheckAsync();
+                if (result.Skipped || !result.UpdateAvailable) return;
+
+                string local = result.LocalVersion ?? "unknown";
+                string remote = result.RemoteVersion ?? "unknown";
+                OpenSnackbar("发现 FRPC 更新", $"当前 {local}, 最新 {remote}");
+
+                if (FrpcUpdateChecker.IsManagedFrpcPath(Global.Config.FrpcPath))
+                {
+                    var win = new DownloadFrpcWindow();
+                    win.Show(this);
+                    OpenSnackbar("更新 FRPC", "已打开下载窗口", InfoBarSeverity.Informational);
+                }
+            }
+            catch
+            {
+                // ignore background update failures
+            }
         }
 
         private void OnDashBoardDeactivated(object? sender, EventArgs e)
@@ -68,13 +115,14 @@ namespace Kairo.Components.DashBoard
             try
             {
                 if (string.IsNullOrWhiteSpace(SessionState.AvatarUrl)) return;
-                using HttpClient hc = new();
-                var bytes = await hc.GetByteArrayAsyncLogged(SessionState.AvatarUrl);
-                using var ms = new System.IO.MemoryStream(bytes);
+                using var api = new ApiClient();
+                var bytes = await api.GetByteArrayWithoutAuthAsync(SessionState.AvatarUrl);
+                using var ms = new MemoryStream(bytes);
                 Avatar = new Bitmap(ms);
                 Dispatcher.UIThread.Post(() =>
                 {
                     _titleBar?.RefreshAvatar();
+                    AvatarChanged?.Invoke(Avatar);
                 });
             }
             catch { }
@@ -103,6 +151,9 @@ namespace Kairo.Components.DashBoard
                     break;
                 case "proxylist":
                     ContentHost.Content = _proxyListPage ??= new ProxyListPage();
+                    break;
+                case "lanparty":
+                    ContentHost.Content = _lanPartyLobbyPage ??= new LanPartyLobbyPage();
                     break;
                 case "status":
                     ContentHost.Content = _statusPage ??= new StatusPage();

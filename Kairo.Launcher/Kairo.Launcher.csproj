@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net10.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <AssemblyName>kairo</AssemblyName>
+        <RootNamespace>Kairo.Launcher</RootNamespace>
+    </PropertyGroup>
+
+    <!-- AOT/Trimming only for Release builds -->
+    <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+        <PublishAot>true</PublishAot>
+        <PublishTrimmed>true</PublishTrimmed>
+        <PublishSingleFile>true</PublishSingleFile>
+        <OptimizationPreference>Speed</OptimizationPreference>
+        <StripSymbols>true</StripSymbols>
+        <InvariantGlobalization>true</InvariantGlobalization>
+    </PropertyGroup>
+
+    <!-- 
+    嵌入的压缩包资源（包含完整运行时）
+    编译流程：
+    1. 先 publish Kairo 和 Kairo.Cli
+    2. 使用 build-launcher.sh 打包到 tar.gz 并生成 .hashes
+    3. 再 publish Kairo.Launcher
+    -->
+    <ItemGroup>
+        <EmbeddedResource Include="Resources\kairo-gui.tar.gz" Condition="Exists('Resources\kairo-gui.tar.gz')">
+            <LogicalName>kairo-gui.tar.gz</LogicalName>
+        </EmbeddedResource>
+        <EmbeddedResource Include="Resources\kairo-cli.tar.gz" Condition="Exists('Resources\kairo-cli.tar.gz')">
+            <LogicalName>kairo-cli.tar.gz</LogicalName>
+        </EmbeddedResource>
+        <EmbeddedResource Include="Resources\kairo-gui.hashes" Condition="Exists('Resources\kairo-gui.hashes')">
+            <LogicalName>kairo-gui.hashes</LogicalName>
+        </EmbeddedResource>
+        <EmbeddedResource Include="Resources\kairo-cli.hashes" Condition="Exists('Resources\kairo-cli.hashes')">
+            <LogicalName>kairo-cli.hashes</LogicalName>
+        </EmbeddedResource>
+    </ItemGroup>
+</Project>

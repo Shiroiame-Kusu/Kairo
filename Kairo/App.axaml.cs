@@ -1,3 +1,4 @@
+using System;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
@@ -20,6 +21,12 @@ public partial class App : Application
             return;
         }
         CrashInterception.Init(); // already hooks AppDomain + TaskScheduler
+        // Ensure frpc child processes are killed on ANY exit path
+        // (SIGTERM, Environment.Exit, updater, etc.)
+        AppDomain.CurrentDomain.ProcessExit += (_, _) =>
+        {
+            try { FrpcProcessManager.StopAll(); } catch { }
+        };
         ConfigManager.Init();
         OAuthCallbackHandler.Init();
         AvaloniaXamlLoader.Load(this); // load XAML BEFORE applying theme so XAML doesn't overwrite our choice

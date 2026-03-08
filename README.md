@@ -45,6 +45,46 @@ dotnet publish Kairo/Kairo.csproj -c Release -r win-x64 --self-contained true
 - **隧道管理**：支持创建、复制、更新、删除、启停及批量更新。
 - **节点工具**：节点连通性测试、域名列表、随机端口申请、统计信息查询。
 - **frpc 生命周期**：下载指定版本、校验文件。
+- **CLI 模式**：支持在无图形界面的 Linux 服务器上运行（详见下方）。
+
+## CLI 模式（无头模式）
+
+Kairo 提供独立的 CLI 版本 (`kairo-cli`)，用于在没有图形界面的环境（如 Linux 服务器、Docker 容器、SSH 会话）中运行。
+
+### CLI 命令参考
+
+```bash
+# 显示帮助
+kairo-cli --help
+
+# 显示版本信息
+kairo-cli --version
+
+# 获取 OAuth 授权 URL（首次使用）
+kairo-cli --oauth
+
+# 使用 Refresh Token 登录
+kairo-cli --refresh-token <your_token>
+
+# 列出所有隧道
+kairo-cli --list
+
+# 启动指定隧道
+kairo-cli --proxy 123,456
+
+# 指定 frpc 路径和 FRP Token
+kairo-cli --frpc-path /path/to/frpc --frp-token <token> --proxy 123
+```
+
+### 首次使用流程
+1. 运行 `kairo-cli --oauth` 获取授权 URL
+2. 在浏览器中打开 URL 并完成授权
+3. 复制页面显示的 Refresh Token
+4. 运行 `kairo-cli --refresh-token <token>` 完成登录
+5. 运行 `kairo-cli` 启动隧道（会自动下载 frpc）
+
+### 环境变量
+- `KAIRO_CONFIG_DIR`：自定义配置文件目录路径
 
 ## 文档
 - 所有 API 与流程文档位于 `docs/`（中文）。示例：

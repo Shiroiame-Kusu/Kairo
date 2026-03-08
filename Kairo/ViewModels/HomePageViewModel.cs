@@ -3,6 +3,7 @@ using System.Net.Http;
 using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using Avalonia.Media;
 using FluentAvalonia.UI.Controls;
 using Kairo.Utils;
 using Kairo.Utils.Logger;
@@ -19,6 +20,7 @@ namespace Kairo.ViewModels
         private string _announcement = "加载公告中...";
         private bool _signButtonVisible = true;
         private bool _signedBorderVisible;
+        private IImage? _avatarImage;
 
         public string WelcomeText
         {
@@ -56,6 +58,19 @@ namespace Kairo.ViewModels
             set => SetProperty(ref _signedBorderVisible, value);
         }
 
+        public string UserNameText => string.IsNullOrWhiteSpace(Global.Config.Username) ? "未登录" : Global.Config.Username;
+        public string UserIdText => Global.Config.ID > 0 ? Global.Config.ID.ToString() : "-";
+        public string LoginStatusText => SessionState.IsLoggedIn ? "已登录" : "未登录";
+        public string UserEmailText => string.IsNullOrWhiteSpace(SessionState.UserEmail) ? "-" : SessionState.UserEmail;
+        public string UserQQText => SessionState.UserQQ > 0 ? SessionState.UserQQ.ToString() : "-";
+        public string UserRegTimeText => string.IsNullOrWhiteSpace(SessionState.UserRegTime) ? "-" : SessionState.UserRegTime;
+
+        public IImage? AvatarImage
+        {
+            get => _avatarImage;
+            set => SetProperty(ref _avatarImage, value);
+        }
+
         public AsyncRelayCommand SignCommand { get; }
 
         public HomePageViewModel()
@@ -69,9 +84,20 @@ namespace Kairo.ViewModels
             BandwidthText = $"上行/下行带宽: {SessionState.Inbound * 8 / 1024}/{SessionState.Outbound * 8 / 1024}Mbps";
             var trafficGb = SessionState.Traffic / 1024d;
             TrafficText = $"剩余流量: {trafficGb:0.00}GB";
+            OnPropertyChanged(nameof(UserNameText));
+            OnPropertyChanged(nameof(UserIdText));
+            OnPropertyChanged(nameof(LoginStatusText));
+            OnPropertyChanged(nameof(UserEmailText));
+            OnPropertyChanged(nameof(UserQQText));
+            OnPropertyChanged(nameof(UserRegTimeText));
 
             _ = RefreshAnnouncementAsync();
             await CheckSignedAsync();
+        }
+
+        public void SetAvatar(IImage? avatar)
+        {
+            AvatarImage = avatar;
         }
 
         public async Task RefreshAnnouncementAsync()

@@ -1,17 +1,14 @@
 using System;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Net.Http;
 using System.Text.Json;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
 using Avalonia.Platform.Storage;
+using Kairo.Core;
 using Kairo.Utils;
 using Kairo.Utils.Configuration;
-using Kairo.Utils.Logger;
 using Kairo.ViewModels;
 
 namespace Kairo.Components.DashBoard
@@ -19,6 +16,17 @@ namespace Kairo.Components.DashBoard
     public partial class SettingsPage : UserControl
     {
         private int _easterCount;
+        private ScrollViewer? _contentScrollViewer;
+        private Border? _navGeneral;
+        private Border? _navAppearance;
+        private Border? _navUpdate;
+        private Border? _navAccount;
+        private Border? _navAbout;
+        private Border? _sectionGeneral;
+        private Border? _sectionAppearance;
+        private Border? _sectionUpdate;
+        private Border? _sectionAccount;
+        private bool _isProgrammaticScrolling;
 
         public SettingsPage()
         {
@@ -30,6 +38,21 @@ namespace Kairo.Components.DashBoard
         private void InitializeComponent()
         {
             AvaloniaXamlLoader.Load(this);
+            _contentScrollViewer = this.FindControl<ScrollViewer>("ContentScrollViewer");
+            _navGeneral = this.FindControl<Border>("NavGeneral");
+            _navAppearance = this.FindControl<Border>("NavAppearance");
+            _navUpdate = this.FindControl<Border>("NavUpdate");
+            _navAccount = this.FindControl<Border>("NavAccount");
+            _navAbout = this.FindControl<Border>("NavAbout");
+            _sectionGeneral = this.FindControl<Border>("SectionGeneral");
+            _sectionAppearance = this.FindControl<Border>("SectionAppearance");
+            _sectionUpdate = this.FindControl<Border>("SectionUpdate");
+            _sectionAccount = this.FindControl<Border>("SectionAccount");
+
+            if (_contentScrollViewer != null)
+            {
+                _contentScrollViewer.ScrollChanged += ContentScrollViewer_OnScrollChanged;
+            }
         }
 
         private void OnLoaded(object? sender, RoutedEventArgs e)
@@ -48,6 +71,141 @@ namespace Kairo.Components.DashBoard
             }
 
             vm.LoadFromConfig();
+            UpdateActiveNavByScrollPosition();
+        }
+
+        private void ContentScrollViewer_OnScrollChanged(object? sender, ScrollChangedEventArgs e)
+        {
+            if (_isProgrammaticScrolling) return;
+            UpdateActiveNavByScrollPosition();
+        }
+
+        private void NavItem_OnPointerPressed(object? sender, PointerPressedEventArgs e)
+        {
+            if (sender is not Border nav || nav.Tag is not string tag) return;
+
+            switch (tag)
+            {
+                case "general":
+                    ScrollToSection(_sectionGeneral);
+                    break;
+                case "appearance":
+                    ScrollToSection(_sectionAppearance);
+                    break;
+                case "update":
+                    ScrollToSection(_sectionUpdate);
+                    break;
+                case "account":
+                    ScrollToSection(_sectionAccount);
+                    break;
+                case "about":
+                    ScrollToBottom();
+                    break;
+            }
+
+            SetActiveNav(tag);
+        }
+
+        private void ScrollToSection(Control? section)
+        {
+            if (_contentScrollViewer == null || section == null) return;
+
+            var point = section.TranslatePoint(new Point(0, 0), _contentScrollViewer);
+            if (point == null) return;
+
+            var maxOffset = Math.Max(0, _contentScrollViewer.Extent.Height - _contentScrollViewer.Viewport.Height);
+            var targetY = Math.Clamp(_contentScrollViewer.Offset.Y + point.Value.Y - 4, 0, maxOffset);
+
+            _isProgrammaticScrolling = true;
+            _contentScrollViewer.Offset = new Vector(_contentScrollViewer.Offset.X, targetY);
+            _isProgrammaticScrolling = false;
+            UpdateActiveNavByScrollPosition();
+        }
+
+        private void ScrollToBottom()
+        {
+            if (_contentScrollViewer == null) return;
+
+            var maxOffset = Math.Max(0, _contentScrollViewer.Extent.Height - _contentScrollViewer.Viewport.Height);
+            _isProgrammaticScrolling = true;
+            _contentScrollViewer.Offset = new Vector(_contentScrollViewer.Offset.X, maxOffset);
+            _isProgrammaticScrolling = false;
+            UpdateActiveNavByScrollPosition(forceAboutWhenBottom: true);
+        }
+
+        private void UpdateActiveNavByScrollPosition(bool forceAboutWhenBottom = false)
+        {
+            if (_contentScrollViewer == null)
+            {
+                SetActiveNav("general");
+                return;
+            }
+
+            var maxOffset = Math.Max(0, _contentScrollViewer.Extent.Height - _contentScrollViewer.Viewport.Height);
+            var currentY = _contentScrollViewer.Offset.Y;
+            var isBottom = maxOffset > 0 && currentY >= maxOffset - 6;
+
+            if (forceAboutWhenBottom || isBottom)
+            {
+                SetActiveNav("about");
+                return;
+            }
+
+            var activeTag = GetNearestSectionTag();
+            SetActiveNav(activeTag);
+        }
+
+        private string GetNearestSectionTag()
+        {
+            if (_contentScrollViewer == null) return "general";
+
+            var anchorY = 10.0;
+            var bestTag = "general";
+            var bestDistance = double.MaxValue;
+
+            TryPickNearest(_sectionGeneral, "general", anchorY, ref bestTag, ref bestDistance);
+            TryPickNearest(_sectionAppearance, "appearance", anchorY, ref bestTag, ref bestDistance);
+            TryPickNearest(_sectionUpdate, "update", anchorY, ref bestTag, ref bestDistance);
+            TryPickNearest(_sectionAccount, "account", anchorY, ref bestTag, ref bestDistance);
+
+            return bestTag;
+        }
+
+        private void TryPickNearest(Control? section, string tag, double anchorY, ref string bestTag, ref double bestDistance)
+        {
+            if (_contentScrollViewer == null || section == null) return;
+
+            var point = section.TranslatePoint(new Point(0, 0), _contentScrollViewer);
+            if (point == null) return;
+
+            var distance = Math.Abs(point.Value.Y - anchorY);
+            if (distance < bestDistance)
+            {
+                bestDistance = distance;
+                bestTag = tag;
+            }
+        }
+
+        private void SetActiveNav(string tag)
+        {
+            SetNavActive(_navGeneral, tag == "general");
+            SetNavActive(_navAppearance, tag == "appearance");
+            SetNavActive(_navUpdate, tag == "update");
+            SetNavActive(_navAccount, tag == "account");
+            SetNavActive(_navAbout, tag == "about");
+        }
+
+        private static void SetNavActive(Border? border, bool isActive)
+        {
+            if (border == null) return;
+            if (isActive)
+            {
+                if (!border.Classes.Contains("active")) border.Classes.Add("active");
+            }
+            else
+            {
+                border.Classes.Remove("active");
+            }
         }
 
         private async void SelectFile_OnClick(object? sender, RoutedEventArgs e)
@@ -117,85 +275,65 @@ namespace Kairo.Components.DashBoard
             try
             {
                 (Access.DashBoard as DashBoard)?.OpenSnackbar("检查更新", "正在从 GitHub 获取最新版本...");
-                using var http = new HttpClient();
-                http.DefaultRequestHeaders.UserAgent.ParseAdd("Kairo/UpdateCheck");
+                using var api = new ApiClient();
 
-                var desiredPref = NormalizeBranch(Global.Config.UpdateBranch) ?? Global.Branch;
-                var desired = NormalizeBranch(desiredPref) ?? "Release";
-                bool canSwitchBranch = Global.Branch.Equals("Alpha", StringComparison.OrdinalIgnoreCase) || desired.Equals(Global.Branch, StringComparison.OrdinalIgnoreCase);
+                // Parse current version using AppVersion
+                var currentVersion = AppVersion.FromComponents(Global.Version, Global.Branch, Global.Revision);
 
                 var releasesUrl = "https://api.github.com/repos/Shiroiame-Kusu/Kairo/releases";
-                var resp = await http.GetAsyncLogged(releasesUrl);
+                var resp = await api.GetWithoutAuthAsync(releasesUrl);
                 resp.EnsureSuccessStatusCode();
                 await using var stream = await resp.Content.ReadAsStreamAsync();
                 using var doc = await JsonDocument.ParseAsync(stream);
-                JsonElement? chosen = null;
+                
+                // Find the latest release matching current channel only
+                AppVersion? remoteVersion = null;
                 foreach (var rel in doc.RootElement.EnumerateArray())
                 {
                     var tag = rel.GetProperty("tag_name").GetString() ?? string.Empty;
-                    if (IsBranchMatch(tag, desired)) { chosen = rel; break; }
+                    if (!AppVersion.TryParse(tag, out var parsed)) continue;
+                    if (parsed.Channel == currentVersion.Channel)
+                    {
+                        remoteVersion = parsed;
+                        break;
+                    }
                 }
-                if (chosen == null)
+
+                if (remoteVersion == null)
                 {
-                    (Access.DashBoard as DashBoard)?.OpenSnackbar("未找到版本", $"分支 {desired}");
+                    (Access.DashBoard as DashBoard)?.OpenSnackbar("未找到版本", $"分支 {currentVersion.ChannelName}");
                     return;
                 }
-                var tagName = chosen.Value.GetProperty("tag_name").GetString() ?? string.Empty;
-                var current = new Version(Global.Version);
-                var currentBranch = NormalizeBranch(Global.Branch) ?? "Release";
-                var currentRev = Global.Revision;
-                var (remoteVer, remoteBranch, remoteRev) = ParseTag(tagName);
 
-                bool updateAvailable;
-                if (currentBranch.Equals(remoteBranch, StringComparison.OrdinalIgnoreCase))
-                {
-                    updateAvailable = remoteVer > current || (remoteVer == current && remoteRev > currentRev);
-                }
-                else
-                {
-                    updateAvailable = canSwitchBranch && desired.Equals(remoteBranch, StringComparison.OrdinalIgnoreCase) && !(remoteVer == current && remoteRev == currentRev && currentBranch == remoteBranch);
-                }
+                // Compare versions (same channel guaranteed)
+                bool updateAvailable = remoteVersion.Value > currentVersion;
 
                 if (!updateAvailable)
                 {
-                    (Access.DashBoard as DashBoard)?.OpenSnackbar("已是最新", $"当前 {Global.Version}-{currentBranch}.{currentRev}");
+                    (Access.DashBoard as DashBoard)?.OpenSnackbar("已是最新", $"当前 {currentVersion}");
                     return;
                 }
-                (Access.DashBoard as DashBoard)?.OpenSnackbar("发现新版本", $"将退出并更新到 {remoteVer}-{remoteBranch}.{remoteRev}");
 
-                var baseDir = AppContext.BaseDirectory;
-                var updaterDll = Path.Combine(baseDir, "Updater.dll");
-                var updaterExe = Path.Combine(baseDir, OperatingSystem.IsWindows() ? "Updater.exe" : "Updater");
-                ProcessStartInfo psi;
-                if (File.Exists(updaterExe))
-                {
-                    psi = new ProcessStartInfo(updaterExe)
-                    {
-                        UseShellExecute = false,
-                        WorkingDirectory = baseDir,
-                        Arguments = $"{Process.GetCurrentProcess().Id} Shiroiame-Kusu Kairo {remoteBranch}"
-                    };
-                }
-                else if (File.Exists(updaterDll))
-                {
-                    psi = new ProcessStartInfo("dotnet")
-                    {
-                        UseShellExecute = false,
-                        WorkingDirectory = baseDir,
-                        Arguments = $"\"{updaterDll}\" {Process.GetCurrentProcess().Id} Shiroiame-Kusu Kairo {remoteBranch}"
-                    };
-                }
-                else
+                // Check if updater is available
+                if (!UpdaterHelper.IsUpdaterAvailable())
                 {
                     (Access.DashBoard as DashBoard)?.OpenSnackbar("更新失败", "未找到 Updater 组件");
                     return;
                 }
 
+                (Access.DashBoard as DashBoard)?.OpenSnackbar("发现新版本", $"将退出并更新到 {remoteVersion.Value}");
+
+                // Prepare and launch updater
+                if (!UpdaterHelper.PrepareUpdate(remoteVersion.Value))
+                {
+                    (Access.DashBoard as DashBoard)?.OpenSnackbar("更新失败", "准备更新器失败");
+                    return;
+                }
+
                 try
                 {
-                    Process.Start(psi);
                     (Access.DashBoard as DashBoard)?.OpenSnackbar("正在更新", "程序即将退出并更新");
-                    Environment.Exit(0);
+                    UpdaterHelper.LaunchUpdaterAndExit();
                 }
                 catch (Exception exLaunch)
                 {
@@ -210,96 +348,6 @@ namespace Kairo.Components.DashBoard
             {
                 if (btn != null) btn.IsEnabled = true;
             }
-        }
-
-        private static bool IsBranchMatch(string tag, string desired)
-        {
-            var lower = tag.ToLowerInvariant();
-            return desired switch
-            {
-                "Alpha" => lower.Contains("-alpha."),
-                "Beta" => lower.Contains("-beta."),
-                "ReleaseCandidate" => lower.Contains("-rc."),
-                "Release" => lower.Contains("-release."),
-                _ => true
-            };
-        }
-
-        private static string? NormalizeBranch(string? b)
-        {
-            if (string.IsNullOrWhiteSpace(b)) return null;
-            b = b.Trim();
-            if (b.Equals("alpha", StringComparison.OrdinalIgnoreCase)) return "Alpha";
-            if (b.Equals("beta", StringComparison.OrdinalIgnoreCase)) return "Beta";
-            if (b.Equals("rc", StringComparison.OrdinalIgnoreCase) || b.Equals("releasecandidate", StringComparison.OrdinalIgnoreCase)) return "ReleaseCandidate";
-            if (b.Equals("release", StringComparison.OrdinalIgnoreCase)) return "Release";
-            return null;
-        }
-
-        private static (Version ver, string branch, int revision) ParseTag(string? tag)
-        {
-            tag ??= string.Empty;
-            string t = tag.StartsWith("v", StringComparison.OrdinalIgnoreCase)
-                ? (tag.Length > 1 ? tag[1..] : string.Empty)
-                : tag;
-            string branch = "Release";
-            int rev = 0;
-            var lower = t.ToLowerInvariant();
-            string versionPart = t;
-            if (lower.Contains("-alpha."))
-            {
-                branch = "Alpha";
-                var idx = lower.IndexOf("-alpha.", StringComparison.Ordinal);
-                if (idx >= 0 && idx <= t.Length)
-                {
-                    versionPart = idx == 0 ? string.Empty : t[..idx];
-                    var suffixIndex = idx + "-alpha.".Length;
-                    var rstr = suffixIndex < t.Length ? t[suffixIndex..] : string.Empty;
-                    int.TryParse(new string(rstr.TakeWhile(char.IsDigit).ToArray()), out rev);
-                }
-            }
-            else if (lower.Contains("-beta."))
-            {
-                branch = "Beta";
-                var idx = lower.IndexOf("-beta.", StringComparison.Ordinal);
-                if (idx >= 0 && idx <= t.Length)
-                {
-                    versionPart = idx == 0 ? string.Empty : t[..idx];
-                    var suffixIndex = idx + "-beta.".Length;
-                    var rstr = suffixIndex < t.Length ? t[suffixIndex..] : string.Empty;
-                    int.TryParse(new string(rstr.TakeWhile(char.IsDigit).ToArray()), out rev);
-                }
-            }
-            else if (lower.Contains("-rc."))
-            {
-                branch = "ReleaseCandidate";
-                var idx = lower.IndexOf("-rc.", StringComparison.Ordinal);
-                if (idx >= 0 && idx <= t.Length)
-                {
-                    versionPart = idx == 0 ? string.Empty : t[..idx];
-                    var suffixIndex = idx + "-rc.".Length;
-                    var rstr = suffixIndex < t.Length ? t[suffixIndex..] : string.Empty;
-                    int.TryParse(new string(rstr.TakeWhile(char.IsDigit).ToArray()), out rev);
-                }
-            }
-            else if (lower.Contains("-release."))
-            {
-                branch = "Release";
-                var idx = lower.IndexOf("-release.", StringComparison.Ordinal);
-                if (idx >= 0 && idx <= t.Length)
-                {
-                    versionPart = idx == 0 ? string.Empty : t[..idx];
-                    var suffixIndex = idx + "-release.".Length;
-                    var rstr = suffixIndex < t.Length ? t[suffixIndex..] : string.Empty;
-                    int.TryParse(new string(rstr.TakeWhile(char.IsDigit).ToArray()), out rev);
-                }
-            }
-
-            if (!Version.TryParse(versionPart, out var ver))
-            {
-                ver = new Version(0, 0, 0);
-            }
-            return (ver, branch, rev);
         }
     }
 }

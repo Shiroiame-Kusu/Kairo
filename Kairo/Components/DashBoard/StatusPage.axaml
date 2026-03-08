@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:fa="using:FluentAvalonia.UI.Controls"
              xmlns:vm="clr-namespace:Kairo.ViewModels"
              xmlns:conv="clr-namespace:Kairo.Utils.Converters"
              x:Class="Kairo.Components.DashBoard.StatusPage"
@@ -10,14 +11,27 @@
       <ContentControl Content="{Binding Converter={StaticResource LogLineToControlConverter}}" />
     </DataTemplate>
   </UserControl.Resources>
-  <Grid Margin="12" RowDefinitions="*,Auto">
-    <Border Grid.Row="0" CornerRadius="8" Background="{DynamicResource LayerFillColorDefaultBrush}" Padding="8">
+  <Grid Margin="12" RowDefinitions="Auto,*,Auto" RowSpacing="12">
+    <Border Grid.Row="0" CornerRadius="8" Padding="14,10" Background="{DynamicResource LayerFillColorDefaultBrush}">
+      <StackPanel Spacing="4">
+        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+          <fa:SymbolIcon Symbol="Code" FontSize="22" />
+          <TextBlock Text="运行状态" FontSize="24" VerticalAlignment="Center" />
+        </StackPanel>
+        <TextBlock Text="查看日志与进程状态" Opacity="0.8" />
+      </StackPanel>
+    </Border>
+
+    <Border Grid.Row="1" CornerRadius="8" Background="{DynamicResource LayerFillColorDefaultBrush}" Padding="8">
       <ScrollViewer x:Name="LogScroll">
         <ItemsControl ItemsSource="{Binding Lines}" ItemTemplate="{StaticResource LogLineTemplate}" />
       </ScrollViewer>
     </Border>
-    <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Left" Spacing="12" Margin="0,12,0,0">
-      <Button Content="强制结束所有隧道" Command="{Binding StopAllCommand}" />
-    </StackPanel>
+
+    <Border Grid.Row="2" CornerRadius="8" Background="{DynamicResource LayerFillColorDefaultBrush}" Padding="12">
+      <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Spacing="12">
+        <Button Content="强制结束所有隧道" Command="{Binding StopAllCommand}" />
+      </StackPanel>
+    </Border>
   </Grid>
 </UserControl>
