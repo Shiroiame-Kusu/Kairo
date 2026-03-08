@@ -13,7 +13,7 @@ namespace Kairo
         public static bool LoginedByConsole = false;
         public const string Version = AppConstants.Version;
         public const string VersionName = AppConstants.VersionName;
-        public const string Branch = AppConstants.Branch;
+        public const ReleaseChannel Branch = AppConstants.Branch;
         public const int Revision = AppConstants.Revision;
         public static readonly BuildInfo BuildInfo = new();
         public const string Developer = AppConstants.Developer;

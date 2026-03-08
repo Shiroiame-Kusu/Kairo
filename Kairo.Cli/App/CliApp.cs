@@ -68,7 +68,7 @@ public class CliApp : IDisposable
         Logger.MethodEntry();
         Logger.Debug("显示欢迎横幅");
         
-        var versionLine = $"Ver {AppConstants.Version} \"{AppConstants.VersionName}\" {AppConstants.Branch} {AppConstants.Revision}";
+        var versionLine = $"Ver {AppConstants.Version} \"{AppConstants.VersionName}\" {AppConstants.Branch.ToDisplayName()} {AppConstants.Revision}";
         var padding = (61 - versionLine.Length) / 2;
         var centeredVersion = versionLine.PadLeft(padding + versionLine.Length).PadRight(61);
         Console.WriteLine();
@@ -868,7 +868,7 @@ public class CliApp : IDisposable
 
     private void ShowVersion()
     {
-        Console.WriteLine($"Kairo CLI {AppConstants.Version} ({AppConstants.Branch})");
+        Console.WriteLine($"Kairo CLI {AppConstants.Version} ({AppConstants.Branch.ToDisplayName()})");
         Console.WriteLine($"Version Name: {AppConstants.VersionName}");
         Console.WriteLine($"Revision: {AppConstants.Revision}");
         Console.WriteLine($"Developer: {AppConstants.Developer}");

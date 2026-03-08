@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Kairo.Core;
 
 namespace Kairo.Components
 {
@@ -43,7 +44,7 @@ namespace Kairo.Components
                    $"编译类型：{Type}\r\n" +
                    $"编译时间：{Time}\r\n" +
                    $"详细信息：{Detail}\r\n" +
-                   $"当前分支：{Global.Branch}";
+                   $"当前分支：{Global.Branch.ToDisplayName()}";
         }
 
         /// <summary>

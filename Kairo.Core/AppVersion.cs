@@ -72,15 +72,14 @@ public readonly partial struct AppVersion : IComparable<AppVersion>, IEquatable<
     /// <summary>
     /// Create an AppVersion from individual components.
     /// </summary>
-    public static AppVersion FromComponents(string version, string branch, int revision)
+    public static AppVersion FromComponents(string version, ReleaseChannel branch, int revision)
     {
         var parts = version.Split('.');
         int major = 0, minor = 0, patch = 0;
         if (parts.Length >= 1) int.TryParse(parts[0], out major);
         if (parts.Length >= 2) int.TryParse(parts[1], out minor);
         if (parts.Length >= 3) int.TryParse(parts[2], out patch);
-        var channel = ParseChannel(branch);
-        return new AppVersion(major, minor, patch, channel, revision);
+        return new AppVersion(major, minor, patch, branch, revision);
     }
 
     private static ReleaseChannel ParseChannel(string? channelStr)
@@ -92,7 +91,7 @@ public readonly partial struct AppVersion : IComparable<AppVersion>, IEquatable<
         {
             "Alpha" => ReleaseChannel.Alpha,
             "Beta" => ReleaseChannel.Beta,
-            "RC" => ReleaseChannel.RC,
+            "RC" => ReleaseChannel.ReleaseCandidate,
             "Release" => ReleaseChannel.Release,
             _ => ReleaseChannel.Release
         };
@@ -144,11 +143,7 @@ public readonly partial struct AppVersion : IComparable<AppVersion>, IEquatable<
     /// </summary>
     public string ChannelName => Channel switch
     {
-        ReleaseChannel.Alpha => "Alpha",
-        ReleaseChannel.Beta => "Beta",
-        ReleaseChannel.RC => "RC",
-        ReleaseChannel.Release => "Release",
-        _ => "Release"
+        _ => Channel.ToDisplayName()
     };
 
     /// <summary>
@@ -179,6 +174,18 @@ public enum ReleaseChannel
 {
     Alpha = 0,
     Beta = 1,
-    RC = 2,
+    ReleaseCandidate = 2,
     Release = 3
+}
+
+public static class ReleaseChannelExtensions
+{
+    public static string ToDisplayName(this ReleaseChannel channel) => channel switch
+    {
+        ReleaseChannel.Alpha => "Alpha",
+        ReleaseChannel.Beta => "Beta",
+        ReleaseChannel.ReleaseCandidate => "RC",
+        ReleaseChannel.Release => "Release",
+        _ => "Release"
+    };
 }

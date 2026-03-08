@@ -343,7 +343,7 @@ namespace Kairo.ViewModels
                 ChunkCount = Math.Clamp(Environment.ProcessorCount, 4, 12),
                 ParallelDownload = true,
                 ParallelCount = Math.Clamp(Environment.ProcessorCount, 4, 12),
-                Timeout = 5000,
+                HttpClientTimeout = 5000,
                 MaxTryAgainOnFailure = 3
             };
             _downloadService = new DownloadService(config);

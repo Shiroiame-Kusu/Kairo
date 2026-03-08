@@ -14,6 +14,7 @@ using Avalonia.Media;
 using Avalonia.VisualTree;
 using System.Collections.Generic;
 using System.Security.Cryptography;
+using Kairo.Core;
 using Kairo.Utils.Logger; // for recent logs
 using System.Text.Json;
 using Kairo.Utils.Serialization;
@@ -182,7 +183,7 @@ namespace Kairo.Utils
                 Message = ex.Message,
                 ExceptionMerged = MergeException(ex),
                 Version = Global.Version,
-                Branch = Global.Branch,
+                Branch = Global.Branch.ToDisplayName(),
                 Revision = Global.Revision,
                 MachineHash = GetMachineHash(),
                 Environment = env,
@@ -251,7 +252,7 @@ namespace Kairo.Utils
         private static string BuildLegacyLogLine(CrashReport report)
         {
             var sb = new StringBuilder();
-            sb.AppendLine(DateTime.Now + "  |  " + $"{Global.Version} - {Global.Branch}.{Global.Revision}" + "  |  NET" + Environment.Version);
+            sb.AppendLine(DateTime.Now + "  |  " + $"{Global.Version} - {Global.Branch.ToDisplayName()}.{Global.Revision}" + "  |  NET" + Environment.Version);
             sb.AppendLine(report.ExceptionMerged);
             sb.AppendLine();
             return sb.ToString();

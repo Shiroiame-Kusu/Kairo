@@ -1,4 +1,5 @@
 using System;
+using Kairo.Core;
 using Kairo.Utils;
 using Kairo.Utils.Configuration;
 
@@ -89,7 +90,7 @@ namespace Kairo.ViewModels
         public bool CanToggleDarkTheme => !FollowSystem;
 
         public string BuildInfoText => Global.BuildInfo?.ToString() ?? string.Empty;
-        public string VersionText => $"版本: {Global.Version} \"{Global.VersionName}\" {Global.Branch} {Global.Revision}";
+        public string VersionText => $"版本: {Global.Version} \"{Global.VersionName}\" {Global.Branch.ToDisplayName()} {Global.Revision}";
         public string DeveloperText => $"开发者: {Global.Developer}";
         public string CopyrightText => Global.Copyright;
 
@@ -113,7 +114,9 @@ namespace Kairo.ViewModels
             FollowSystem = Global.Config.FollowSystemTheme;
             DarkTheme = Global.Config.DarkTheme;
             DebugMode = Global.Config.DebugMode;
-            UpdateBranchIndex = BranchToIndex(string.IsNullOrWhiteSpace(Global.Config.UpdateBranch) ? Global.Branch : Global.Config.UpdateBranch);
+            UpdateBranchIndex = BranchToIndex(string.IsNullOrWhiteSpace(Global.Config.UpdateBranch)
+                ? Global.Branch.ToDisplayName()
+                : Global.Config.UpdateBranch);
             OnPropertyChanged(nameof(CanToggleDarkTheme));
         }
 
