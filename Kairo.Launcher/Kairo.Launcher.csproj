@@ -6,6 +6,8 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <AssemblyName>kairo</AssemblyName>
         <RootNamespace>Kairo.Launcher</RootNamespace>
+        <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+        <ApplicationIcon>..\Kairo\Assets\kairo.ico</ApplicationIcon>
     </PropertyGroup>
 
     <PropertyGroup Condition="$([System.String]::Copy('$(RuntimeIdentifier)').StartsWith('win'))">
@@ -30,6 +32,7 @@
     3. 再 publish Kairo.Launcher
     -->
     <ItemGroup>
+        <Resource Include="..\Kairo\Assets\kairo.ico" Link="Assets\kairo.ico" />
         <EmbeddedResource Include="Resources\kairo-gui.tar.gz" Condition="Exists('Resources\kairo-gui.tar.gz')">
             <LogicalName>kairo-gui.tar.gz</LogicalName>
         </EmbeddedResource>
@@ -42,5 +45,9 @@
         <EmbeddedResource Include="Resources\kairo-cli.hashes" Condition="Exists('Resources\kairo-cli.hashes')">
             <LogicalName>kairo-cli.hashes</LogicalName>
         </EmbeddedResource>
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\Kairo.Core\Kairo.Core.csproj" />
     </ItemGroup>
 </Project>
