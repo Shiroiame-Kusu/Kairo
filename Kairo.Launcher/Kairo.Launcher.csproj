@@ -8,6 +8,10 @@
         <RootNamespace>Kairo.Launcher</RootNamespace>
     </PropertyGroup>
 
+    <PropertyGroup Condition="$([System.String]::Copy('$(RuntimeIdentifier)').StartsWith('win'))">
+        <OutputType>WinExe</OutputType>
+    </PropertyGroup>
+
     <!-- AOT/Trimming only for Release builds -->
     <PropertyGroup Condition="'$(Configuration)' == 'Release'">
         <PublishAot>true</PublishAot>
