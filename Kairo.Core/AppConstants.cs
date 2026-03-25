@@ -7,7 +7,7 @@ public static class AppConstants
 {
     public const string Version = "3.3.0";
     public const string VersionName = "Voyaging Star";
-    public const ReleaseChannel Branch = ReleaseChannel.ReleaseCandidate;
+    public const ReleaseChannel Branch = ReleaseChannel.Release;
     public const int Revision = 1;
     public const string Developer = "Shiroiame-Kusu & Daiyangcheng";
     public const string Copyright = "Copyright © Shiroiame-Kusu All Rights Reserved";

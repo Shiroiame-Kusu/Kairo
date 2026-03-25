@@ -4,6 +4,7 @@ using System.IO.Compression;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
+using System.Text;
 
 namespace Kairo.Launcher;
 
@@ -15,6 +16,7 @@ class Program
 
     private static readonly string GuiDir = Path.Combine(AppDataDir, "gui");
     private static readonly string CliDir = Path.Combine(AppDataDir, "cli");
+    private static bool _consoleAttached;
 
     /// <summary>
     /// 获取应用程序数据目录（平台相关）
@@ -57,12 +59,19 @@ class Program
 
     static int Main(string[] args)
     {
+        bool useCli = false;
+
         try
         {
             // 确定应该启动哪个程序
-            bool useCli = IsLinuxHeadless() ||
-                          args.Contains("--cli") ||
-                          args.Contains("-c");
+            useCli = IsLinuxHeadless() ||
+                     args.Contains("--cli") ||
+                     args.Contains("-c");
+
+            if (OperatingSystem.IsWindows() && useCli)
+            {
+                EnsureConsole();
+            }
 
             string targetDir = useCli ? CliDir : GuiDir;
             string hashesResourceName = useCli ? "kairo-cli.hashes" : "kairo-gui.hashes";
@@ -88,9 +97,7 @@ class Program
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[Launcher Error] {ex.Message}");
-            if (ex.InnerException != null)
-                Console.WriteLine($"[Inner] {ex.InnerException.Message}");
+            ReportLauncherError(ex, useCli);
             return 1;
         }
     }
@@ -194,7 +201,7 @@ class Program
 
     private static void ExtractEmbeddedArchive(string resourceName, string targetDir)
     {
-        Console.WriteLine($"[Launcher] 正在解压 {resourceName}...");
+        LogInfo($"[Launcher] 正在解压 {resourceName}...");
 
         var assembly = Assembly.GetExecutingAssembly();
         using var stream = assembly.GetManifestResourceStream(resourceName);
@@ -247,7 +254,7 @@ class Program
             SetExecutablePermissions(targetDir);
         }
 
-        Console.WriteLine($"[Launcher] 解压完成: {targetDir}");
+        LogInfo($"[Launcher] 解压完成: {targetDir}");
     }
 
     private static void SetExecutablePermissions(string dir)
@@ -285,9 +292,9 @@ class Program
     {
         if (!File.Exists(path))
         {
-            Console.WriteLine($"[Launcher Error] 找不到目标程序: {path}");
-            Console.WriteLine("[Launcher] 提示: 请确保 Launcher 包含嵌入的压缩包资源");
-            return 1;
+            throw new FileNotFoundException(
+                $"找不到目标程序: {path}\n请确保 Launcher 包含嵌入的压缩包资源。",
+                path);
         }
 
         var psi = new ProcessStartInfo
@@ -314,11 +321,105 @@ class Program
         using var process = Process.Start(psi);
         if (process == null)
         {
-            Console.WriteLine("[Launcher Error] 无法启动目标程序");
-            return 1;
+            throw new InvalidOperationException("无法启动目标程序");
         }
 
         process.WaitForExit();
         return process.ExitCode;
     }
+
+    private static void LogInfo(string message)
+    {
+        if (!CanWriteToConsole())
+            return;
+
+        try
+        {
+            Console.WriteLine(message);
+        }
+        catch { }
+    }
+
+    private static void LogError(string message)
+    {
+        if (!CanWriteToConsole())
+            return;
+
+        try
+        {
+            Console.Error.WriteLine(message);
+        }
+        catch { }
+    }
+
+    private static bool CanWriteToConsole()
+    {
+        return !OperatingSystem.IsWindows() || _consoleAttached;
+    }
+
+    private static void ReportLauncherError(Exception ex, bool useCli)
+    {
+        var builder = new StringBuilder()
+            .Append("[Launcher Error] ")
+            .Append(ex.Message);
+
+        if (ex.InnerException != null)
+        {
+            builder.AppendLine()
+                .Append("[Inner] ")
+                .Append(ex.InnerException.Message);
+        }
+
+        var errorMessage = builder.ToString();
+        LogError(errorMessage);
+
+        if (OperatingSystem.IsWindows() && !(useCli && _consoleAttached))
+        {
+            ShowWindowsErrorDialog(errorMessage);
+        }
+    }
+
+    private static void EnsureConsole()
+    {
+        if (!OperatingSystem.IsWindows() || _consoleAttached)
+            return;
+
+        if (AttachConsole(ATTACH_PARENT_PROCESS) || AllocConsole())
+        {
+            _consoleAttached = true;
+            ResetConsoleStreams();
+        }
+    }
+
+    private static void ResetConsoleStreams()
+    {
+        try
+        {
+            var stdout = new StreamWriter(Console.OpenStandardOutput()) { AutoFlush = true };
+            var stderr = new StreamWriter(Console.OpenStandardError()) { AutoFlush = true };
+            Console.SetOut(stdout);
+            Console.SetError(stderr);
+        }
+        catch { }
+    }
+
+    private static void ShowWindowsErrorDialog(string message)
+    {
+        try
+        {
+            MessageBoxW(IntPtr.Zero, message, "Kairo Launcher", 0x00000010);
+        }
+        catch { }
+    }
+
+    private const int ATTACH_PARENT_PROCESS = -1;
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern bool AllocConsole();
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern bool AttachConsole(int dwProcessId);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    private static extern int MessageBoxW(IntPtr hWnd, string text, string caption, uint type);
 }
