@@ -10,6 +10,7 @@ using System.Windows.Input;
 using Avalonia.Controls;
 using Avalonia.Threading;
 using FluentAvalonia.UI.Controls;
+using Kairo.Core.Models;
 using HakuuLib.MultiplayerLAN.Minecraft.Java.Discovery;
 using HakuuLib.MultiplayerLAN.Minecraft.Bedrock.Discovery;
 using Kairo.Utils;
@@ -205,6 +206,12 @@ namespace Kairo.ViewModels
 
         public void OnLoaded()
         {
+            if (!Global.CurrentProvider.SupportsMinecraftRooms)
+            {
+                StatusText = $"{Global.CurrentProvider.DisplayName} 暂不支持 Minecraft 联机房间";
+                return;
+            }
+
             // Only refresh nodes if empty (first load or after explicit clear)
             if (Nodes.Count == 0)
             {
@@ -413,62 +420,28 @@ namespace Kairo.ViewModels
                     return;
                 }
 
-                var url = ApiClient.GetNodesUrl();
-                var resp = await _api.GetAsync(url);
-                var content = await resp.Content.ReadAsStringAsync();
-                var json = JsonNode.Parse(content);
-
-                if (json?["status"]?.GetValue<int>() != 200)
+                var result = await _api.GetNodesAsync();
+                if (!result.Success)
                 {
-                    StatusText = $"获取节点失败: {json?["message"]?.GetValue<string>()}";
+                    StatusText = $"获取节点失败: {result.Message}";
                     return;
                 }
 
-                var list = json?["data"]?["list"] as JsonArray;
                 Nodes.Clear();
-
-                if (list != null)
+                foreach (var node in result.Data ?? Array.Empty<FrpNode>())
                 {
-                    foreach (var item in list)
+                    string label = !string.IsNullOrWhiteSpace(node.Host) ? node.Host : node.Ip;
+                    string portRangeDisplay = node.PortRanges.Count > 0 ? string.Join(", ", node.PortRanges) : "—";
+
+                    if (node.Id > 0 && !string.IsNullOrWhiteSpace(label))
                     {
-                        int id = item?["id"]?.GetValue<int>() ?? 0;
-                        string ip = item?["ip"]?.GetValue<string>() ?? string.Empty;
-                        string host = item?["host"]?.GetValue<string>() ?? string.Empty;
-                        string label = !string.IsNullOrWhiteSpace(host) ? host : ip;
-                        string name = item?["name"]?.GetValue<string>() ?? label;
-
-                        var additional = item?["additional"] as JsonObject;
-                        string? description = additional?["description"]?.GetValue<string>();
-                        if (string.IsNullOrWhiteSpace(description))
-                            description = item?["description"]?.GetValue<string>();
-
-                        var portRangeArray = item?["port_range"] as JsonArray;
-                        var portRanges = new List<string>();
-                        if (portRangeArray != null)
-                        {
-                            foreach (var token in portRangeArray)
-                            {
-                                if (token is JsonNode tk)
-                                {
-                                    var range = tk.GetValue<string>();
-                                    if (!string.IsNullOrWhiteSpace(range))
-                                        portRanges.Add(range);
-                                }
-                            }
-                        }
-
-                        string portRangeDisplay = portRanges.Count > 0 ? string.Join(", ", portRanges) : "—";
-
-                        if (id > 0 && !string.IsNullOrWhiteSpace(label))
-                        {
-                            Nodes.Add(new NodeViewModel(
-                                id,
-                                string.IsNullOrWhiteSpace(name) ? label : name,
-                                label,
-                                portRangeDisplay,
-                                string.IsNullOrWhiteSpace(description) ? "暂无描述" : description!
-                            ));
-                        }
+                        Nodes.Add(new NodeViewModel(
+                            node.Id,
+                            string.IsNullOrWhiteSpace(node.Name) ? label : node.Name,
+                            label,
+                            portRangeDisplay,
+                            string.IsNullOrWhiteSpace(node.Description) ? "暂无描述" : node.Description
+                        ));
                     }
                 }
 
@@ -494,6 +467,12 @@ namespace Kairo.ViewModels
 
         private async Task CreateRoomAsync()
         {
+            if (!Global.CurrentProvider.SupportsMinecraftRooms)
+            {
+                ShowSnackbar("功能不可用", $"{Global.CurrentProvider.DisplayName} 暂不支持 Minecraft 联机房间", InfoBarSeverity.Warning);
+                return;
+            }
+
             if (SelectedServer == null)
             {
                 ShowSnackbar("请选择服务器", "请先选择一个探测到的本地服务器", InfoBarSeverity.Warning);
@@ -538,7 +517,7 @@ namespace Kairo.ViewModels
                     new KeyValuePair<string, string>("tunnel_id", tunnelId.ToString())
                 });
 
-                var resp = await _api.PutAsync($"{Global.API}/game/minecraft/game", content);
+                var resp = await _api.PutAsync($"{Global.CurrentProvider.ApiBaseUrl}/game/minecraft/game", content);
                 var body = await resp.Content.ReadAsStringAsync();
                 var json = JsonNode.Parse(body);
 
@@ -576,15 +555,8 @@ namespace Kairo.ViewModels
                 if (!ApiClient.IsLoggedIn)
                     return 0;
 
-                var url = ApiClient.GetRandomPortUrl(nodeId);
-                var resp = await _api.GetAsync(url);
-                var content = await resp.Content.ReadAsStringAsync();
-                var json = JsonNode.Parse(content);
-
-                if (json?["status"]?.GetValue<int>() != 200)
-                    return 0;
-
-                return json?["data"]?["port"]?.GetValue<int>() ?? 0;
+                var result = await _api.GetRandomPortAsync(nodeId);
+                return result.Success ? result.Data : 0;
             }
             catch
             {
@@ -597,36 +569,28 @@ namespace Kairo.ViewModels
             try
             {
                 // Use UDP for Bedrock, TCP for Java - determine from selected server
-                var tunnelType = SelectedServer?.Edition == MinecraftEdition.Bedrock ? "UDP" : "TCP";
+                var tunnelType = SelectedServer?.Edition == MinecraftEdition.Bedrock ? "udp" : "tcp";
 
-                var form = new List<KeyValuePair<string, string>>
+                var result = await _api.CreateTunnelAsync(new CreateFrpTunnelRequest
                 {
-                    new("user_id", Global.Config.ID.ToString()),
-                    new("name", name),
-                    new("local_ip", localIp),
-                    new("type", tunnelType),
-                    new("local_port", localPort.ToString()),
-                    new("node_id", nodeId.ToString()),
-                    new("remote_port", remotePort.ToString()),
-                    new("use_encryption", UseEncryption.ToString().ToLowerInvariant()),
-                    new("use_compression", UseCompression.ToString().ToLowerInvariant()),
-                };
+                    Name = name,
+                    LocalIp = localIp,
+                    Type = tunnelType,
+                    LocalPort = localPort,
+                    NodeId = nodeId,
+                    RemotePort = remotePort,
+                    UseEncryption = UseEncryption,
+                    UseCompression = UseCompression
+                });
 
-                var resp = await _api.PutAsync(Global.APIList.Tunnel, new FormUrlEncodedContent(form));
-                var content = await resp.Content.ReadAsStringAsync();
-                var json = JsonNode.Parse(content);
-
-                if (json?["status"]?.GetValue<int>() == 200)
+                if (result.Success && result.Data != null)
                 {
-                    return json?["data"]?["tunnel_id"]?.GetValue<int>() ?? 0;
+                    return result.Data.TunnelId;
                 }
-                else
-                {
-                    var msg = json?["message"]?.GetValue<string>() ?? "创建隧道失败";
-                    ShowSnackbar("创建隧道失败", msg, InfoBarSeverity.Error);
-                    StatusText = msg;
-                    return 0;
-                }
+
+                ShowSnackbar("创建隧道失败", result.Message, InfoBarSeverity.Error);
+                StatusText = result.Message;
+                return 0;
             }
             catch (Exception ex)
             {

@@ -5,6 +5,8 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
+using Kairo.Core.Models;
+using Kairo.Core.Providers;
 using Kairo.Utils.Logger;
 using AppLogger = Kairo.Utils.Logger.Logger;
 
@@ -27,7 +29,7 @@ internal static class FrpcProcessManager
 
     public static bool IsRunning(int proxyId) => _processes.ContainsKey(proxyId);
 
-    public static bool StartProxy(int proxyId, string frpcPath, string frpToken, Action<string>? onStarted = null, Action<string>? onFailed = null)
+    public static bool StartProxy(int proxyId, string proxyName, string frpcPath, string frpToken, IFrpProvider provider, Action<string>? onStarted = null, Action<string>? onFailed = null)
     {
         if (string.IsNullOrWhiteSpace(frpcPath) || !File.Exists(frpcPath))
         {
@@ -88,10 +90,17 @@ internal static class FrpcProcessManager
         }
         try
         {
+            var arguments = provider.BuildFrpcArguments(new FrpStartOptions
+            {
+                TunnelId = proxyId,
+                TunnelName = proxyName,
+                FrpToken = frpToken,
+                ApiBaseUrl = provider.ApiBaseUrl
+            });
             var psi = new ProcessStartInfo
             {
                 FileName = frpcPath,
-                Arguments = $" -u {frpToken} -t {proxyId}",
+                Arguments = arguments,
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,

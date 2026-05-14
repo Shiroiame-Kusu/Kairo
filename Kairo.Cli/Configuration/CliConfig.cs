@@ -29,6 +29,9 @@ public class CliConfig : BaseConfig
 /// </summary>
 [JsonSourceGenerationOptions(WriteIndented = true)]
 [JsonSerializable(typeof(CliConfig))]
+[JsonSerializable(typeof(Dictionary<string, string>))]
+[JsonSerializable(typeof(ProviderAuthState))]
+[JsonSerializable(typeof(Dictionary<string, ProviderAuthState>))]
 public partial class CliConfigJsonContext : JsonSerializerContext { }
 
 /// <summary>

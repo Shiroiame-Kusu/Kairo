@@ -134,6 +134,12 @@ namespace Kairo.ViewModels
 
         public void OnLoaded()
         {
+            if (!Global.CurrentProvider.SupportsMinecraftRooms)
+            {
+                StatusText = $"{Global.CurrentProvider.DisplayName} 暂不支持 Minecraft 联机房间";
+                return;
+            }
+
             _ = RefreshMyRoomsAsync();
         }
 
@@ -165,7 +171,10 @@ namespace Kairo.ViewModels
         {
             try
             {
-                var url = $"{Global.API}/game/minecraft/games?user_id={Global.Config.ID}";
+                if (!Global.CurrentProvider.SupportsMinecraftRooms)
+                    return;
+
+                var url = $"{Global.CurrentProvider.ApiBaseUrl}/game/minecraft/games?user_id={Global.Config.ID}";
                 var resp = await _api.GetAsync(url);
                 var body = await resp.Content.ReadAsStringAsync();
                 var json = JsonNode.Parse(body);
@@ -203,7 +212,13 @@ namespace Kairo.ViewModels
         {
             try
             {
-                var url = $"{Global.API}/game/minecraft/game?user_id={Global.Config.ID}&code={room.Code}";
+                if (!Global.CurrentProvider.SupportsMinecraftRooms)
+                {
+                    ShowSnackbar("功能不可用", $"{Global.CurrentProvider.DisplayName} 暂不支持 Minecraft 联机房间", InfoBarSeverity.Warning);
+                    return;
+                }
+
+                var url = $"{Global.CurrentProvider.ApiBaseUrl}/game/minecraft/game?user_id={Global.Config.ID}&code={room.Code}";
                 var resp = await _api.DeleteAsync(url);
                 var body = await resp.Content.ReadAsStringAsync();
                 var json = JsonNode.Parse(body);
@@ -230,6 +245,12 @@ namespace Kairo.ViewModels
 
         private async Task JoinRoomAsync()
         {
+            if (!Global.CurrentProvider.SupportsMinecraftRooms)
+            {
+                ShowSnackbar("功能不可用", $"{Global.CurrentProvider.DisplayName} 暂不支持 Minecraft 联机房间", InfoBarSeverity.Warning);
+                return;
+            }
+
             if (string.IsNullOrWhiteSpace(JoinRoomCode))
             {
                 ShowSnackbar("请输入房间代码", null, InfoBarSeverity.Warning);
@@ -241,7 +262,7 @@ namespace Kairo.ViewModels
                 StatusText = "正在获取房间信息...";
 
                 // Get room info from API
-                var url = $"{Global.API}/game/minecraft/game?code={JoinRoomCode.Trim()}";
+                var url = $"{Global.CurrentProvider.ApiBaseUrl}/game/minecraft/game?code={JoinRoomCode.Trim()}";
                 var resp = await _api.GetAsync(url);
                 var body = await resp.Content.ReadAsStringAsync();
                 var json = JsonNode.Parse(body);

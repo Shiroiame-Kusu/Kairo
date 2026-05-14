@@ -5,16 +5,14 @@ namespace Kairo.Core;
 /// </summary>
 public static class AppConstants
 {
-    public const string Version = "3.3.0";
-    public const string VersionName = "Voyaging Star";
-    public const ReleaseChannel Branch = ReleaseChannel.Release;
+    public const string Version = "3.4.0";
+    public const string VersionName = "Lycoris Radiata";
+    public const ReleaseChannel Branch = ReleaseChannel.Alpha;
     public const int Revision = 1;
     public const string Developer = "Shiroiame-Kusu & Daiyangcheng";
     public const string Copyright = "Copyright © Shiroiame-Kusu All Rights Reserved";
 
     // API v3 base
-    public const string API = "https://api.locyanfrp.cn/v3";
-    public const string Dashboard = "https://dashboard.locyanfrp.cn";
     public const string UpdateCheckerAPI = "https://kairo.nyat.icu/api";
     public const string GithubMirror = "https://hub.locyancs.cn";
 
@@ -37,31 +35,4 @@ public static class AppConstants
         "Sayings:你是抱着多大的觉悟说出这种话的?",
         "Sayings:你这个人，满脑子都只想着自己呢。"
     };
-}
-
-/// <summary>
-/// API 端点定义
-/// </summary>
-public static class ApiEndpoints
-{
-    private const string API = AppConstants.API;
-    private const string Dashboard = AppConstants.Dashboard;
-
-    // User & OAuth
-    public const string GetUserInfo = $"{API}/user";
-    public const string OAuthAuthorize = $"{Dashboard}/auth/oauth/authorize";
-    public const string GetRefreshToken = $"{API}/auth/oauth/refresh-token";
-    public const string GetAccessToken = $"{API}/auth/oauth/access-token";
-    public const string GetFrpToken = $"{API}/user/frp/token";
-
-    // Site & sign
-    public const string GetSign = $"{API}/sign";
-    public const string GetNotice = $"{API}/site/notice";
-
-    // Tunnels & nodes
-    public const string GetAllProxy = $"{API}/tunnels?user_id=";
-    public const string DeleteProxy = $"{API}/tunnel?user_id=";
-    public const string Tunnel = $"{API}/tunnel";
-    public const string GetAllNodes = $"{API}/nodes?user_id=";
-    public const string GetRandomPort = $"{API}/node/port";
 }

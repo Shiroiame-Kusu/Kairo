@@ -10,6 +10,7 @@ using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using FluentAvalonia.UI.Controls;
 using Kairo.Controls;
+using Kairo.Core.Providers;
 using Kairo.Utils;
 using Avalonia.Threading; // added for DispatcherTimer
 using Kairo.ViewModels;
@@ -37,8 +38,11 @@ namespace Kairo.Components.DashBoard
             _viewModel = new DashBoardViewModel();
             DataContext = _viewModel;
             Access.DashBoard = this;
+            ApplyProviderIcon();
             SetupPlatformWindowStyle();
             NavView.SelectedItem = HomeNavItem;
+            if (Global.CurrentProvider.Type == FrpProviderType.Lolia && this.FindControl<NavigationViewItem>("LanPartyNavItem") is { } lanPartyItem)
+                lanPartyItem.IsVisible = false;
             _titleBar = this.FindControl<CustomTitleBar>("TitleBar");
             this.Opened += OnDashBoardOpened;
             this.Deactivated += OnDashBoardDeactivated;
@@ -57,6 +61,11 @@ namespace Kairo.Components.DashBoard
             windowBorder.Margin = new Thickness(0);
             windowBorder.BoxShadow = new BoxShadows();
             
+        }
+
+        private void ApplyProviderIcon()
+        {
+            try { Icon = ProviderBranding.LoadIcon(Global.CurrentProvider); } catch { }
         }
 
         private void OnDashBoardOpened(object? sender, EventArgs e)
@@ -92,7 +101,7 @@ namespace Kairo.Components.DashBoard
                 string remote = result.RemoteVersion ?? "unknown";
                 OpenSnackbar("发现 FRPC 更新", $"当前 {local}, 最新 {remote}");
 
-                if (FrpcUpdateChecker.IsManagedFrpcPath(Global.Config.FrpcPath))
+                if (FrpcUpdateChecker.IsManagedFrpcPath(ProviderFrpcPath.Get(Global.CurrentProvider)))
                 {
                     var win = new DownloadFrpcWindow();
                     win.Show(this);

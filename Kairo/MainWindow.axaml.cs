@@ -26,6 +26,7 @@ public partial class MainWindow : Window
         _viewModel = new MainWindowViewModel();
         DataContext = _viewModel;
         Access.MainWindow = this;
+        ApplyProviderIcon();
         SetupPlatformWindowStyle();
         SetupTrayIcon();
         HookViewModel();
@@ -64,6 +65,20 @@ public partial class MainWindow : Window
     {
         _viewModel.LoginSucceeded += OnLoginSucceeded;
         _viewModel.LoginFailed += (_, msg) => _viewModel.ShowSnackbar("登录失败", msg, InfoBarSeverity.Error);
+        _viewModel.ProviderChanged += (_, _) => ApplyProviderIcon();
+    }
+
+    private void ApplyProviderIcon()
+    {
+        try
+        {
+            Icon = ProviderBranding.LoadIcon(Global.CurrentProvider);
+            if (_trayIcon != null)
+                _trayIcon.Icon = Icon;
+        }
+        catch
+        {
+        }
     }
 
     private async void OnLoginSucceeded(object? sender, UserInfo user)
@@ -88,6 +103,11 @@ public partial class MainWindow : Window
     public async Task AcceptOAuthRefreshToken(string refreshToken)
     {
         await _viewModel.AcceptOAuthRefreshTokenAsync(refreshToken);
+    }
+
+    public async Task AcceptOAuthCode(string code)
+    {
+        await _viewModel.AcceptOAuthCodeAsync(code);
     }
 
     private void SetupTrayIcon()

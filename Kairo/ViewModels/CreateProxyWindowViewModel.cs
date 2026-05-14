@@ -2,11 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using System.Net.Http;
-using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
+using Kairo.Core.Models;
+using Kairo.Core.Providers;
 using Kairo.Utils;
 
 namespace Kairo.ViewModels
@@ -180,56 +180,26 @@ namespace Kairo.ViewModels
                 }
 
                 using var api = new ApiClient();
-                var url = ApiClient.GetNodesUrl();
-                var resp = await api.GetAsync(url);
-                var content = await resp.Content.ReadAsStringAsync();
-                var json = JsonNode.Parse(content);
-                if (json?["status"]?.GetValue<int>() != 200)
+                var result = await api.GetNodesAsync();
+                if (!result.Success)
                 {
-                    StatusText = $"获取节点失败: {json?["message"]?.GetValue<string>()}";
+                    StatusText = $"获取节点失败: {result.Message}";
                     return;
                 }
 
-                var list = json?["data"]?["list"] as JsonArray;
                 _nodes.Clear();
-                if (list != null)
+                foreach (var node in result.Data ?? Array.Empty<FrpNode>())
                 {
-                    foreach (var item in list)
+                    string label = !string.IsNullOrWhiteSpace(node.Ip) ? node.Ip : node.Host;
+                    var portRangeDisplay = node.PortRanges.Count > 0 ? string.Join(", ", node.PortRanges) : "";
+                    if (node.Id > 0 && !string.IsNullOrWhiteSpace(label))
                     {
-                        int id = item?["id"]?.GetValue<int>() ?? 0;
-                        string ip = item?["ip"]?.GetValue<string>() ?? string.Empty;
-                        string host = item?["host"]?.GetValue<string>() ?? string.Empty;
-                        string label = !string.IsNullOrWhiteSpace(ip) ? ip : host;
-                        var additional = item?["additional"] as JsonObject;
-                        string name = item?["name"]?.GetValue<string>() ?? label;
-                        string? description = additional?["description"]?.GetValue<string>();
-                        if (string.IsNullOrWhiteSpace(description))
-                            description = item?["description"]?.GetValue<string>();
-                        var portRangeArray = item?["port_range"] as JsonArray;
-                        var portRanges = new List<string>();
-                        if (portRangeArray != null)
+                        _nodes.Add(new NodeItem(node.Id, label)
                         {
-                            foreach (var token in portRangeArray)
-                            {
-                                if (token is JsonNode tk)
-                                {
-                                    var range = tk.GetValue<string>();
-                                    if (!string.IsNullOrWhiteSpace(range))
-                                        portRanges.Add(range);
-                                }
-                            }
-                        }
-
-                        string portRangeDisplay = portRanges.Count > 0 ? string.Join(", ", portRanges) : "";
-                        if (id > 0 && !string.IsNullOrWhiteSpace(label))
-                        {
-                            _nodes.Add(new NodeItem(id, label)
-                            {
-                                DisplayName = string.IsNullOrWhiteSpace(name) ? label : name,
-                                PortRangeDisplay = string.IsNullOrWhiteSpace(portRangeDisplay) ? "—" : portRangeDisplay,
-                                DescriptionDisplay = string.IsNullOrWhiteSpace(description) ? "暂无" : description!,
-                            });
-                        }
+                            DisplayName = string.IsNullOrWhiteSpace(node.Name) ? label : node.Name,
+                            PortRangeDisplay = string.IsNullOrWhiteSpace(portRangeDisplay) ? "—" : portRangeDisplay,
+                            DescriptionDisplay = string.IsNullOrWhiteSpace(node.Description) ? "暂无" : node.Description,
+                        });
                     }
                 }
 
@@ -275,6 +245,11 @@ namespace Kairo.ViewModels
                 {
                     if (string.IsNullOrWhiteSpace(remotePortStr))
                     {
+                        if (Global.CurrentProvider.Type == FrpProviderType.Lolia)
+                        {
+                            StatusText = "LoliaFRP 暂不支持随机端口，请手动输入远端端口";
+                            return;
+                        }
                         StatusText = "正在请求随机远端端口…";
                         var port = await TryGetRandomPortAsync(nodeItem.Id);
                         if (port <= 0)
@@ -298,39 +273,26 @@ namespace Kairo.ViewModels
                 }
 
                 using var api = new ApiClient();
-                var form = new List<KeyValuePair<string, string>>
+                var result = await api.CreateTunnelAsync(new CreateFrpTunnelRequest
                 {
-                    new("user_id", Global.Config.ID.ToString()),
-                    new("name", name!),
-                    new("local_ip", localIp!),
-                    new("type", type.ToUpperInvariant()),
-                    new("local_port", localPort.ToString()),
-                    new("node_id", nodeItem.Id.ToString()),
-                    new("use_encryption", useEnc ? "true" : "false"),
-                    new("use_compression", useComp ? "true" : "false"),
-                };
-                if (needRemote)
-                    form.Add(new("remote_port", remotePort.ToString()));
-                if (needSecret)
-                    form.Add(new("secret_key", secret ?? string.Empty));
-                if (needDomain)
-                    form.Add(new("domain", domain ?? string.Empty));
-
-                var resp = await api.PutAsync(Global.APIList.Tunnel, new FormUrlEncodedContent(form));
-                var content = await resp.Content.ReadAsStringAsync();
-                JsonNode? json;
-                try { json = JsonNode.Parse(content); }
-                catch { StatusText = "服务器返回异常"; return; }
-                if (json?["status"]?.GetValue<int>() == 200)
+                    Name = name!,
+                    LocalIp = localIp!,
+                    Type = type,
+                    LocalPort = localPort,
+                    NodeId = nodeItem.Id,
+                    UseEncryption = useEnc,
+                    UseCompression = useComp,
+                    RemotePort = needRemote ? remotePort : null,
+                    SecretKey = needSecret ? secret ?? string.Empty : string.Empty,
+                    Domain = needDomain ? domain ?? string.Empty : string.Empty
+                });
+                if (result.Success && result.Data != null)
                 {
-                    int proxyId = json?["data"]?["tunnel_id"]?.GetValue<int>() ?? 0;
-                    string proxyName = name!;
-                    ProxyCreated?.Invoke(proxyId, proxyName);
+                    ProxyCreated?.Invoke(result.Data.TunnelId, string.IsNullOrWhiteSpace(result.Data.TunnelName) ? name! : result.Data.TunnelName);
                 }
                 else
                 {
-                    var msg = json?["message"]?.GetValue<string>() ?? "创建失败";
-                    StatusText = msg;
+                    StatusText = result.Message;
                 }
             }
             catch (Exception ex)
@@ -346,14 +308,8 @@ namespace Kairo.ViewModels
                 if (!ApiClient.IsLoggedIn)
                     return 0;
                 using var api = new ApiClient();
-                var url = ApiClient.GetRandomPortUrl(nodeId);
-                var resp = await api.GetAsync(url);
-                var content = await resp.Content.ReadAsStringAsync();
-                var json = JsonNode.Parse(content);
-                if (json?["status"]?.GetValue<int>() != 200)
-                    return 0;
-                var port = json?["data"]?["port"]?.GetValue<int>() ?? 0;
-                return port;
+                var result = await api.GetRandomPortAsync(nodeId);
+                return result.Success ? result.Data : 0;
             }
             catch
             {

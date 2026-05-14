@@ -21,8 +21,7 @@ namespace Kairo.ViewModels
             {
                 if (SetProperty(ref _frpcPath, value))
                 {
-                    Global.Config.FrpcPath = value;
-                    ConfigManager.Save();
+                    ProviderFrpcPath.Set(Global.CurrentProvider, value);
                 }
             }
         }
@@ -109,7 +108,7 @@ namespace Kairo.ViewModels
 
         public void LoadFromConfig()
         {
-            FrpcPath = Global.Config.FrpcPath ?? string.Empty;
+            FrpcPath = ProviderFrpcPath.Get(Global.CurrentProvider);
             UseMirror = Global.Config.UsingDownloadMirror;
             FollowSystem = Global.Config.FollowSystemTheme;
             DarkTheme = Global.Config.DarkTheme;

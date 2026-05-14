@@ -1,4 +1,5 @@
 using System;
+using Avalonia.Media;
 using Avalonia.Threading;
 using FluentAvalonia.UI.Controls;
 using Kairo.Utils;
@@ -50,6 +51,8 @@ namespace Kairo.ViewModels
             set => SetProperty(ref _frpcChecked, value);
         }
 
+        public IImage IconSource => ProviderBranding.GetIconImage(Global.CurrentProvider);
+
         public void ShowSnackbar(string title, string? message, InfoBarSeverity severity = InfoBarSeverity.Informational)
         {
             SnackbarTitle = title;
@@ -62,7 +65,7 @@ namespace Kairo.ViewModels
         {
             if (FrpcChecked) return false;
             FrpcChecked = true;
-            var path = Global.Config.FrpcPath;
+            var path = ProviderFrpcPath.Get(Global.CurrentProvider);
             return string.IsNullOrWhiteSpace(path) || !System.IO.File.Exists(path);
         }
 

@@ -1,14 +1,14 @@
 using System;
 using System.Collections.ObjectModel;
-using System.Text.Json.Nodes;
+using System.Linq;
 using System.Threading.Tasks;
 using FluentAvalonia.UI.Controls;
 using Avalonia.Threading;
 using Avalonia.Controls;
 using Kairo.Components.DashBoard;
+using Kairo.Core.Models;
+using Kairo.Core.Providers;
 using Kairo.Utils;
-using Kairo.Utils.Serialization;
-using System.Text.Json;
 
 namespace Kairo.ViewModels
 {
@@ -83,21 +83,15 @@ namespace Kairo.ViewModels
         {
             try
             {
-                var url = ApiClient.GetProxiesUrl();
-                var resp = await _api.GetAsync(url);
-                var body = await resp.Content.ReadAsStringAsync();
-                var json = JsonNode.Parse(body);
-                var status = json?["status"]?.GetValue<int>() ?? 0;
-                if (status != 200)
+                var result = await _api.GetTunnelsAsync();
+                if (!result.Success)
                 {
-                    AccessSnackbar("获取隧道失败", json?["message"]?.GetValue<string>(), InfoBarSeverity.Error);
+                    AccessSnackbar("获取隧道失败", result.Message, InfoBarSeverity.Error);
                     return;
                 }
-                var arrToken = json?["data"]?["list"];
-                var proxies = arrToken?.Deserialize(AppJsonContext.Default.ListProxy) ?? new();
 
                 Proxies.Clear();
-                foreach (var p in proxies)
+                foreach (var p in (result.Data ?? Array.Empty<FrpTunnel>()).Select(t => t.ToProxy()))
                 {
                     var vm = new ProxyCardViewModel(p, this)
                     {
@@ -117,18 +111,16 @@ namespace Kairo.ViewModels
         {
             try
             {
-                var url = ApiClient.GetDeleteProxyUrl(vm.Proxy.Id);
-                var resp = await _api.DeleteAsync(url);
-                var body = await resp.Content.ReadAsStringAsync();
-                var json = JsonNode.Parse(body);
-                if (json?["status"]?.GetValue<int>() == 200)
+                var tunnel = new FrpTunnel { Id = vm.Proxy.Id, Name = vm.Proxy.ProxyName };
+                var result = await _api.DeleteTunnelAsync(tunnel);
+                if (result.Success)
                 {
                     AccessSnackbar("已删除", vm.Proxy.ProxyName, InfoBarSeverity.Success);
                     await RefreshAsync();
                 }
                 else
                 {
-                    AccessSnackbar("删除失败", json?["message"]?.GetValue<string>(), InfoBarSeverity.Error);
+                    AccessSnackbar("删除失败", result.Message, InfoBarSeverity.Error);
                 }
             }
             catch (Exception ex)
@@ -137,18 +129,32 @@ namespace Kairo.ViewModels
             }
         }
 
-        public void StartProxy(ProxyCardViewModel vm)
+        public async void StartProxy(ProxyCardViewModel vm)
         {
-            if (string.IsNullOrWhiteSpace(Global.Config.FrpcPath))
+            var frpcPath = ProviderFrpcPath.Get(Global.CurrentProvider);
+            if (string.IsNullOrWhiteSpace(frpcPath))
             {
-                AccessSnackbar("未配置frpc", "请在设置中指定或下载frpc", InfoBarSeverity.Warning);
+                AccessSnackbar("未配置frpc", $"请在设置中指定或下载 {Global.CurrentProvider.DisplayName} frpc", InfoBarSeverity.Warning);
                 return;
             }
             if (FrpcProcessManager.IsRunning(vm.Proxy.Id))
             {
                 FrpcProcessManager.StopProxy(vm.Proxy.Id);
             }
-            FrpcProcessManager.StartProxy(vm.Proxy.Id, Global.Config.FrpcPath, Global.Config.FrpToken,
+            var frpToken = Global.Config.FrpToken;
+            if (Global.CurrentProvider.Type == FrpProviderType.Lolia)
+            {
+                using var api = new ApiClient();
+                var config = await api.GetFrpcConfigAsync(new FrpTunnel { Id = vm.Proxy.Id, Name = vm.Proxy.ProxyName });
+                if (!config.Success || string.IsNullOrWhiteSpace(config.Data?.Token))
+                {
+                    AccessSnackbar("启动失败", config.Message, InfoBarSeverity.Error);
+                    return;
+                }
+                frpToken = config.Data.Token;
+            }
+
+            FrpcProcessManager.StartProxy(vm.Proxy.Id, vm.Proxy.ProxyName, frpcPath, frpToken, Global.CurrentProvider,
                 _ =>
                 {
                     vm.IsRunning = true;

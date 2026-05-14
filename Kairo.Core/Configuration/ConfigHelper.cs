@@ -7,6 +7,15 @@ namespace Kairo.Core.Configuration;
 /// <summary>
 /// 共享配置基类
 /// </summary>
+public class ProviderAuthState
+{
+    public string AccessToken { get; set; } = "";
+    public string RefreshToken { get; set; } = "";
+    public string Username { get; set; } = "";
+    public int ID { get; set; }
+    public string FrpToken { get; set; } = "";
+}
+
 public class BaseConfig
 {
     public string AccessToken { get; set; } = "";
@@ -14,7 +23,10 @@ public class BaseConfig
     public string Username { get; set; } = "";
     public int ID { get; set; } = 0;
     public string FrpToken { get; set; } = "";
+    public Dictionary<string, ProviderAuthState> ProviderAuth { get; set; } = new(StringComparer.OrdinalIgnoreCase);
     public string FrpcPath { get; set; } = "";
+    public Dictionary<string, string> FrpcPaths { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+    public string ProviderId { get; set; } = "locyan";
     public bool UsingDownloadMirror { get; set; } = true;
 }
 

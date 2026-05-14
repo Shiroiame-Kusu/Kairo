@@ -1,6 +1,9 @@
 using System.Diagnostics;
+using System.Security.Cryptography;
+using System.Text;
 using Kairo.Core;
 using Kairo.Core.Models;
+using Kairo.Core.Providers;
 using Kairo.Cli.Configuration;
 using Kairo.Cli.Services;
 using Kairo.Cli.Utils;
@@ -17,7 +20,9 @@ public class CliApp : IDisposable
     private ApiClient? _apiClient;
     private bool _disposed;
     private bool _cancelKeyRegistered;
+    private string _pkceCodeVerifier = string.Empty;
     private readonly List<Process> _frpcProcesses = new();
+    private IFrpProvider CurrentProvider => FrpProviderRegistry.Get(CliConfigManager.Config.ProviderId);
 
     public CliApp(string[] args)
     {
@@ -109,6 +114,13 @@ public class CliApp : IDisposable
         // 使用 OAuth Code 登录（code -> refresh_token -> access_token）
         if (!string.IsNullOrWhiteSpace(options.OAuthCode))
         {
+            if (CurrentProvider.Type == FrpProviderType.Lolia)
+            {
+                Console.WriteLine("[错误] LoliaFRP OAuth 使用 PKCE，请使用交互式登录以保持 code_verifier");
+                Logger.MethodExit("1 (Lolia PKCE requires interactive login)");
+                return 1;
+            }
+
             Logger.Info($"使用 OAuth Code 进行登录，Code长度: {options.OAuthCode.Length}");
             if (!await PerformLoginWithCodeAsync(options.OAuthCode))
             {
@@ -140,7 +152,7 @@ public class CliApp : IDisposable
         Logger.Debug($"FRP Token 来源: {(!string.IsNullOrWhiteSpace(options.FrpToken) ? "命令行参数" : "配置文件")}");
         Logger.Debug($"FRP Token 是否存在: {!string.IsNullOrWhiteSpace(frpToken)}");
 
-        if (string.IsNullOrWhiteSpace(frpToken))
+        if (string.IsNullOrWhiteSpace(frpToken) && CurrentProvider.Type != FrpProviderType.Lolia)
         {
             Logger.Warning("未找到 FRP Token");
             if (options.InteractiveMode)
@@ -173,7 +185,7 @@ public class CliApp : IDisposable
         }
 
         // 检查 frpc 路径
-        var frpcPath = options.FrpcPath ?? CliConfigManager.Config.FrpcPath;
+        var frpcPath = options.FrpcPath ?? ProviderFrpcPath.Get(CurrentProvider);
         Logger.Debug($"frpc 路径来源: {(options.FrpcPath != null ? "命令行参数" : "配置文件")}");
         Logger.Debug($"frpc 路径: {frpcPath ?? "(未设置)"}");
         
@@ -207,7 +219,7 @@ public class CliApp : IDisposable
         // 获取隧道列表
         List<Tunnel>? tunnels = null;
         
-        if (options.ListProxies || options.ProxyIds.Count == 0)
+        if (options.ListProxies || options.ProxyIds.Count == 0 || CurrentProvider.Type == FrpProviderType.Lolia)
         {
             Logger.Debug($"需要获取隧道列表: ListProxies={options.ListProxies}, ProxyIds.Count={options.ProxyIds.Count}");
             _apiClient ??= new ApiClient();
@@ -269,7 +281,7 @@ public class CliApp : IDisposable
         }
 
         Logger.Info($"开始启动隧道，数量: {options.ProxyIds.Count}");
-        var result = await StartProxiesAsync(frpcPath, frpToken!, options.ProxyIds);
+        var result = await StartProxiesAsync(frpcPath, frpToken!, options.ProxyIds, tunnels);
         Logger.MethodExit($"{result}");
         return result;
     }
@@ -288,7 +300,29 @@ public class CliApp : IDisposable
         Console.WriteLine("检测到您尚未登录，需要先完成 OAuth 授权。");
         Console.WriteLine();
 
-        var oauthUrl = $"{ApiEndpoints.OAuthAuthorize}?client_id={AppConstants.APPID}&scopes=User,Node,Tunnel,Sign&mode=code";
+        if (!CurrentProvider.SupportsOAuthLogin)
+        {
+            Console.WriteLine($"[错误] {CurrentProvider.DisplayName} 未公开 OAuth 登录接口");
+            Logger.MethodExit("false (provider unsupported)");
+            return false;
+        }
+
+        var codeChallenge = string.Empty;
+        if (CurrentProvider.Type == FrpProviderType.Lolia)
+        {
+            _pkceCodeVerifier = CreatePkceCodeVerifier();
+            codeChallenge = CreatePkceCodeChallenge(_pkceCodeVerifier);
+        }
+
+        var oauthUrl = CurrentProvider.BuildOAuthUrl(new OAuthRequest
+        {
+            ClientId = AppConstants.APPID,
+            Scopes = CurrentProvider.Type == FrpProviderType.Lolia ? "all node:read" : "User,Node,Tunnel,Sign",
+            RedirectUri = CurrentProvider.Type == FrpProviderType.Lolia ? "http://127.0.0.1:10000/oauth/callback" : string.Empty,
+            Mode = "code",
+            CodeChallenge = codeChallenge,
+            CodeChallengeMethod = string.IsNullOrWhiteSpace(codeChallenge) ? string.Empty : "S256"
+        });
         Logger.Debug($"OAuth URL: {oauthUrl}");
         
         Console.WriteLine("请在浏览器中打开以下链接进行授权:");
@@ -322,7 +356,7 @@ public class CliApp : IDisposable
             return false;
         }
 
-        var result = await PerformLoginWithCodeAsync(code);
+        var result = await PerformLoginWithCodeAsync(code, _pkceCodeVerifier);
         Logger.MethodExit(result.ToString());
         return result;
     }
@@ -330,7 +364,7 @@ public class CliApp : IDisposable
     /// <summary>
     /// 使用授权码登录
     /// </summary>
-    private async Task<bool> PerformLoginWithCodeAsync(string code)
+    private async Task<bool> PerformLoginWithCodeAsync(string code, string codeVerifier = "")
     {
         Logger.MethodEntry($"code长度={code.Length}");
         
@@ -338,7 +372,7 @@ public class CliApp : IDisposable
         _apiClient = new ApiClient();
         
         Logger.Debug("调用 ExchangeCodeForRefreshTokenAsync");
-        var loginResult = await _apiClient.ExchangeCodeForRefreshTokenAsync(code);
+        var loginResult = await _apiClient.ExchangeCodeForRefreshTokenAsync(code, codeVerifier);
         
         if (!loginResult.Success)
         {
@@ -543,7 +577,7 @@ public class CliApp : IDisposable
         Logger.MethodExit();
     }
 
-    private async Task<int> StartProxiesAsync(string frpcPath, string frpToken, List<int> proxyIds)
+    private async Task<int> StartProxiesAsync(string frpcPath, string frpToken, List<int> proxyIds, List<Tunnel>? tunnels)
     {
         Logger.MethodEntry($"frpcPath={frpcPath}, proxyIds.Count={proxyIds.Count}");
         
@@ -571,7 +605,27 @@ public class CliApp : IDisposable
         foreach (var proxyId in proxyIds)
         {
             Logger.Debug($"启动隧道 ID: {proxyId}");
-            var process = StartFrpcProcess(frpcPath, frpToken, proxyId);
+            var tunnel = tunnels?.FirstOrDefault(t => t.Id == proxyId);
+            var token = frpToken;
+            if (CurrentProvider.Type == FrpProviderType.Lolia)
+            {
+                if (tunnel == null)
+                {
+                    Logger.Error($"LoliaFRP 启动隧道 {proxyId} 需要先获取隧道列表");
+                    Console.WriteLine($"[错误] 隧道 {proxyId} 启动失败: 未找到隧道信息");
+                    continue;
+                }
+                _apiClient ??= new ApiClient();
+                var config = await _apiClient.GetFrpcConfigAsync(tunnel);
+                if (!config.Success || string.IsNullOrWhiteSpace(config.Data?.Token))
+                {
+                    Logger.Error($"获取 LoliaFRP 隧道 token 失败: {config.Message}");
+                    Console.WriteLine($"[错误] 隧道 {proxyId} 启动失败: {config.Message}");
+                    continue;
+                }
+                token = config.Data.Token;
+            }
+            var process = StartFrpcProcess(frpcPath, token, proxyId, tunnel?.ProxyName ?? string.Empty);
             if (process != null)
             {
                 lock (_frpcProcesses)
@@ -628,12 +682,18 @@ public class CliApp : IDisposable
         return 0;
     }
 
-    private Process? StartFrpcProcess(string frpcPath, string frpToken, int proxyId)
+    private Process? StartFrpcProcess(string frpcPath, string frpToken, int proxyId, string proxyName)
     {
         Logger.MethodEntry($"proxyId={proxyId}");
         try
         {
-            var arguments = $"-u {frpToken} -t {proxyId}";
+            var arguments = CurrentProvider.BuildFrpcArguments(new FrpStartOptions
+            {
+                TunnelId = proxyId,
+                TunnelName = proxyName,
+                FrpToken = frpToken,
+                ApiBaseUrl = CurrentProvider.ApiBaseUrl
+            });
             Logger.ProcessStart(frpcPath, arguments);
             
             var psi = new ProcessStartInfo
@@ -875,10 +935,44 @@ public class CliApp : IDisposable
         Console.WriteLine(AppConstants.Copyright);
     }
 
+    private static string CreatePkceCodeVerifier()
+    {
+        var bytes = RandomNumberGenerator.GetBytes(32);
+        return Base64UrlEncode(bytes);
+    }
+
+    private static string CreatePkceCodeChallenge(string codeVerifier)
+    {
+        var hash = SHA256.HashData(Encoding.ASCII.GetBytes(codeVerifier));
+        return Base64UrlEncode(hash);
+    }
+
+    private static string Base64UrlEncode(byte[] bytes) => Convert.ToBase64String(bytes)
+        .TrimEnd('=')
+        .Replace('+', '-')
+        .Replace('/', '_');
+
     private void ShowOAuthUrl()
     {
-        var oauthUrl = $"{ApiEndpoints.OAuthAuthorize}?client_id={AppConstants.APPID}&scopes=User,Node,Tunnel,Sign&mode=code";
-        
+        if (!CurrentProvider.SupportsOAuthLogin)
+        {
+            Console.WriteLine($"[错误] {CurrentProvider.DisplayName} 未公开 OAuth 登录接口");
+            return;
+        }
+        if (CurrentProvider.Type == FrpProviderType.Lolia)
+        {
+            Console.WriteLine("[错误] LoliaFRP OAuth 使用 PKCE，请使用交互式登录生成配套 code_verifier");
+            return;
+        }
+
+        var oauthUrl = CurrentProvider.BuildOAuthUrl(new OAuthRequest
+        {
+            ClientId = AppConstants.APPID,
+            Scopes = CurrentProvider.Type == FrpProviderType.Lolia ? "all node:read" : "User,Node,Tunnel,Sign",
+            RedirectUri = CurrentProvider.Type == FrpProviderType.Lolia ? "http://127.0.0.1:10000/oauth/callback" : string.Empty,
+            Mode = "code"
+        });
+
         Console.WriteLine("═══════════════════════════════════════════════════════════════");
         Console.WriteLine("请在浏览器中打开以下 URL 进行授权:");
         Console.WriteLine();

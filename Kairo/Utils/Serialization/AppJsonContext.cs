@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Text.Json.Serialization;
 using Kairo.Models;
 using Kairo.Components;
+using Kairo.Core.Configuration;
 using Kairo.Utils.Configuration;
 using static Kairo.Utils.CrashInterception;
 
@@ -16,6 +17,9 @@ namespace Kairo.Utils.Serialization;
     Converters = new[] { typeof(BigDecimalJsonConverter) })]
 [JsonSerializable(typeof(Config))]
 [JsonSerializable(typeof(List<Proxy>))]
+[JsonSerializable(typeof(Dictionary<string, string>))]
+[JsonSerializable(typeof(Dictionary<string, ProviderAuthState>))]
+[JsonSerializable(typeof(ProviderAuthState))]
 [JsonSerializable(typeof(Proxy))]
 [JsonSerializable(typeof(ProxyNode))]
 [JsonSerializable(typeof(UserInfo))]

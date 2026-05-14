@@ -1,4 +1,5 @@
 using Kairo.Cli.Configuration;
+using Kairo.Cli.Services;
 using Kairo.Cli.Utils;
 
 namespace Kairo.Cli;
@@ -29,7 +30,8 @@ class Program
         
         // 初始化配置
         CliConfigManager.Init();
-        
+        ProviderAuth.ApplyCurrent();
+
         // 如果配置中启用了调试模式，覆盖日志级别
         if (CliConfigManager.Config.DebugMode && logLevel > LogLevel.Debug)
             logLevel = LogLevel.Debug;

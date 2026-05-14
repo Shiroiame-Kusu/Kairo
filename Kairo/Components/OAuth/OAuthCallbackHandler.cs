@@ -48,9 +48,13 @@ namespace Kairo.Components.OAuth
                     _application.MapGet("/oauth/callback", async (HttpContext ctx) =>
                     {
                         var refreshToken = ctx.Request.Query["refresh_token"].ToString();
-                        if (!string.IsNullOrWhiteSpace(refreshToken) && Kairo.Utils.Access.MainWindow is Kairo.MainWindow mw)
+                        var code = ctx.Request.Query["code"].ToString();
+                        if (Kairo.Utils.Access.MainWindow is Kairo.MainWindow mw)
                         {
-                            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(async () => await mw.AcceptOAuthRefreshToken(refreshToken));
+                            if (!string.IsNullOrWhiteSpace(refreshToken))
+                                await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(async () => await mw.AcceptOAuthRefreshToken(refreshToken));
+                            else if (!string.IsNullOrWhiteSpace(code))
+                                await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(async () => await mw.AcceptOAuthCode(code));
                         }
                         const string html = "<html><head><title>OAuth Complete</title></head><body><h3>授权完成，可以返回 Kairo 应用。</h3><script>setTimeout(()=>window.close(),1500);</script></body></html>";
                         ctx.Response.ContentType = "text/html; charset=utf-8";

@@ -1,7 +1,11 @@
 using System;
+using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using Kairo.Core;
+using Kairo.Core.Models;
+using Kairo.Core.Providers;
 using Kairo.Utils.Logger;
 
 namespace Kairo.Utils
@@ -76,6 +80,96 @@ namespace Kairo.Utils
             {
                 _http.DefaultRequestHeaders.Add("Authorization", $"Bearer {Global.Config.AccessToken}");
             }
+        }
+
+        public string BuildOAuthUrl(string mode = "code", string codeChallenge = "") => Global.CurrentProvider.BuildOAuthUrl(new OAuthRequest
+        {
+            ClientId = AppConstants.APPID,
+            Scopes = Global.CurrentProvider.Type == FrpProviderType.Lolia ? "all node:read" : "User,Node,Tunnel,Sign",
+            RedirectUri = Global.CurrentProvider.Type == FrpProviderType.Locyan && mode == "callback"
+                ? $"{Global.CurrentProvider.DashboardUrl}/auth/oauth/redirect-localhost?port={Global.OAuthPort}&ssl=false&path=/oauth/callback"
+                : string.Empty,
+            Mode = mode,
+            CallbackPort = Global.OAuthPort,
+            CodeChallenge = codeChallenge,
+            CodeChallengeMethod = string.IsNullOrWhiteSpace(codeChallenge) ? string.Empty : "S256"
+        });
+
+        public async Task<FrpApiResult<FrpLoginResult>> LoginWithRefreshTokenAsync(string refreshToken, CancellationToken ct = default)
+        {
+            ConfigureAuth();
+            var result = await Global.CurrentProvider.LoginWithRefreshTokenAsync(_http, refreshToken, ct);
+            if (result.Success && result.Data != null)
+            {
+                Global.Config.ID = result.Data.UserId;
+                Global.Config.AccessToken = result.Data.AccessToken;
+                Global.Config.RefreshToken = result.Data.RefreshToken;
+                Global.Config.Username = result.Data.User.Username;
+                Global.Config.FrpToken = result.Data.FrpToken;
+                ProviderAuth.SaveCurrent(save: false);
+            }
+            return result;
+        }
+
+        public async Task<FrpApiResult<string>> ExchangeCodeForRefreshTokenAsync(string code, string codeVerifier = "", CancellationToken ct = default)
+        {
+            ConfigureAuth();
+            var redirectUri = $"http://127.0.0.1:{Global.OAuthPort}/oauth/callback";
+            return await Global.CurrentProvider.ExchangeCodeForRefreshTokenAsync(_http, code, redirectUri, codeVerifier, ct);
+        }
+
+        public async Task<FrpApiResult<string>> GetAnnouncementAsync(CancellationToken ct = default)
+        {
+            ConfigureAuth();
+            return await Global.CurrentProvider.GetAnnouncementAsync(_http, ct);
+        }
+
+        public async Task<FrpApiResult<FrpSignStatus>> GetSignStatusAsync(CancellationToken ct = default)
+        {
+            ConfigureAuth();
+            return await Global.CurrentProvider.GetSignStatusAsync(_http, Global.Config.ID, ct);
+        }
+
+        public async Task<FrpApiResult<FrpSignResult>> SignAsync(CancellationToken ct = default)
+        {
+            ConfigureAuth();
+            return await Global.CurrentProvider.SignAsync(_http, Global.Config.ID, ct);
+        }
+
+        public async Task<FrpApiResult<IReadOnlyList<FrpTunnel>>> GetTunnelsAsync(CancellationToken ct = default)
+        {
+            ConfigureAuth();
+            return await Global.CurrentProvider.GetTunnelsAsync(_http, Global.Config.ID, ct);
+        }
+
+        public async Task<FrpApiResult<IReadOnlyList<FrpNode>>> GetNodesAsync(CancellationToken ct = default)
+        {
+            ConfigureAuth();
+            return await Global.CurrentProvider.GetNodesAsync(_http, Global.Config.ID, ct);
+        }
+
+        public async Task<FrpApiResult<int>> GetRandomPortAsync(int nodeId, CancellationToken ct = default)
+        {
+            ConfigureAuth();
+            return await Global.CurrentProvider.GetRandomPortAsync(_http, Global.Config.ID, nodeId, ct);
+        }
+
+        public async Task<FrpApiResult<CreateFrpTunnelResult>> CreateTunnelAsync(CreateFrpTunnelRequest request, CancellationToken ct = default)
+        {
+            ConfigureAuth();
+            return await Global.CurrentProvider.CreateTunnelAsync(_http, Global.Config.ID, request, ct);
+        }
+
+        public async Task<FrpApiResult<object>> DeleteTunnelAsync(FrpTunnel tunnel, CancellationToken ct = default)
+        {
+            ConfigureAuth();
+            return await Global.CurrentProvider.DeleteTunnelAsync(_http, Global.Config.ID, tunnel, ct);
+        }
+
+        public async Task<FrpApiResult<FrpcConfigResult>> GetFrpcConfigAsync(FrpTunnel tunnel, CancellationToken ct = default)
+        {
+            ConfigureAuth();
+            return await Global.CurrentProvider.GetFrpcConfigAsync(_http, tunnel, ct);
         }
 
         #region GET 请求
@@ -214,42 +308,6 @@ namespace Kairo.Utils
         {
             return await _httpExternal.PatchAsyncLogged(url, content, ct);
         }
-
-        #endregion
-
-        #region 便捷方法
-
-        /// <summary>
-        /// 构建带 user_id 参数的 URL
-        /// </summary>
-        public static string BuildUserUrl(string baseUrl, bool appendUserId = true)
-        {
-            if (!appendUserId) return baseUrl;
-            var separator = baseUrl.Contains('?') ? '&' : '?';
-            return $"{baseUrl}{separator}user_id={Global.Config.ID}";
-        }
-
-        /// <summary>
-        /// 获取节点列表的 URL
-        /// </summary>
-        public static string GetNodesUrl() => $"{Global.APIList.GetAllNodes}{Global.Config.ID}";
-
-        /// <summary>
-        /// 获取隧道列表的 URL
-        /// </summary>
-        public static string GetProxiesUrl() => $"{Global.APIList.GetAllProxy}{Global.Config.ID}";
-
-        /// <summary>
-        /// 获取随机端口的 URL
-        /// </summary>
-        public static string GetRandomPortUrl(int nodeId) => 
-            $"{Global.APIList.GetRandomPort}?user_id={Global.Config.ID}&node_id={nodeId}";
-
-        /// <summary>
-        /// 获取删除隧道的 URL
-        /// </summary>
-        public static string GetDeleteProxyUrl(int tunnelId) => 
-            $"{Global.APIList.DeleteProxy}{Global.Config.ID}&tunnel_id={tunnelId}";
 
         #endregion
 

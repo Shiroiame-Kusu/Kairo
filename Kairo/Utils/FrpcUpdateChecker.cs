@@ -1,10 +1,11 @@
 using System;
 using System.Diagnostics;
 using System.IO;
-using System.Text.Json.Nodes;
+using System.Net.Http;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using Kairo.Core.Services;
 using Kairo.Utils.Configuration;
 
 namespace Kairo.Utils
@@ -21,8 +22,6 @@ namespace Kairo.Utils
     internal static class FrpcUpdateChecker
     {
         private static readonly TimeSpan CheckInterval = TimeSpan.FromHours(24);
-        private const string ApiMirror = $"https://{Global.GithubMirror}/repos/LoCyan-Team/LocyanFrpPureApp/releases/latest";
-        private const string ApiOrigin = "https://api.github.com/repos/LoCyan-Team/LocyanFrpPureApp/releases/latest";
 
         public static bool ShouldCheckNow()
         {
@@ -39,28 +38,15 @@ namespace Kairo.Utils
             }
         }
 
-        public static bool IsManagedFrpcPath(string? path)
-        {
-            if (string.IsNullOrWhiteSpace(path)) return false;
-            try
-            {
-                var full = Path.GetFullPath(path);
-                var workDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Kairo", "frpc");
-                workDir = Path.GetFullPath(workDir);
-                return full.StartsWith(workDir + Path.DirectorySeparatorChar, StringComparison.Ordinal);
-            }
-            catch
-            {
-                return false;
-            }
-        }
+        public static bool IsManagedFrpcPath(string? path) =>
+            FrpcDownloadService.IsManagedFrpcPath(path, Global.CurrentProvider);
 
         public static async Task<FrpcUpdateResult> CheckAsync(CancellationToken ct = default)
         {
             if (!ShouldCheckNow())
                 return new FrpcUpdateResult { Skipped = true, Message = "recently checked" };
 
-            string frpcPath = Global.Config.FrpcPath;
+            string frpcPath = ProviderFrpcPath.Get(Global.CurrentProvider);
             if (string.IsNullOrWhiteSpace(frpcPath) || !File.Exists(frpcPath))
                 return new FrpcUpdateResult { Skipped = true, Message = "frpc not found" };
 
@@ -72,7 +58,9 @@ namespace Kairo.Utils
 
             UpdateLocalVersion(localVersion);
 
-            JsonObject? release = await TryFetchReleaseAsync(ct);
+            using var http = new HttpClient();
+            http.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", $"Kairo/{Global.Version}");
+            var release = await Global.CurrentProvider.GetLatestFrpcReleaseAsync(http, ct);
             if (release == null)
             {
                 return new FrpcUpdateResult
@@ -83,7 +71,7 @@ namespace Kairo.Utils
                 };
             }
 
-            string remoteVersion = ExtractReleaseVersion(release);
+            string remoteVersion = release.Version;
             if (string.IsNullOrWhiteSpace(remoteVersion))
             {
                 return new FrpcUpdateResult
@@ -101,38 +89,6 @@ namespace Kairo.Utils
                 LocalVersion = localVersion,
                 RemoteVersion = remoteVersion
             };
-        }
-
-        private static async Task<JsonObject?> TryFetchReleaseAsync(CancellationToken ct)
-        {
-            using var api = new ApiClient();
-            return await TryFetchAsync(api, ApiMirror, ct) ?? await TryFetchAsync(api, ApiOrigin, ct);
-        }
-
-        private static async Task<JsonObject?> TryFetchAsync(ApiClient api, string url, CancellationToken ct)
-        {
-            try
-            {
-                using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-                cts.CancelAfter(TimeSpan.FromSeconds(8));
-                using var resp = await api.GetWithoutAuthAsync(url, cts.Token);
-                var text = await resp.Content.ReadAsStringAsync(cts.Token);
-                return JsonNode.Parse(text) as JsonObject;
-            }
-            catch
-            {
-                return null;
-            }
-        }
-
-        private static string ExtractReleaseVersion(JsonObject release)
-        {
-            var tag = GetNodeString(release["tag_name"]);
-            if (string.IsNullOrWhiteSpace(tag)) return string.Empty;
-
-            var match = Regex.Match(tag, "v?(\\d+\\.\\d+\\.\\d+[a-zA-Z0-9]*)");
-            if (match.Success) return match.Groups[1].Value;
-            return tag.TrimStart('v');
         }
 
         private static async Task<string?> TryGetLocalVersionAsync(string frpcPath, CancellationToken ct)
@@ -174,7 +130,7 @@ namespace Kairo.Utils
         private static string? ParseVersionFromText(string text)
         {
             if (string.IsNullOrWhiteSpace(text)) return null;
-            var match = Regex.Match(text, "(\\d+\\.\\d+\\.\\d+[a-zA-Z0-9]*)");
+            var match = Regex.Match(text, @"(\d+\.\d+\.\d+[a-zA-Z0-9.-]*)");
             return match.Success ? match.Groups[1].Value : null;
         }
 
@@ -196,13 +152,6 @@ namespace Kairo.Utils
                 cfg.FrpcVersion = localVersion;
                 return true;
             }, save: true, debounce: true);
-        }
-
-        private static string GetNodeString(JsonNode? node)
-        {
-            if (node is JsonValue value && value.TryGetValue<string>(out var str))
-                return str;
-            return node?.ToString() ?? string.Empty;
         }
     }
 }

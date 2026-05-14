@@ -3,8 +3,10 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
+using Avalonia.Media;
 using Avalonia.VisualTree;
 using Kairo.Components.DashBoard;
+using Kairo.Utils;
 
 namespace Kairo.Controls;
 
@@ -12,6 +14,7 @@ public partial class CustomTitleBar : UserControl
 {
     public static readonly StyledProperty<string?> TitleProperty = AvaloniaProperty.Register<CustomTitleBar, string?>(nameof(Title));
     public static readonly StyledProperty<bool> ShowUserInfoProperty = AvaloniaProperty.Register<CustomTitleBar, bool>(nameof(ShowUserInfo), false);
+    public static readonly StyledProperty<IImage?> IconSourceProperty = AvaloniaProperty.Register<CustomTitleBar, IImage?>(nameof(IconSource), ProviderBranding.GetIconImage(Global.CurrentProvider));
 
     public string? Title
     {
@@ -23,6 +26,12 @@ public partial class CustomTitleBar : UserControl
     {
         get => GetValue(ShowUserInfoProperty);
         set => SetValue(ShowUserInfoProperty, value);
+    }
+
+    public IImage? IconSource
+    {
+        get => GetValue(IconSourceProperty);
+        set => SetValue(IconSourceProperty, value);
     }
 
     private Window? _window;

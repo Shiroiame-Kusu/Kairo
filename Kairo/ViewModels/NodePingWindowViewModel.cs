@@ -6,6 +6,7 @@ using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 using Avalonia.Threading;
+using Kairo.Core.Models;
 using Kairo.Utils;
 
 namespace Kairo.ViewModels
@@ -109,18 +110,15 @@ namespace Kairo.ViewModels
                     return;
                 }
 
-                var url = ApiClient.GetNodesUrl();
-                var resp = await _api.GetAsync(url);
-                var content = await resp.Content.ReadAsStringAsync();
-                var json = System.Text.Json.Nodes.JsonNode.Parse(content);
-                if (json?["status"]?.GetValue<int>() != 200)
+                var result = await _api.GetNodesAsync();
+                if (!result.Success)
                 {
-                    StatusText = $"获取节点失败: {json?["message"]?.GetValue<string>()}";
+                    StatusText = $"获取节点失败: {result.Message}";
                     return;
                 }
 
-                var list = json?["data"]?["list"] as System.Text.Json.Nodes.JsonArray;
-                if (list == null || list.Count == 0)
+                var list = result.Data ?? Array.Empty<FrpNode>();
+                if (list.Count == 0)
                 {
                     StatusText = "没有可用节点";
                     return;
@@ -129,14 +127,11 @@ namespace Kairo.ViewModels
                 await Dispatcher.UIThread.InvokeAsync(() =>
                 {
                     _rows.Clear();
-                    foreach (var item in list)
+                    foreach (var node in list)
                     {
-                        string id = item?["name"]?.GetValue<string>() ?? string.Empty;
-                        string ip = item?["ip"]?.GetValue<string>() ?? string.Empty;
-                        string host = item?["host"]?.GetValue<string>() ?? string.Empty;
-                        string target = !string.IsNullOrWhiteSpace(ip) ? ip : host;
+                        string target = !string.IsNullOrWhiteSpace(node.Ip) ? node.Ip : node.Host;
                         if (string.IsNullOrWhiteSpace(target)) continue;
-                        _rows.Add(new NodePingRow { Node = id, Host = target, Status = "等待中" });
+                        _rows.Add(new NodePingRow { Node = node.Name, Host = target, Status = "等待中" });
                     }
                     UpdateStatus();
                 });

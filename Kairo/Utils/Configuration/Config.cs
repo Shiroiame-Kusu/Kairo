@@ -1,5 +1,7 @@
+using System;
 using System.Collections.Generic;
 using Kairo.Components;
+using Kairo.Core.Configuration;
 
 namespace Kairo.Utils.Configuration
 {
@@ -12,7 +14,10 @@ namespace Kairo.Utils.Configuration
         public int OAuthPort = 10000;
         //public string Password = "";
         public string FrpToken = "";
+        public Dictionary<string, ProviderAuthState> ProviderAuth = new(StringComparer.OrdinalIgnoreCase);
         public string FrpcPath = "";
+        public Dictionary<string, string> FrpcPaths = new(StringComparer.OrdinalIgnoreCase);
+        public string ProviderId = "locyan";
         public string FrpcVersion = "";
         public long FrpcLastUpdateCheckUtc = 0;
         public bool DebugMode = false;

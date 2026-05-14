@@ -234,8 +234,12 @@ namespace Kairo.Components.DashBoard
 
         private void SignOutBtn_OnClick(object? sender, RoutedEventArgs e)
         {
+            ProviderAuth.ClearCurrent(save: false);
             Global.Config.AccessToken = string.Empty;
             Global.Config.RefreshToken = string.Empty;
+            Global.Config.Username = string.Empty;
+            Global.Config.ID = 0;
+            Global.Config.FrpToken = string.Empty;
             ConfigManager.Save();
             (Access.DashBoard as DashBoard)?.OpenSnackbar("已退出", "请重新登录");
 
@@ -256,7 +260,7 @@ namespace Kairo.Components.DashBoard
             else
                 win.Show();
 
-            vm.FrpcPath = Global.Config.FrpcPath;
+            vm.FrpcPath = ProviderFrpcPath.Get(Global.CurrentProvider);
         }
 
         private void EasterEggBtn_OnClick(object? sender, RoutedEventArgs e)

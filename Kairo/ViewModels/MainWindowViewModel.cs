@@ -1,20 +1,19 @@
 using System;
 using System.Collections.Generic;
-using System.Net.Http;
+using System.Linq;
 using System.Text;
-using System.Text.Json;
-using System.Text.Json.Nodes;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Diagnostics;
 using System.Security.Cryptography;
+using Avalonia.Media;
 using Avalonia.Threading;
 using FluentAvalonia.UI.Controls;
+using Kairo.Core.Providers;
 using Kairo.Models;
 using Kairo.Utils;
 using Kairo.Utils.Configuration;
 using Kairo.Utils.Logger;
-using Kairo.Utils.Serialization;
 
 namespace Kairo.ViewModels
 {
@@ -30,7 +29,34 @@ namespace Kairo.ViewModels
         private string _snackbarMessage = string.Empty;
         private InfoBarSeverity _snackbarSeverity = InfoBarSeverity.Informational;
         private bool _isSnackbarOpen;
+        private string _pkceCodeVerifier = string.Empty;
         private UserInfo? _userInfo;
+        private ProviderOption? _selectedProvider;
+
+        public IReadOnlyList<ProviderOption> Providers { get; } = FrpProviderRegistry.All
+            .Select(provider => new ProviderOption(provider.Id, provider.DisplayName))
+            .ToList();
+
+        public ProviderOption? SelectedProvider
+        {
+            get => _selectedProvider;
+            set
+            {
+                if (!SetProperty(ref _selectedProvider, value) || value == null) return;
+                ProviderAuth.SaveCurrent(save: false);
+                Global.Config.ProviderId = value.Id;
+                ProviderAuth.ApplyCurrent();
+                ConfigManager.Save();
+                OnPropertyChanged(nameof(BannerSource));
+                OnPropertyChanged(nameof(IconSource));
+                OnPropertyChanged(nameof(IsLoginEnabled));
+                StartOAuthCommand.RaiseCanExecuteChanged();
+                ProviderChanged?.Invoke(this, EventArgs.Empty);
+            }
+        }
+
+        public IImage BannerSource => ProviderBranding.GetBannerImage(Global.CurrentProvider);
+        public IImage IconSource => ProviderBranding.GetIconImage(Global.CurrentProvider);
 
         public RelayCommand StartOAuthCommand { get; }
 
@@ -80,7 +106,7 @@ namespace Kairo.ViewModels
 
         public bool IsLoginFormVisible => !IsLoggingIn;
         public bool IsLoginStatusVisible => IsLoggingIn;
-        public bool IsLoginEnabled => !IsLoggingIn;
+        public bool IsLoginEnabled => !IsLoggingIn && Global.CurrentProvider.SupportsOAuthLogin;
         public double LoginFormOpacity => IsLoginFormVisible ? 1d : 0d;
         public double LoginStatusOpacity => IsLoginStatusVisible ? 1d : 0d;
 
@@ -116,15 +142,19 @@ namespace Kairo.ViewModels
 
         public event EventHandler<UserInfo>? LoginSucceeded;
         public event EventHandler<string>? LoginFailed;
+        public event EventHandler? ProviderChanged;
 
         public MainWindowViewModel()
         {
-            StartOAuthCommand = new RelayCommand(StartOAuthFlow, () => !IsLoggingIn);
+            _selectedProvider = Providers.FirstOrDefault(provider => provider.Id.Equals(Global.Config.ProviderId, StringComparison.OrdinalIgnoreCase))
+                ?? Providers.FirstOrDefault();
+            StartOAuthCommand = new RelayCommand(StartOAuthFlow, () => !IsLoggingIn && Global.CurrentProvider.SupportsOAuthLogin);
         }
 
         public async Task InitializeAsync()
         {
             TipText = PickTip();
+            ProviderAuth.ApplyCurrent();
             if (!string.IsNullOrWhiteSpace(Global.Config.RefreshToken))
             {
                 await LoginWithRefreshTokenAsync(Global.Config.RefreshToken, auto: true);
@@ -140,7 +170,18 @@ namespace Kairo.ViewModels
         public void StartOAuthFlow()
         {
             if (IsLoggingIn) return;
-            var url = $"{Global.APIList.GetTheFUCKINGRefreshToken}?client_id={Global.APPID}&scopes=User,Node,Tunnel,Sign&redirect_uri={Uri.EscapeDataString($"{Global.Dashboard}/auth/oauth/redirect-localhost?port={Global.OAuthPort}&ssl=false&path=/oauth/callback")}&mode=callback";
+            if (!Global.CurrentProvider.SupportsOAuthLogin)
+            {
+                ShowSnackbar("暂不支持登录", $"{Global.CurrentProvider.DisplayName} 未公开 OAuth 登录接口", InfoBarSeverity.Warning);
+                return;
+            }
+            var codeChallenge = string.Empty;
+            if (Global.CurrentProvider.Type == FrpProviderType.Lolia)
+            {
+                _pkceCodeVerifier = CreatePkceCodeVerifier();
+                codeChallenge = CreatePkceCodeChallenge(_pkceCodeVerifier);
+            }
+            var url = _api.BuildOAuthUrl("callback", codeChallenge);
             try
             {
                 Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
@@ -150,6 +191,7 @@ namespace Kairo.ViewModels
             catch (Exception ex)
             {
                 CancelLoginTimeout();
+                _pkceCodeVerifier = string.Empty;
                 Logger.Output(LogType.Error, "[Login] 启动浏览器失败:", ex);
                 ShowSnackbar("启动浏览器失败", ex.Message, InfoBarSeverity.Error);
                 IsLoggingIn = false;
@@ -169,6 +211,49 @@ namespace Kairo.ViewModels
             await LoginWithRefreshTokenAsync(refreshToken);
         }
 
+        public async Task AcceptOAuthCodeAsync(string code)
+        {
+            CancelLoginTimeout();
+            if (string.IsNullOrWhiteSpace(code))
+            {
+                Logger.Output(LogType.Warn, "[Login] OAuth 回调提供的授权码为空");
+                ShowSnackbar("无效授权码", "提供的授权码为空", InfoBarSeverity.Warning);
+                IsLoggingIn = false;
+                return;
+            }
+            await LoginWithCodeAsync(code);
+        }
+
+        private async Task LoginWithCodeAsync(string code)
+        {
+            if (IsLoggedIn) return;
+            IsLoggingIn = true;
+            try
+            {
+                var token = await _api.ExchangeCodeForRefreshTokenAsync(code, _pkceCodeVerifier);
+                if (!token.Success || string.IsNullOrWhiteSpace(token.Data))
+                {
+                    Logger.Output(LogType.Error, $"[Login] 换取令牌失败: API状态={token.Code}, 消息={token.Message}");
+                    ShowSnackbar("登录失败", $"API状态: {token.Code} {token.Message}", InfoBarSeverity.Error);
+                    IsLoggingIn = false;
+                    return;
+                }
+
+                await LoginWithRefreshTokenAsync(token.Data);
+            }
+            catch (Exception ex)
+            {
+                Logger.Output(LogType.Error, "[Login] 登录异常:", ex);
+                ShowSnackbar("异常", ex.Message, InfoBarSeverity.Error);
+                RunOnUi(() => LoginFailed?.Invoke(this, ex.Message));
+            }
+            finally
+            {
+                IsLoggingIn = false;
+                CancelLoginTimeout();
+            }
+        }
+
         public async Task LoginWithRefreshTokenAsync(string refreshToken, bool auto = false)
         {
             if (IsLoggedIn) return;
@@ -180,56 +265,26 @@ namespace Kairo.ViewModels
                     IsLoggingIn = false;
                     return;
                 }
-                var accessUrl = Global.APIList.GetAccessToken;
-                var formContent = new FormUrlEncodedContent(new[]
+                var login = await _api.LoginWithRefreshTokenAsync(refreshToken);
+                if (!login.Success || login.Data == null)
                 {
-                    new KeyValuePair<string, string>("app_id", Global.APPID.ToString()),
-                    new KeyValuePair<string, string>("refresh_token", refreshToken)
-                });
-                var response = await _api.PostWithoutAuthAsync(accessUrl, formContent);
-                var accessBody = await response.Content.ReadAsStringAsync();
-                var json = JsonNode.Parse(accessBody);
-                var accessStatus = json? ["status"]?.GetValue<int>() ?? 0;
-                if (accessStatus != 200)
-                {
-                    var message = json? ["message"]?.GetValue<string>() ?? "未知错误";
-                    Logger.Output(LogType.Error, $"[Login] 获取 AccessToken 失败: API状态={accessStatus}, 消息={message}");
-                    if (!auto) ShowSnackbar("登录失败", $"API状态: {accessStatus} {message}", InfoBarSeverity.Error);
+                    Logger.Output(LogType.Error, $"[Login] 登录失败: API状态={login.Code}, 消息={login.Message}");
+                    if (!auto) ShowSnackbar("登录失败", $"API状态: {login.Code} {login.Message}", InfoBarSeverity.Error);
+                    ProviderAuth.ClearCurrent(save: false);
                     Global.Config.RefreshToken = string.Empty;
                     Global.Config.AccessToken = string.Empty;
+                    Global.Config.Username = string.Empty;
                     Global.Config.ID = 0;
+                    Global.Config.FrpToken = string.Empty;
+                    ConfigManager.Save();
                     IsLoggingIn = false;
                     return;
                 }
-                var dataNode = json? ["data"];
-                Global.Config.ID = dataNode? ["user_id"]?.GetValue<int>() ?? 0;
-                Global.Config.AccessToken = dataNode? ["access_token"]?.GetValue<string>() ?? string.Empty;
-                Global.Config.RefreshToken = refreshToken;
-
-                var userUrl = $"{Global.APIList.GetUserInfo}?user_id={Global.Config.ID}";
-                var userResp = await _api.GetAsync(userUrl);
-                var userBody = await userResp.Content.ReadAsStringAsync();
-                var userJson = JsonNode.Parse(userBody);
-                var userNode = userJson? ["data"];
-                _userInfo = userNode == null ? null : JsonSerializer.Deserialize(userNode.ToJsonString(), AppJsonContext.Default.UserInfo);
-                if (_userInfo == null)
-                {
-                    Logger.Output(LogType.Error, "[Login] 解析用户信息失败, userNode:", userNode?.ToJsonString() ?? "null");
-                    ShowSnackbar("错误", "解析用户信息失败", InfoBarSeverity.Error);
-                    IsLoggingIn = false;
-                    return;
-                }
-
-                var frpUrl = $"{Global.APIList.GetFrpToken}?user_id={Global.Config.ID}";
-                var frpResp = await _api.GetAsync(frpUrl);
-                var frpBody = await frpResp.Content.ReadAsStringAsync();
-                var frpJson = JsonNode.Parse(frpBody);
-                _userInfo.FrpToken = frpJson? ["data"]? ["token"]?.GetValue<string>();
-                Global.Config.Username = _userInfo.Username;
-                Global.Config.FrpToken = _userInfo.FrpToken ?? string.Empty;
+                _userInfo = login.Data.User.ToUserInfo(login.Data.FrpToken);
                 ApplyUserInfoToSession(_userInfo);
                 IsLoggedIn = true;
                 SessionState.IsLoggedIn = true;
+                ProviderAuth.SaveCurrent(save: false);
                 ConfigManager.Save();
                 ShowSnackbar("登录成功", $"欢迎 {_userInfo.Username}", InfoBarSeverity.Success);
                 RunOnUi(() => LoginSucceeded?.Invoke(this, _userInfo));
@@ -267,6 +322,23 @@ namespace Kairo.ViewModels
                 sb.Append(b.ToString("x2"));
             return $"https://cravatar.cn/avatar/{sb}";
         }
+
+        private static string CreatePkceCodeVerifier()
+        {
+            var bytes = RandomNumberGenerator.GetBytes(32);
+            return Base64UrlEncode(bytes);
+        }
+
+        private static string CreatePkceCodeChallenge(string codeVerifier)
+        {
+            var hash = SHA256.HashData(Encoding.ASCII.GetBytes(codeVerifier));
+            return Base64UrlEncode(hash);
+        }
+
+        private static string Base64UrlEncode(byte[] bytes) => Convert.ToBase64String(bytes)
+            .TrimEnd('=')
+            .Replace('+', '-')
+            .Replace('/', '_');
 
         public void ShowSnackbar(string title, string? message, InfoBarSeverity severity)
         {
@@ -324,7 +396,13 @@ namespace Kairo.ViewModels
             IsLoggingIn = false;
             IsLoggedIn = false;
             IsSnackbarOpen = false;
+            _pkceCodeVerifier = string.Empty;
             _userInfo = null;
         }
+    }
+
+    public sealed record ProviderOption(string Id, string DisplayName)
+    {
+        public override string ToString() => DisplayName;
     }
 }

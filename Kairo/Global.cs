@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Kairo.Components;
 using Kairo.Core;
+using Kairo.Core.Providers;
 using Kairo.Utils.Configuration;
 using Kairo.Utils;
 
@@ -19,6 +20,7 @@ namespace Kairo
         public const string Developer = AppConstants.Developer;
         public const string Copyright = AppConstants.Copyright;
         public static Config Config = new();
+        public static IFrpProvider CurrentProvider => FrpProviderRegistry.Get(Config?.ProviderId);
         public static bool isDarkThemeEnabled;
         public static bool DebugMode { get; private set; }
         public static bool DebugModeEnabled => DebugMode;
@@ -50,36 +52,8 @@ namespace Kairo
             "Sayings:你这个人，满脑子都只想着自己呢。"
         };
 
-        // API v3 base
-        public const string API = AppConstants.API;
-        public const string Dashboard = AppConstants.Dashboard;
         //public const string UpdateCheckerAPI = "http://localhost:5043/api";
         public const string UpdateCheckerAPI = AppConstants.UpdateCheckerAPI;
-        public const string GithubMirror = AppConstants.GithubMirror;
-
-        public class APIList
-        {
-            // User & OAuth
-            public const string GetUserInfo = ApiEndpoints.GetUserInfo;
-            public const string GetTheFUCKINGRefreshToken = ApiEndpoints.OAuthAuthorize; 
-            // Yes, this is really the endpoint for getting refresh token, not a typo in the name. GET with ?user_id= for status, POST with form user_id for get new refresh token
-            public const string GetAccessToken = ApiEndpoints.GetAccessToken;
-
-            public const string GetFrpToken = ApiEndpoints.GetFrpToken;
-
-            // Site & sign
-            public const string GetSign = ApiEndpoints.GetSign; // GET for status with ?user_id=, POST with form user_id for sign
-
-            public const string GetNotice = ApiEndpoints.GetNotice;
-
-            // Tunnels & nodes
-            public const string GetAllProxy = ApiEndpoints.GetAllProxy;
-            public const string DeleteProxy = ApiEndpoints.DeleteProxy; // append user_id and use &tunnel_id=
-            public const string Tunnel = ApiEndpoints.Tunnel; // base for PUT(create)/PATCH(update)
-            public const string GetAllNodes = ApiEndpoints.GetAllNodes;
-            // Random port for a node
-            public const string GetRandomPort = ApiEndpoints.GetRandomPort; // GET with ?user_id=&node_id=
-        }
 
         public static int OAuthPort = 10000;
         public const int APPID = AppConstants.APPID;
