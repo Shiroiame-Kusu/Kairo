@@ -5,8 +5,10 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
 using Kairo.Components.OAuth;
+using Kairo.Core.Logging;
 using Kairo.Utils;
 using Kairo.Utils.Configuration; // added for Access
+using Kairo.Utils.Logger;
 
 namespace Kairo;
 
@@ -28,6 +30,7 @@ public partial class App : Application
             try { FrpcProcessManager.StopAll(); } catch { }
         };
         ConfigManager.Init();
+        CoreLogger.Sink = (level, message) => Logger.OutputNetwork(level == CoreLogLevel.Warn ? LogType.Warn : LogType.DetailDebug, message);
         OAuthCallbackHandler.Init();
         AvaloniaXamlLoader.Load(this); // load XAML BEFORE applying theme so XAML doesn't overwrite our choice
         // Apply persisted theme AFTER XAML so user's preference wins over App.axaml RequestedThemeVariant

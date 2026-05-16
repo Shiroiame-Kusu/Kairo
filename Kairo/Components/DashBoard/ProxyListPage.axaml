@@ -75,7 +75,7 @@
 
         <Border Grid.Row="2" CornerRadius="8" Padding="12" Background="{DynamicResource LayerFillColorDefaultBrush}">
             <Grid ColumnDefinitions="Auto,Auto,Auto,*" ColumnSpacing="12">
-                <Button Grid.Column="0" Content="节点延迟" Command="{Binding NodePingCommand}" />
+                <Button Grid.Column="0" Content="节点延迟" Command="{Binding NodePingCommand}" IsVisible="{Binding CanPingNodes}" />
                 <Button Grid.Column="1" Content="创建新隧道" Command="{Binding CreateCommand}" />
                 <Button Grid.Column="2" Content="刷新" Command="{Binding RefreshCommand}" />
                 <Border Grid.Column="3" VerticalAlignment="Center" Padding="8" CornerRadius="6"

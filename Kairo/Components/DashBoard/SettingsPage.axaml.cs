@@ -1,5 +1,7 @@
 using System;
 using System.Text.Json;
+using Kairo.Models;
+using Kairo.Utils.Serialization;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -288,14 +290,13 @@ namespace Kairo.Components.DashBoard
                 var resp = await api.GetWithoutAuthAsync(releasesUrl);
                 resp.EnsureSuccessStatusCode();
                 await using var stream = await resp.Content.ReadAsStreamAsync();
-                using var doc = await JsonDocument.ParseAsync(stream);
-                
+                var releases = await JsonSerializer.DeserializeAsync(stream, AppJsonContext.Default.ListGitHubReleaseSummary);
+
                 // Find the latest release matching current channel only
                 AppVersion? remoteVersion = null;
-                foreach (var rel in doc.RootElement.EnumerateArray())
+                foreach (var rel in releases ?? new())
                 {
-                    var tag = rel.GetProperty("tag_name").GetString() ?? string.Empty;
-                    if (!AppVersion.TryParse(tag, out var parsed)) continue;
+                    if (!AppVersion.TryParse(rel.TagName, out var parsed)) continue;
                     if (parsed.Channel == currentVersion.Channel)
                     {
                         remoteVersion = parsed;

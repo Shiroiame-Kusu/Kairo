@@ -79,15 +79,26 @@
             <StackPanel Spacing="10">
               <TextBlock Text="常规" FontSize="18" />
               <Border Classes="settings-item">
-                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12" VerticalAlignment="Center">
-                  <StackPanel Spacing="2">
-                    <TextBlock Text="Frpc 路径" />
-                    <TextBlock Text="选择本地 frpc 可执行文件" FontSize="12" Opacity="0.75" />
-                  </StackPanel>
-                  <Grid Grid.Column="1" ColumnDefinitions="280,Auto" ColumnSpacing="8">
-                    <TextBox IsReadOnly="True" Text="{Binding FrpcPath}" Width="280" />
-                    <Button Grid.Column="1" Content="选择文件" Click="SelectFile_OnClick" />
+                <Grid RowDefinitions="Auto,Auto" RowSpacing="8">
+                  <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8" VerticalAlignment="Center">
+                    <StackPanel Spacing="2">
+                      <TextBlock Text="Frpc 路径" />
+                      <TextBlock Text="选择本地 frpc 可执行文件" FontSize="12" Opacity="0.75" />
+                    </StackPanel>
+                    <Button Grid.Column="1" Click="SelectFile_OnClick">
+                      <StackPanel Orientation="Horizontal" Spacing="6">
+                        <fa:SymbolIcon Symbol="OpenFile" FontSize="14" />
+                        <TextBlock Text="选择文件" />
+                      </StackPanel>
+                    </Button>
+                    <Button Grid.Column="2" x:Name="DownloadFrpcBtn" Click="DownloadFrpcBtn_OnClick">
+                      <StackPanel Orientation="Horizontal" Spacing="6">
+                        <fa:SymbolIcon Symbol="Download" FontSize="14" />
+                        <TextBlock Text="{Binding FrpcDownloadButtonText}" />
+                      </StackPanel>
+                    </Button>
                   </Grid>
+                  <TextBox Grid.Row="1" IsReadOnly="True" Text="{Binding FrpcPath}" HorizontalAlignment="Stretch" />
                 </Grid>
               </Border>
               <Border Classes="settings-item">
@@ -129,15 +140,6 @@
           <Border x:Name="SectionUpdate" Classes="settings-card">
             <StackPanel Spacing="10">
               <TextBlock Text="下载与更新" FontSize="18" />
-              <Border Classes="settings-item">
-                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12" VerticalAlignment="Center">
-                  <StackPanel Spacing="2">
-                    <TextBlock Text="FRPC" />
-                    <TextBlock Text="从发行源下载并配置 frpc" FontSize="12" Opacity="0.75" />
-                  </StackPanel>
-                  <Button Grid.Column="1" x:Name="DownloadFrpcBtn" Content="下载 FRPC" Click="DownloadFrpcBtn_OnClick" />
-                </Grid>
-              </Border>
               <Border Classes="settings-item">
                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12" VerticalAlignment="Center">
                   <StackPanel Spacing="2">
