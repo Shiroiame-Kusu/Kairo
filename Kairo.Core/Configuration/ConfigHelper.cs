@@ -24,6 +24,7 @@ public class BaseConfig
     public int ID { get; set; } = 0;
     public string FrpToken { get; set; } = "";
     public Dictionary<string, ProviderAuthState> ProviderAuth { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+    public int OAuthPort { get; set; } = 10000;
     public string FrpcPath { get; set; } = "";
     public Dictionary<string, string> FrpcPaths { get; set; } = new(StringComparer.OrdinalIgnoreCase);
     public string ProviderId { get; set; } = "locyan";

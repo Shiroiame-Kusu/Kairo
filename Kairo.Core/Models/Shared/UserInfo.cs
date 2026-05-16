@@ -2,9 +2,6 @@ using System.Text.Json.Serialization;
 
 namespace Kairo.Core.Models;
 
-/// <summary>
-/// 用户信息
-/// </summary>
 public class UserInfo
 {
     [JsonPropertyName("id")]

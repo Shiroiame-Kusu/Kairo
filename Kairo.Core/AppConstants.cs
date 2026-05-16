@@ -16,8 +16,6 @@ public static class AppConstants
     public const string UpdateCheckerAPI = "https://kairo.nyat.icu/api";
     public const string GithubMirror = "https://hub.locyancs.cn";
 
-    public const int APPID = 1;
-
     public static readonly List<string> Tips = new()
     {
         "Tips:他们说下载的时候把电脑抱起来摇匀, 下载速度会更快哦",

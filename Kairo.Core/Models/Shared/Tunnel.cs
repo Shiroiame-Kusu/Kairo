@@ -2,9 +2,6 @@ using System.Text.Json.Serialization;
 
 namespace Kairo.Core.Models;
 
-/// <summary>
-/// 隧道/代理信息（共享模型）
-/// </summary>
 public class Tunnel
 {
     [JsonPropertyName("id")]
@@ -12,6 +9,9 @@ public class Tunnel
 
     [JsonPropertyName("name")]
     public string ProxyName { get; set; } = string.Empty;
+
+    [JsonPropertyName("tunnel_token")]
+    public string Token { get; set; } = string.Empty;
 
     [JsonPropertyName("type")]
     public string ProxyType { get; set; } = string.Empty;
@@ -40,14 +40,10 @@ public class Tunnel
     [JsonPropertyName("secret_key")]
     public string? SecretKey { get; set; }
 
-    // 兼容性
     [JsonIgnore]
     public int Node => NodeInfo?.Id ?? 0;
 }
 
-/// <summary>
-/// 节点信息
-/// </summary>
 public class TunnelNode
 {
     [JsonPropertyName("id")]
@@ -61,15 +57,4 @@ public class TunnelNode
 
     [JsonPropertyName("ip")]
     public string? Ip { get; set; }
-}
-
-/// <summary>
-/// AOT 兼容的 JSON 序列化上下文
-/// </summary>
-[JsonSerializable(typeof(Tunnel))]
-[JsonSerializable(typeof(TunnelNode))]
-[JsonSerializable(typeof(List<Tunnel>))]
-[JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower)]
-public partial class TunnelJsonContext : JsonSerializerContext
-{
 }

@@ -1,22 +1,24 @@
 using System.Runtime.InteropServices;
-using System.Text.Json.Nodes;
+using System.Text.Json;
+using System.Text.Json.Serialization.Metadata;
 using System.Text.RegularExpressions;
+using Kairo.Core.Logging;
 using Kairo.Core.Models;
 
 namespace Kairo.Core.Providers;
 
 internal static class FrpProviderHelpers
 {
-    public static async Task<JsonObject?> TryGetJsonAsync(HttpClient http, string url, CancellationToken ct)
+    public static async Task<FrpDownloadRelease?> TryGetGitHubReleaseAsync(HttpClient http, string url, CancellationToken ct)
     {
         try
         {
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             cts.CancelAfter(TimeSpan.FromSeconds(10));
-            using var resp = await http.GetAsync(url, cts.Token);
+            using var resp = await http.GetAsyncLogged(url, cts.Token);
             if (!resp.IsSuccessStatusCode) return null;
-            var text = await resp.Content.ReadAsStringAsync(cts.Token);
-            return JsonNode.Parse(text) as JsonObject;
+            var release = await ReadJsonAsync(resp, FrpModelsJsonContext.Default.GitHubReleaseData, cts.Token);
+            return release == null ? null : ParseGitHubRelease(release);
         }
         catch
         {
@@ -24,48 +26,43 @@ internal static class FrpProviderHelpers
         }
     }
 
-    public static async Task<JsonObject?> ReadJsonAsync(HttpResponseMessage response, CancellationToken ct)
+    public static async Task<T?> ReadJsonAsync<T>(HttpResponseMessage response, JsonTypeInfo<T> typeInfo, CancellationToken ct)
     {
         var text = await response.Content.ReadAsStringAsync(ct);
-        if (string.IsNullOrWhiteSpace(text)) return null;
-        return JsonNode.Parse(text) as JsonObject;
+        if (string.IsNullOrWhiteSpace(text)) return default;
+        return JsonSerializer.Deserialize(text, typeInfo);
     }
 
-    public static FrpApiResult<JsonObject> ParseApiObject(JsonObject? json, string statusName, string messageName)
+    public static FrpApiResult<T> ParseLoliaResponse<T>(LoliaApiResponse<T>? response)
     {
-        if (json == null) return FrpApiResult<JsonObject>.Fail(0, "响应格式错误");
-        var code = GetInt(json[statusName]);
-        var message = GetString(json[messageName]);
-        return code == 200
-            ? FrpApiResult<JsonObject>.Ok(json, code, message)
-            : FrpApiResult<JsonObject>.Fail(code, message);
+        if (response == null) return FrpApiResult<T>.Fail(0, "响应格式错误");
+        return response.Code == 200
+            ? FrpApiResult<T>.Ok(response.Data, response.Code, response.Msg)
+            : FrpApiResult<T>.Fail(response.Code, response.Msg);
     }
 
-    public static FrpDownloadRelease ParseGitHubRelease(JsonObject json)
+    public static FrpApiResult<T> ParseLocyanResponse<T>(LocyanApiResponse<T>? response)
     {
-        var assets = new List<FrpDownloadAsset>();
-        if (json["assets"] is JsonArray arr)
-        {
-            foreach (var item in arr.OfType<JsonObject>())
-            {
-                assets.Add(new FrpDownloadAsset
-                {
-                    Name = GetString(item["name"]),
-                    DownloadUrl = GetString(item["browser_download_url"]),
-                    Digest = GetString(item["digest"]),
-                    Raw = item
-                });
-            }
-        }
+        if (response == null) return FrpApiResult<T>.Fail(0, "响应格式错误");
+        return response.Status == 200
+            ? FrpApiResult<T>.Ok(response.Data, response.Status, response.Message)
+            : FrpApiResult<T>.Fail(response.Status, response.Message);
+    }
 
-        var tag = GetString(json["tag_name"]);
+    private static FrpDownloadRelease ParseGitHubRelease(GitHubReleaseData release)
+    {
+        var tag = release.TagName;
         return new FrpDownloadRelease
         {
             Version = ExtractVersion(tag),
-            ReleaseName = FirstNonEmpty(GetString(json["name"]), tag),
+            ReleaseName = FirstNonEmpty(release.Name, tag),
             TagName = tag,
-            Assets = assets,
-            Raw = json
+            Assets = release.Assets.Select(asset => new FrpDownloadAsset
+            {
+                Name = asset.Name,
+                DownloadUrl = asset.BrowserDownloadUrl,
+                Digest = asset.Digest
+            }).ToList()
         };
     }
 
@@ -143,80 +140,6 @@ internal static class FrpProviderHelpers
         return url + separator + string.Join("&", values.Select(v => $"{Uri.EscapeDataString(v.Name)}={Uri.EscapeDataString(v.Value)}"));
     }
 
-    public static int GetInt(JsonNode? node)
-    {
-        if (node == null) return 0;
-        try
-        {
-            if (node is JsonValue value)
-            {
-                if (value.TryGetValue<int>(out var i)) return i;
-                if (value.TryGetValue<long>(out var l)) return (int)l;
-                if (value.TryGetValue<string>(out var s) && int.TryParse(s, out var parsed)) return parsed;
-            }
-        }
-        catch { }
-        return 0;
-    }
-
-    public static long GetLong(JsonNode? node)
-    {
-        if (node == null) return 0;
-        try
-        {
-            if (node is JsonValue value)
-            {
-                if (value.TryGetValue<long>(out var l)) return l;
-                if (value.TryGetValue<int>(out var i)) return i;
-                if (value.TryGetValue<string>(out var s) && long.TryParse(s, out var parsed)) return parsed;
-            }
-        }
-        catch { }
-        return 0;
-    }
-
-    public static decimal GetDecimal(JsonNode? node)
-    {
-        if (node == null) return 0;
-        try
-        {
-            if (node is JsonValue value)
-            {
-                if (value.TryGetValue<decimal>(out var d)) return d;
-                if (value.TryGetValue<double>(out var dbl)) return (decimal)dbl;
-                if (value.TryGetValue<long>(out var l)) return l;
-                if (value.TryGetValue<string>(out var s) && decimal.TryParse(s, out var parsed)) return parsed;
-            }
-        }
-        catch { }
-        return 0;
-    }
-
-    public static bool GetBool(JsonNode? node)
-    {
-        if (node == null) return false;
-        try
-        {
-            if (node is JsonValue value)
-            {
-                if (value.TryGetValue<bool>(out var b)) return b;
-                if (value.TryGetValue<int>(out var i)) return i != 0;
-                if (value.TryGetValue<string>(out var s) && bool.TryParse(s, out var parsed)) return parsed;
-            }
-        }
-        catch { }
-        return false;
-    }
-
-    public static string GetString(JsonNode? node)
-    {
-        if (node == null) return string.Empty;
-        if (node is JsonValue value && value.TryGetValue<string>(out var str)) return str ?? string.Empty;
-        return node.ToString();
-    }
-
     public static string FirstNonEmpty(params string[] values) =>
         values.FirstOrDefault(v => !string.IsNullOrWhiteSpace(v)) ?? string.Empty;
-
-    public static JsonObject ObjectOrEmpty(JsonNode? node) => node as JsonObject ?? new JsonObject();
 }

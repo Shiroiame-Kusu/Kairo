@@ -1,9 +1,5 @@
 using System.Diagnostics;
-using System.Formats.Tar;
-using System.IO.Compression;
-using System.Runtime.InteropServices;
-using System.Security.Cryptography;
-using System.Text.RegularExpressions;
+using Kairo.Core.Logging;
 using Kairo.Core.Models;
 using Kairo.Core.Providers;
 
@@ -13,10 +9,12 @@ public sealed class FrpcDownloadService
 {
     private const int MaxAttempts = 3;
     private readonly HttpClient _http;
+    private readonly FrpcChecksumVerifier _checksumVerifier;
 
     public FrpcDownloadService(HttpClient http)
     {
         _http = http;
+        _checksumVerifier = new FrpcChecksumVerifier(http);
     }
 
     public async Task<FrpcInstallResult> InstallAsync(
@@ -67,10 +65,10 @@ public sealed class FrpcDownloadService
                     await DownloadFileAsync(currentUrl, tempFile, progress, ct);
 
                     progress?.Report(new FrpcDownloadProgress { Stage = FrpcDownloadStage.Verifying, Message = "正在校验..." });
-                    await VerifyChecksumAsync(provider, release, asset, tempFile, options.UseMirror && !options.ForceOrigin && sourceRound == 0, ct);
+                    await _checksumVerifier.VerifyAsync(provider, release, asset, tempFile, options.UseMirror && !options.ForceOrigin && sourceRound == 0, ct);
 
                     progress?.Report(new FrpcDownloadProgress { Stage = FrpcDownloadStage.Extracting, Message = "正在解压..." });
-                    var finalPath = await ExtractAsync(tempFile, workDir, ct);
+                    var finalPath = await FrpcArchiveExtractor.ExtractAsync(tempFile, workDir, ct);
 
                     progress?.Report(new FrpcDownloadProgress { Stage = FrpcDownloadStage.Completed, Message = "完成", FrpcPath = finalPath });
                     return new FrpcInstallResult
@@ -124,7 +122,7 @@ public sealed class FrpcDownloadService
 
     private async Task DownloadFileAsync(string url, string destPath, IProgress<FrpcDownloadProgress>? progress, CancellationToken ct)
     {
-        using var response = await _http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, ct);
+        using var response = await _http.GetAsyncLogged(url, HttpCompletionOption.ResponseHeadersRead, ct);
         response.EnsureSuccessStatusCode();
 
         var total = response.Content.Headers.ContentLength ?? -1;
@@ -157,193 +155,4 @@ public sealed class FrpcDownloadService
             }
         }
     }
-
-    private async Task VerifyChecksumAsync(IFrpProvider provider, FrpDownloadRelease release, FrpDownloadAsset asset, string filePath, bool useMirror, CancellationToken ct)
-    {
-        var digest = asset.Digest;
-        if (!string.IsNullOrWhiteSpace(digest) && digest.StartsWith("sha256:", StringComparison.OrdinalIgnoreCase))
-        {
-            var expected = digest["sha256:".Length..].Trim().ToLowerInvariant();
-            await VerifyHashAsync(filePath, expected, sha256: true, ct);
-            return;
-        }
-
-        var checksumUrl = provider.GetChecksumUrl(release, asset, useMirror);
-        if (string.IsNullOrWhiteSpace(checksumUrl)) return;
-
-        string checksumContent;
-        try
-        {
-            checksumContent = await _http.GetStringAsync(checksumUrl, ct);
-        }
-        catch
-        {
-            return;
-        }
-
-        var expectedHash = FindHashForAsset(checksumContent, asset.Name, out var sha256);
-        if (string.IsNullOrWhiteSpace(expectedHash)) return;
-        await VerifyHashAsync(filePath, expectedHash, sha256, ct);
-    }
-
-    private static string? FindHashForAsset(string checksumContent, string assetName, out bool sha256)
-    {
-        sha256 = false;
-        string? fallback = null;
-        bool fallbackSha256 = false;
-
-        foreach (var line in checksumContent.Split('\n'))
-        {
-            var trimmed = line.Trim();
-            if (trimmed.Length == 0) continue;
-            var parts = trimmed.Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
-            if (parts.Length == 0) continue;
-
-            var hash = parts[0].Trim().ToLowerInvariant();
-            var isSha256 = Regex.IsMatch(hash, "^[a-fA-F0-9]{64}$");
-            var isMd5 = Regex.IsMatch(hash, "^[a-fA-F0-9]{32}$");
-            if (!isSha256 && !isMd5) continue;
-
-            fallback ??= hash;
-            fallbackSha256 = isSha256;
-
-            if (parts.Any(p => p.Contains(assetName, StringComparison.OrdinalIgnoreCase)))
-            {
-                sha256 = isSha256;
-                return hash;
-            }
-        }
-
-        sha256 = fallbackSha256;
-        return fallback;
-    }
-
-    private static async Task VerifyHashAsync(string filePath, string expectedHash, bool sha256, CancellationToken ct)
-    {
-        await using var fs = File.OpenRead(filePath);
-        var actual = sha256
-            ? Convert.ToHexString(await SHA256.HashDataAsync(fs, ct)).ToLowerInvariant()
-            : Convert.ToHexString(await MD5.HashDataAsync(fs, ct)).ToLowerInvariant();
-        if (!string.Equals(expectedHash, actual, StringComparison.OrdinalIgnoreCase))
-            throw new InvalidOperationException("文件哈希不匹配");
-    }
-
-    private static async Task<string> ExtractAsync(string archivePath, string workDir, CancellationToken ct)
-    {
-        var extractDir = Path.Combine(workDir, "extract");
-        if (Directory.Exists(extractDir)) Directory.Delete(extractDir, true);
-        Directory.CreateDirectory(extractDir);
-
-        if (archivePath.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
-        {
-            ZipFile.ExtractToDirectory(archivePath, extractDir);
-        }
-        else if (archivePath.EndsWith(".tar.gz", StringComparison.OrdinalIgnoreCase))
-        {
-            await ExtractTarGzAsync(archivePath, extractDir, ct);
-        }
-        else
-        {
-            throw new InvalidOperationException("不支持的压缩格式");
-        }
-
-        var exeName = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "frpc.exe" : "frpc";
-        var frpcPath = Directory.GetFiles(extractDir, exeName, SearchOption.AllDirectories).FirstOrDefault()
-            ?? throw new InvalidOperationException("未找到 frpc 可执行文件");
-
-        var finalPath = Path.Combine(workDir, exeName);
-        File.Copy(frpcPath, finalPath, true);
-        EnsureExecutable(finalPath);
-
-        TryCleanup(archivePath, extractDir);
-        return finalPath;
-    }
-
-    private static async Task ExtractTarGzAsync(string gzFile, string extractDir, CancellationToken ct)
-    {
-        await using var fs = File.OpenRead(gzFile);
-        await using var gzip = new GZipStream(fs, CompressionMode.Decompress);
-        using var tar = new TarReader(gzip);
-
-        TarEntry? entry;
-        while ((entry = await tar.GetNextEntryAsync(cancellationToken: ct)) != null)
-        {
-            var fullPath = Path.Combine(extractDir, entry.Name.TrimStart('.', '/'));
-            switch (entry.EntryType)
-            {
-                case TarEntryType.Directory:
-                    Directory.CreateDirectory(fullPath);
-                    break;
-                case TarEntryType.RegularFile:
-                    Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);
-                    await using (var outFs = File.Create(fullPath))
-                    {
-                        if (entry.DataStream != null)
-                            await entry.DataStream.CopyToAsync(outFs, ct);
-                    }
-                    break;
-            }
-        }
-    }
-
-    private static void EnsureExecutable(string path)
-    {
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) return;
-        try
-        {
-            var psi = new ProcessStartInfo
-            {
-                FileName = "/bin/chmod",
-                Arguments = $"+x \"{path}\"",
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
-            using var process = Process.Start(psi);
-            process?.WaitForExit(3000);
-        }
-        catch { }
-    }
-
-    private static void TryCleanup(string archivePath, string extractDir)
-    {
-        try { if (File.Exists(archivePath)) File.Delete(archivePath); } catch { }
-        try { if (Directory.Exists(extractDir)) Directory.Delete(extractDir, true); } catch { }
-    }
-}
-
-public sealed class FrpcInstallOptions
-{
-    public bool UseMirror { get; init; }
-    public bool ForceOrigin { get; init; }
-    public string WorkDirectory { get; init; } = string.Empty;
-}
-
-public sealed class FrpcInstallResult
-{
-    public bool Success { get; init; }
-    public string FrpcPath { get; init; } = string.Empty;
-    public string Version { get; init; } = string.Empty;
-    public string ProviderId { get; init; } = string.Empty;
-    public string Message { get; init; } = string.Empty;
-}
-
-public sealed class FrpcDownloadProgress
-{
-    public FrpcDownloadStage Stage { get; init; }
-    public string Message { get; init; } = string.Empty;
-    public string DownloadUrl { get; init; } = string.Empty;
-    public long ReceivedBytes { get; init; }
-    public long TotalBytes { get; init; }
-    public double Percent { get; init; }
-    public double SpeedBytesPerSecond { get; init; }
-    public string FrpcPath { get; init; } = string.Empty;
-}
-
-public enum FrpcDownloadStage
-{
-    FetchingRelease,
-    Downloading,
-    Verifying,
-    Extracting,
-    Completed
 }

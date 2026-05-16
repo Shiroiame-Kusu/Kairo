@@ -1,7 +1,6 @@
-using System.Net.Http.Json;
-using System.Text;
+using System.Text.Json;
 using System.Text.Json.Nodes;
-using System.Text.RegularExpressions;
+using Kairo.Core.Logging;
 using Kairo.Core.Models;
 
 namespace Kairo.Core.Providers;
@@ -19,7 +18,7 @@ public sealed class LoliaFrpProvider : IFrpProvider
     public string ApiBaseUrl => ApiRoot;
     public string DashboardUrl => "https://dash.lolia.link";
     public bool SupportsOAuthLogin => true;
-    public bool SupportsSign => false;
+    public bool SupportsSign => true;
     public bool SupportsMinecraftRooms => false;
 
     public string BuildOAuthUrl(OAuthRequest request)
@@ -93,12 +92,11 @@ public sealed class LoliaFrpProvider : IFrpProvider
 
     public async Task<FrpApiResult<FrpUserProfile>> GetUserInfoAsync(HttpClient http, int userId, CancellationToken ct = default)
     {
-        using var response = await http.GetAsync($"{ApiBaseUrl}/user/info", ct);
-        var json = await FrpProviderHelpers.ReadJsonAsync(response, ct);
-        var parsed = ParseResponse(json);
-        if (!parsed.Success) return FrpApiResult<FrpUserProfile>.Fail(parsed.Code, parsed.Message);
-        var obj = FrpProviderHelpers.ObjectOrEmpty(parsed.Data?["data"]);
-        return FrpApiResult<FrpUserProfile>.Ok(ParseUser(obj), parsed.Code, parsed.Message);
+        using var response = await http.GetAsyncLogged($"{ApiBaseUrl}/user/info", ct);
+        var apiResponse = await FrpProviderHelpers.ReadJsonAsync(response, FrpModelsJsonContext.Default.LoliaApiResponseLoliaUserInfoData, ct);
+        var parsed = FrpProviderHelpers.ParseLoliaResponse(apiResponse);
+        if (!parsed.Success || parsed.Data == null) return FrpApiResult<FrpUserProfile>.Fail(parsed.Code, parsed.Message);
+        return FrpApiResult<FrpUserProfile>.Ok(ParseUser(parsed.Data), parsed.Code, parsed.Message);
     }
 
     public Task<FrpApiResult<string>> GetFrpTokenAsync(HttpClient http, int userId, CancellationToken ct = default) =>
@@ -108,33 +106,41 @@ public sealed class LoliaFrpProvider : IFrpProvider
         Task.FromResult(FrpApiResult<string>.Ok(string.Empty));
 
     public Task<FrpApiResult<FrpSignStatus>> GetSignStatusAsync(HttpClient http, int userId, CancellationToken ct = default) =>
-        Task.FromResult(FrpApiResult<FrpSignStatus>.Fail(0, "LoliaFRP 暂未提供签到接口"));
+        Task.FromResult(FrpApiResult<FrpSignStatus>.Ok(new FrpSignStatus { Signed = false }));
 
-    public Task<FrpApiResult<FrpSignResult>> SignAsync(HttpClient http, int userId, CancellationToken ct = default) =>
-        Task.FromResult(FrpApiResult<FrpSignResult>.Fail(0, "LoliaFRP 暂未提供签到接口"));
+    public async Task<FrpApiResult<FrpSignResult>> SignAsync(HttpClient http, int userId, CancellationToken ct = default)
+    {
+        using var response = await http.PostAsyncLogged($"{ApiBaseUrl}/user/checkin", null, ct);
+        var apiResponse = await FrpProviderHelpers.ReadJsonAsync(response, FrpModelsJsonContext.Default.LoliaApiResponseLoliaCheckinData, ct);
+        var parsed = FrpProviderHelpers.ParseLoliaResponse(apiResponse);
+        if (!parsed.Success) return FrpApiResult<FrpSignResult>.Fail(parsed.Code, parsed.Message);
+
+        return FrpApiResult<FrpSignResult>.Ok(new FrpSignResult
+        {
+            GainedTrafficGb = parsed.Data?.TrafficGb ?? 0
+        }, parsed.Code, parsed.Message);
+    }
 
     public async Task<FrpApiResult<IReadOnlyList<FrpTunnel>>> GetTunnelsAsync(HttpClient http, int userId, CancellationToken ct = default)
     {
         var url = FrpProviderHelpers.AppendQuery($"{ApiBaseUrl}/user/tunnel", ("page", "1"), ("limit", "1000"));
-        using var response = await http.GetAsync(url, ct);
-        var json = await FrpProviderHelpers.ReadJsonAsync(response, ct);
-        var parsed = ParseResponse(json);
+        using var response = await http.GetAsyncLogged(url, ct);
+        var apiResponse = await FrpProviderHelpers.ReadJsonAsync(response, FrpModelsJsonContext.Default.LoliaApiResponseLoliaTunnelListData, ct);
+        var parsed = FrpProviderHelpers.ParseLoliaResponse(apiResponse);
         if (!parsed.Success) return FrpApiResult<IReadOnlyList<FrpTunnel>>.Fail(parsed.Code, parsed.Message);
-        var list = (parsed.Data?["data"]?["list"] as JsonArray) ?? new JsonArray();
-        return FrpApiResult<IReadOnlyList<FrpTunnel>>.Ok(list.OfType<JsonObject>().Select(ParseTunnel).ToList(), parsed.Code, parsed.Message);
+        return FrpApiResult<IReadOnlyList<FrpTunnel>>.Ok((parsed.Data?.List ?? new()).Select(ParseTunnel).ToList(), parsed.Code, parsed.Message);
     }
 
     public async Task<FrpApiResult<IReadOnlyList<FrpNode>>> GetNodesAsync(HttpClient http, int userId, CancellationToken ct = default)
     {
-        using var response = await http.PostAsJsonAsync($"{ApiBaseUrl}/user/nodes",
+        using var response = await http.PostAsJsonAsyncLogged($"{ApiBaseUrl}/user/nodes",
             new LoliaNodeListRequest { Page = 1, Limit = 1000 },
             FrpModelsJsonContext.Default.LoliaNodeListRequest,
             ct);
-        var json = await FrpProviderHelpers.ReadJsonAsync(response, ct);
-        var parsed = ParseResponse(json);
+        var apiResponse = await FrpProviderHelpers.ReadJsonAsync(response, FrpModelsJsonContext.Default.LoliaApiResponseLoliaNodeListData, ct);
+        var parsed = FrpProviderHelpers.ParseLoliaResponse(apiResponse);
         if (!parsed.Success) return FrpApiResult<IReadOnlyList<FrpNode>>.Fail(parsed.Code, parsed.Message);
-        var list = (parsed.Data?["data"]?["nodes"] as JsonArray) ?? new JsonArray();
-        return FrpApiResult<IReadOnlyList<FrpNode>>.Ok(list.OfType<JsonObject>().Select(ParseNode).ToList(), parsed.Code, parsed.Message);
+        return FrpApiResult<IReadOnlyList<FrpNode>>.Ok((parsed.Data?.Nodes ?? new()).Select(ParseNode).ToList(), parsed.Code, parsed.Message);
     }
 
     public Task<FrpApiResult<int>> GetRandomPortAsync(HttpClient http, int userId, int nodeId, CancellationToken ct = default) =>
@@ -142,7 +148,7 @@ public sealed class LoliaFrpProvider : IFrpProvider
 
     public async Task<FrpApiResult<CreateFrpTunnelResult>> CreateTunnelAsync(HttpClient http, int userId, CreateFrpTunnelRequest request, CancellationToken ct = default)
     {
-        using var response = await http.PostAsJsonAsync($"{ApiBaseUrl}/user/tunnel",
+        using var response = await http.PostAsJsonAsyncLogged($"{ApiBaseUrl}/user/tunnel",
             new LoliaCreateTunnelRequest
             {
                 NodeId = request.NodeId,
@@ -155,23 +161,22 @@ public sealed class LoliaFrpProvider : IFrpProvider
             },
             FrpModelsJsonContext.Default.LoliaCreateTunnelRequest,
             ct);
-        var json = await FrpProviderHelpers.ReadJsonAsync(response, ct);
-        var parsed = ParseResponse(json);
+        var apiResponse = await FrpProviderHelpers.ReadJsonAsync(response, FrpModelsJsonContext.Default.LoliaApiResponseLoliaCreateTunnelData, ct);
+        var parsed = FrpProviderHelpers.ParseLoliaResponse(apiResponse);
         if (!parsed.Success) return FrpApiResult<CreateFrpTunnelResult>.Fail(parsed.Code, parsed.Message);
-        var data = parsed.Data?["data"] as JsonObject ?? new JsonObject();
         return FrpApiResult<CreateFrpTunnelResult>.Ok(new CreateFrpTunnelResult
         {
-            TunnelId = FrpProviderHelpers.GetInt(data["id"]),
-            TunnelName = FrpProviderHelpers.FirstNonEmpty(FrpProviderHelpers.GetString(data["name"]), request.Name)
+            TunnelId = parsed.Data?.Id ?? 0,
+            TunnelName = FrpProviderHelpers.FirstNonEmpty(parsed.Data?.Name ?? string.Empty, request.Name)
         }, parsed.Code, parsed.Message);
     }
 
     public async Task<FrpApiResult<object>> DeleteTunnelAsync(HttpClient http, int userId, FrpTunnel tunnel, CancellationToken ct = default)
     {
         var tunnelName = string.IsNullOrWhiteSpace(tunnel.Name) ? tunnel.Id.ToString() : tunnel.Name;
-        using var response = await http.DeleteAsync($"{ApiBaseUrl}/user/tunnel/{Uri.EscapeDataString(tunnelName)}", ct);
-        var json = await FrpProviderHelpers.ReadJsonAsync(response, ct);
-        var parsed = ParseResponse(json);
+        using var response = await http.DeleteAsyncLogged($"{ApiBaseUrl}/user/tunnel/{Uri.EscapeDataString(tunnelName)}", ct);
+        var apiResponse = await FrpProviderHelpers.ReadJsonAsync(response, FrpModelsJsonContext.Default.LoliaApiResponseObject, ct);
+        var parsed = FrpProviderHelpers.ParseLoliaResponse(apiResponse);
         return parsed.Success
             ? FrpApiResult<object>.Ok(new object(), parsed.Code, parsed.Message)
             : FrpApiResult<object>.Fail(parsed.Code, parsed.Message);
@@ -179,37 +184,26 @@ public sealed class LoliaFrpProvider : IFrpProvider
 
     public async Task<FrpApiResult<FrpcConfigResult>> GetFrpcConfigAsync(HttpClient http, FrpTunnel tunnel, CancellationToken ct = default)
     {
+        if (!string.IsNullOrWhiteSpace(tunnel.Token))
+            return FrpApiResult<FrpcConfigResult>.Ok(new FrpcConfigResult { Token = tunnel.Token });
+
         var tunnelName = string.IsNullOrWhiteSpace(tunnel.Name) ? tunnel.Id.ToString() : tunnel.Name;
-        var url = FrpProviderHelpers.AppendQuery($"{ApiBaseUrl}/user/frpc/config", ("tunnel", tunnelName));
-        using var response = await http.GetAsync(url, ct);
-        var json = await FrpProviderHelpers.ReadJsonAsync(response, ct);
-        var parsed = ParseResponse(json);
+        using var response = await http.GetAsyncLogged($"{ApiBaseUrl}/user/tunnel/{Uri.EscapeDataString(tunnelName)}", ct);
+        var apiResponse = await FrpProviderHelpers.ReadJsonAsync(response, FrpModelsJsonContext.Default.LoliaApiResponseLoliaTunnelData, ct);
+        var parsed = FrpProviderHelpers.ParseLoliaResponse(apiResponse);
         if (!parsed.Success) return FrpApiResult<FrpcConfigResult>.Fail(parsed.Code, parsed.Message);
 
-        var config = FrpProviderHelpers.GetString(parsed.Data?["data"]?["config"]);
-        if (string.IsNullOrWhiteSpace(config))
-            return FrpApiResult<FrpcConfigResult>.Fail(0, "API 返回的 frpc config 为空");
-
-        var toml = DecodeBase64String(config);
-        if (string.IsNullOrWhiteSpace(toml))
-            return FrpApiResult<FrpcConfigResult>.Fail(0, "frpc config 解码失败");
-
-        var token = ExtractMetadataToken(toml);
+        var token = parsed.Data?.TunnelToken ?? string.Empty;
         return string.IsNullOrWhiteSpace(token)
-            ? FrpApiResult<FrpcConfigResult>.Fail(0, "未在 frpc config 的 [metadatas] 中找到 token")
-            : FrpApiResult<FrpcConfigResult>.Ok(new FrpcConfigResult { Config = toml, Token = token }, parsed.Code, parsed.Message);
+            ? FrpApiResult<FrpcConfigResult>.Fail(0, "API 返回的 tunnel_token 为空")
+            : FrpApiResult<FrpcConfigResult>.Ok(new FrpcConfigResult { Token = token }, parsed.Code, parsed.Message);
     }
 
-    public string BuildFrpcArguments(FrpStartOptions options)
-    {
-        var id = string.IsNullOrWhiteSpace(options.TunnelName) ? options.TunnelId.ToString() : options.TunnelName;
-        return $"-t {id}:{options.FrpToken}";
-    }
+    public string BuildFrpcArguments(FrpStartOptions options) => $"-t {options.TunnelId}:{options.FrpToken}";
 
     public async Task<FrpDownloadRelease?> GetLatestFrpcReleaseAsync(HttpClient http, CancellationToken ct = default)
     {
-        var release = await FrpProviderHelpers.TryGetJsonAsync(http, ReleaseApiOrigin, ct);
-        return release == null ? null : FrpProviderHelpers.ParseGitHubRelease(release);
+        return await FrpProviderHelpers.TryGetGitHubReleaseAsync(http, ReleaseApiOrigin, ct);
     }
 
     public FrpAssetSelection SelectBestAsset(FrpDownloadRelease release)
@@ -226,26 +220,31 @@ public sealed class LoliaFrpProvider : IFrpProvider
 
     private static async Task<FrpApiResult<LoliaOAuthTokenData>> RequestOAuthTokenAsync(HttpClient http, Dictionary<string, string> form, CancellationToken ct)
     {
-        using var response = await http.PostAsync($"{ApiRoot}/oauth2/token", new FormUrlEncodedContent(form), ct);
-        var json = await FrpProviderHelpers.ReadJsonAsync(response, ct);
-        if (json == null)
+        using var response = await http.PostAsyncLogged($"{ApiRoot}/oauth2/token", new FormUrlEncodedContent(form), ct);
+        var text = await response.Content.ReadAsStringAsync(ct);
+        if (string.IsNullOrWhiteSpace(text))
             return FrpApiResult<LoliaOAuthTokenData>.Fail((int)response.StatusCode, "OAuth 响应格式错误");
 
-        var parsed = json["code"] != null || json["status"] != null || json["data"] != null
-            ? ParseResponse(json)
-            : FrpApiResult<JsonObject>.Ok(json, response.IsSuccessStatusCode ? 200 : (int)response.StatusCode, response.ReasonPhrase ?? string.Empty);
-        if (!parsed.Success)
-            return FrpApiResult<LoliaOAuthTokenData>.Fail(parsed.Code, parsed.Message);
-
-        var data = FrpProviderHelpers.ObjectOrEmpty(parsed.Data?["data"] ?? parsed.Data);
-        return FrpApiResult<LoliaOAuthTokenData>.Ok(new LoliaOAuthTokenData
+        try
         {
-            AccessToken = FrpProviderHelpers.GetString(data["access_token"]),
-            RefreshToken = FrpProviderHelpers.GetString(data["refresh_token"]),
-            TokenType = FrpProviderHelpers.GetString(data["token_type"]),
-            ExpiresIn = FrpProviderHelpers.GetInt(data["expires_in"]),
-            Scope = FrpProviderHelpers.GetString(data["scope"])
-        }, parsed.Code, parsed.Message);
+            if (text.Contains("\"data\"", StringComparison.Ordinal))
+            {
+                var wrapped = JsonSerializer.Deserialize(text, FrpModelsJsonContext.Default.LoliaApiResponseLoliaOAuthTokenData);
+                var parsed = FrpProviderHelpers.ParseLoliaResponse(wrapped);
+                return parsed.Success && parsed.Data != null
+                    ? parsed
+                    : FrpApiResult<LoliaOAuthTokenData>.Fail(parsed.Code, parsed.Message);
+            }
+
+            var token = JsonSerializer.Deserialize(text, FrpModelsJsonContext.Default.LoliaOAuthTokenData);
+            return token == null
+                ? FrpApiResult<LoliaOAuthTokenData>.Fail((int)response.StatusCode, "OAuth 响应格式错误")
+                : FrpApiResult<LoliaOAuthTokenData>.Ok(token, response.IsSuccessStatusCode ? 200 : (int)response.StatusCode, response.ReasonPhrase ?? string.Empty);
+        }
+        catch (JsonException)
+        {
+            return FrpApiResult<LoliaOAuthTokenData>.Fail((int)response.StatusCode, "OAuth 响应格式错误");
+        }
     }
 
     private static string ResolveRedirectUri(OAuthRequest request)
@@ -254,105 +253,51 @@ public sealed class LoliaFrpProvider : IFrpProvider
         return request.CallbackPort > 0 ? $"http://127.0.0.1:{request.CallbackPort}/oauth/callback" : string.Empty;
     }
 
-    private static string? DecodeBase64String(string encoded)
+    private static FrpUserProfile ParseUser(LoliaUserInfoData user) => new()
     {
-        try
+        Id = user.Id,
+        Username = user.Username,
+        Email = user.Email,
+        Avatar = user.Avatar,
+        Traffic = (user.TrafficLimit - user.TrafficUsed) / 1024m / 1024m,
+        Inbound = user.BandwidthLimit * 1024 / 8,
+        Outbound = user.BandwidthLimit * 1024 / 8,
+        TodayChecked = user.TodayChecked
+    };
+
+    private static FrpTunnel ParseTunnel(LoliaTunnelData tunnel) => new()
+    {
+        Id = tunnel.Id,
+        Name = tunnel.Name,
+        Token = tunnel.TunnelToken,
+        Type = tunnel.Type,
+        LocalIp = tunnel.LocalIp,
+        LocalPort = tunnel.LocalPort,
+        RemotePort = tunnel.RemotePort,
+        Domain = tunnel.CustomDomain,
+        Node = new FrpNode
         {
-            var normalized = encoded.Trim().Replace('-', '+').Replace('_', '/');
-            var mod = normalized.Length % 4;
-            if (mod > 0)
-                normalized = normalized.PadRight(normalized.Length + (4 - mod), '=');
-            return Encoding.UTF8.GetString(Convert.FromBase64String(normalized));
+            Id = tunnel.NodeId,
+            Name = tunnel.NodeName,
+            Host = tunnel.NodeAddress,
+            Ip = tunnel.NodeAddress
         }
-        catch
-        {
-            return null;
-        }
-    }
+    };
 
-    private static string? ExtractMetadataToken(string toml)
+    private static FrpNode ParseNode(LoliaNodeData node)
     {
-        var inMetadatas = false;
-        foreach (var raw in toml.Split('\n'))
-        {
-            var line = raw.Trim();
-            if (string.IsNullOrWhiteSpace(line) || line.StartsWith('#')) continue;
-            if (line.StartsWith('[') && line.EndsWith(']'))
-            {
-                inMetadatas = string.Equals(line, "[metadatas]", StringComparison.OrdinalIgnoreCase);
-                continue;
-            }
-            if (!inMetadatas) continue;
-
-            var match = Regex.Match(line, "^token\\s*=\\s*\\\"(?<val>[^\\\"]+)\\\"\\s*$", RegexOptions.IgnoreCase);
-            if (match.Success) return match.Groups["val"].Value;
-
-            match = Regex.Match(line, "^token\\s*=\\s*'(?<val>[^']+)'\\s*$", RegexOptions.IgnoreCase);
-            if (match.Success) return match.Groups["val"].Value;
-
-            match = Regex.Match(line, "^token\\s*=\\s*(?<val>\\S+)\\s*$", RegexOptions.IgnoreCase);
-            if (match.Success) return match.Groups["val"].Value.Trim('"', '\'');
-        }
-        return null;
-    }
-
-    private static FrpApiResult<JsonObject> ParseResponse(JsonObject? json) =>
-        FrpProviderHelpers.ParseApiObject(json, "code", "msg");
-
-    private static FrpUserProfile ParseUser(JsonObject obj)
-    {
-        return new FrpUserProfile
-        {
-            Id = FrpProviderHelpers.GetInt(obj["id"]),
-            Username = FrpProviderHelpers.GetString(obj["username"]),
-            Email = FrpProviderHelpers.GetString(obj["email"]),
-            Avatar = FrpProviderHelpers.GetString(obj["avatar"]),
-            Traffic = FrpProviderHelpers.GetDecimal(obj["traffic_limit"]) - FrpProviderHelpers.GetDecimal(obj["traffic_used"]),
-            Inbound = FrpProviderHelpers.GetInt(obj["bandwidth_limit"]),
-            Outbound = FrpProviderHelpers.GetInt(obj["bandwidth_limit"]),
-            TodayChecked = FrpProviderHelpers.GetBool(obj["today_checked"]),
-            Raw = obj
-        };
-    }
-
-    private static FrpTunnel ParseTunnel(JsonObject obj)
-    {
-        return new FrpTunnel
-        {
-            Id = FrpProviderHelpers.GetInt(obj["id"]),
-            Name = FrpProviderHelpers.GetString(obj["name"]),
-            Type = FrpProviderHelpers.GetString(obj["type"]),
-            LocalIp = FrpProviderHelpers.GetString(obj["local_ip"]),
-            LocalPort = FrpProviderHelpers.GetInt(obj["local_port"]),
-            RemotePort = FrpProviderHelpers.GetInt(obj["remote_port"]),
-            Domain = FrpProviderHelpers.GetString(obj["custom_domain"]),
-            Node = new FrpNode
-            {
-                Id = FrpProviderHelpers.GetInt(obj["node_id"]),
-                Name = FrpProviderHelpers.GetString(obj["node_name"]),
-                Host = FrpProviderHelpers.GetString(obj["node_address"]),
-                Ip = FrpProviderHelpers.GetString(obj["node_address"])
-            },
-            Raw = obj
-        };
-    }
-
-    private static FrpNode ParseNode(JsonObject obj)
-    {
-        var protocols = new List<string>();
-        if (obj["supported_protocols"] is JsonArray protocolArray)
-        {
-            protocols.AddRange(protocolArray.Select(FrpProviderHelpers.GetString).Where(s => !string.IsNullOrWhiteSpace(s)));
-        }
+        var host = FrpProviderHelpers.FirstNonEmpty(node.Host, node.Address, node.NodeAddress, node.ServerAddress);
+        var ip = FrpProviderHelpers.FirstNonEmpty(node.Ip, host);
 
         return new FrpNode
         {
-            Id = FrpProviderHelpers.GetInt(obj["id"]),
-            Name = FrpProviderHelpers.GetString(obj["name"]),
-            Host = FrpProviderHelpers.GetString(obj["name"]),
-            Description = FrpProviderHelpers.GetString(obj["remark"]),
-            SupportedProtocols = protocols,
-            Raw = obj
+            Id = node.Id,
+            Name = node.Name,
+            Host = host,
+            Ip = ip,
+            Description = FrpProviderHelpers.FirstNonEmpty(node.Description, node.Remark),
+            PortRanges = node.PortRanges,
+            SupportedProtocols = node.SupportedProtocols
         };
     }
 }
