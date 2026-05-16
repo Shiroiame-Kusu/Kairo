@@ -30,6 +30,7 @@ internal static class FrpModelMapper
     {
         Id = tunnel.Id,
         ProxyName = tunnel.Name,
+        Token = tunnel.Token,
         ProxyType = tunnel.Type,
         LocalIp = tunnel.LocalIp,
         LocalPort = tunnel.LocalPort,
@@ -51,6 +52,7 @@ internal static class FrpModelMapper
     {
         Id = tunnel.Id,
         ProxyName = tunnel.Name,
+        Token = tunnel.Token,
         ProxyType = tunnel.Type,
         LocalIp = tunnel.LocalIp,
         LocalPort = tunnel.LocalPort,

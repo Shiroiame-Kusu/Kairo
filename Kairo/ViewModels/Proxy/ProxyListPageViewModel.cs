@@ -35,6 +35,8 @@ namespace Kairo.ViewModels
             }
         }
 
+        public bool CanPingNodes => Global.CurrentProvider.Type != FrpProviderType.Lolia;
+
         public AsyncRelayCommand RefreshCommand { get; }
         public RelayCommand CreateCommand { get; }
         public RelayCommand NodePingCommand { get; }
@@ -58,6 +60,7 @@ namespace Kairo.ViewModels
 
         public void OnLoaded()
         {
+            OnPropertyChanged(nameof(CanPingNodes));
             if (!_isLoaded)
             {
                 _isLoaded = true;
@@ -145,7 +148,7 @@ namespace Kairo.ViewModels
             if (Global.CurrentProvider.Type == FrpProviderType.Lolia)
             {
                 using var api = new ApiClient();
-                var config = await api.GetFrpcConfigAsync(new FrpTunnel { Id = vm.Proxy.Id, Name = vm.Proxy.ProxyName });
+                var config = await api.GetFrpcConfigAsync(new FrpTunnel { Id = vm.Proxy.Id, Name = vm.Proxy.ProxyName, Token = vm.Proxy.Token });
                 if (!config.Success || string.IsNullOrWhiteSpace(config.Data?.Token))
                 {
                     AccessSnackbar("启动失败", config.Message, InfoBarSeverity.Error);
@@ -264,6 +267,7 @@ namespace Kairo.ViewModels
 
         public void RequestNodePingWindow()
         {
+            if (!CanPingNodes) return;
             OpenNodePingWindowRequested?.Invoke();
         }
 

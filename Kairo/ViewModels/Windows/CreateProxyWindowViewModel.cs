@@ -204,14 +204,12 @@ namespace Kairo.ViewModels
                 }
 
                 SelectedNode = _nodes.FirstOrDefault();
+                CanPing = Global.CurrentProvider.Type != FrpProviderType.Lolia && _nodes.Count > 0;
             }
             catch (Exception ex)
             {
                 StatusText = $"获取节点失败: {ex.Message}";
-            }
-            finally
-            {
-                CanPing = true;
+                CanPing = false;
             }
         }
 

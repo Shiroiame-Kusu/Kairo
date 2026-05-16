@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using Kairo.Core;
 using Kairo.Utils;
 using Kairo.Utils.Configuration;
@@ -22,6 +23,7 @@ namespace Kairo.ViewModels
                 if (SetProperty(ref _frpcPath, value))
                 {
                     ProviderFrpcPath.Set(Global.CurrentProvider, value);
+                    OnPropertyChanged(nameof(FrpcDownloadButtonText));
                 }
             }
         }
@@ -87,6 +89,7 @@ namespace Kairo.ViewModels
         }
 
         public bool CanToggleDarkTheme => !FollowSystem;
+        public string FrpcDownloadButtonText => !string.IsNullOrWhiteSpace(FrpcPath) && File.Exists(FrpcPath) ? "更新 FRPC" : "下载 FRPC";
 
         public string BuildInfoText => Global.BuildInfo?.ToString() ?? string.Empty;
         public string VersionText => $"版本: {Global.Version} \"{Global.VersionName}\" {Global.Branch.ToDisplayName()} {Global.Revision}";

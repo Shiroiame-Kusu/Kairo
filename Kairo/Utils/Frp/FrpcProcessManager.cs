@@ -15,6 +15,7 @@ namespace Kairo.Utils;
 internal static class FrpcProcessManager
 {
     private const LogDestination FrpcLogDestinations = LogDestination.Console | LogDestination.File | LogDestination.Cache | LogDestination.Event;
+    private const LogDestination FrpcStartArgumentLogDestinations = LogDestination.Console | LogDestination.File;
 
     private class ProcInfo
     {
@@ -97,6 +98,7 @@ internal static class FrpcProcessManager
                 FrpToken = frpToken,
                 ApiBaseUrl = provider.ApiBaseUrl
             });
+            AppLogger.Output(LogType.Info, FrpcStartArgumentLogDestinations, $"[FRPC] 启动参数: provider={provider.Id}, path=\"{frpcPath}\", args={arguments}");
             var psi = new ProcessStartInfo
             {
                 FileName = frpcPath,

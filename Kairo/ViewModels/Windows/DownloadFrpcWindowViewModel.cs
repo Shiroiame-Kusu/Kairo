@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Threading;
 using FluentAvalonia.UI.Controls;
+using Kairo.Core.Models;
 using Kairo.Core.Services;
 using Kairo.Utils;
 using Kairo.Utils.Configuration;

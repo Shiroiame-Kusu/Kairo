@@ -4,9 +4,9 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Kairo.Core;
+using Kairo.Core.Logging;
 using Kairo.Core.Models;
 using Kairo.Core.Providers;
-using Kairo.Utils.Logger;
 
 namespace Kairo.Utils
 {
@@ -84,7 +84,6 @@ namespace Kairo.Utils
 
         public string BuildOAuthUrl(string mode = "code", string codeChallenge = "") => Global.CurrentProvider.BuildOAuthUrl(new OAuthRequest
         {
-            ClientId = AppConstants.APPID,
             Scopes = Global.CurrentProvider.Type == FrpProviderType.Lolia ? "all node:read" : "User,Node,Tunnel,Sign",
             RedirectUri = Global.CurrentProvider.Type == FrpProviderType.Locyan && mode == "callback"
                 ? $"{Global.CurrentProvider.DashboardUrl}/auth/oauth/redirect-localhost?port={Global.OAuthPort}&ssl=false&path=/oauth/callback"

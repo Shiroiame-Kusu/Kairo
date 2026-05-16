@@ -1,119 +1,25 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Net;
-using System.Net.Http;
-using System.Text.Json.Nodes;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using Avalonia.Controls;
 using Avalonia.Threading;
 using FluentAvalonia.UI.Controls;
 using Kairo.Core.Models;
+using Kairo.Core.Providers;
 using HakuuLib.MultiplayerLAN.Minecraft.Java.Discovery;
 using HakuuLib.MultiplayerLAN.Minecraft.Bedrock.Discovery;
 using Kairo.Utils;
 
 namespace Kairo.ViewModels
 {
-    /// <summary>
-    /// Minecraft edition type.
-    /// </summary>
-    public enum MinecraftEdition
-    {
-        Java,
-        Bedrock
-    }
-
-    /// <summary>
-    /// ViewModel for a detected local Minecraft LAN server (supports both Java and Bedrock).
-    /// </summary>
-    public class DetectedServerViewModel : ViewModelBase
-    {
-        public string Motd { get; }
-        public int Port { get; }
-        public IPEndPoint Sender { get; }
-        public MinecraftEdition Edition { get; }
-        public string EditionDisplay => Edition == MinecraftEdition.Java ? "Java" : "基岩";
-        public string AddressDisplay => $"{Sender.Address}:{Port}";
-
-        // Bedrock-specific properties
-        public string? VersionName { get; }
-        public int? PlayerCount { get; }
-        public int? MaxPlayerCount { get; }
-        public string? GameModeName { get; }
-
-        private bool _isSelected;
-        public bool IsSelected
-        {
-            get => _isSelected;
-            set => SetProperty(ref _isSelected, value);
-        }
-
-        /// <summary>
-        /// Constructor for Java Edition server.
-        /// </summary>
-        public DetectedServerViewModel(JavaLanAnnouncement announcement)
-        {
-            Edition = MinecraftEdition.Java;
-            Motd = announcement.Motd;
-            Port = announcement.Port;
-            Sender = announcement.Sender;
-        }
-
-        /// <summary>
-        /// Constructor for Bedrock Edition server.
-        /// </summary>
-        public DetectedServerViewModel(BedrockLanAnnouncement announcement)
-        {
-            Edition = MinecraftEdition.Bedrock;
-            Motd = announcement.MotdLine1;
-            Port = announcement.PortV4;
-            Sender = announcement.Sender;
-            VersionName = announcement.VersionName;
-            PlayerCount = announcement.PlayerCount;
-            MaxPlayerCount = announcement.MaxPlayerCount;
-            GameModeName = announcement.GameModeName;
-        }
-    }
-
-    /// <summary>
-    /// ViewModel for a node that can be used for hosting.
-    /// </summary>
-    public class NodeViewModel : ViewModelBase
-    {
-        public int Id { get; }
-        public string Name { get; }
-        public string Host { get; }
-        public string PortRangeDisplay { get; }
-        public string Description { get; }
-        public string DisplayLabel => $"{Name} ({Host})";
-
-        private bool _isSelected;
-        public bool IsSelected
-        {
-            get => _isSelected;
-            set => SetProperty(ref _isSelected, value);
-        }
-
-        public NodeViewModel(int id, string name, string host, string portRangeDisplay, string description)
-        {
-            Id = id;
-            Name = name;
-            Host = host;
-            PortRangeDisplay = portRangeDisplay;
-            Description = description;
-        }
-    }
-
     public class HostRoomPageViewModel : ViewModelBase, IDisposable
     {
         private readonly ApiClient _api = new();
+        private readonly MinecraftRoomApiClient _rooms;
+        private readonly MinecraftLanDiscoveryService _discovery = new();
         private readonly RelayCommand _pingCommand;
-        private JavaLanDiscoveryListener? _javaDiscoveryListener;
-        private BedrockLanDiscoveryListener? _bedrockDiscoveryListener;
-        private CancellationTokenSource? _detectionCts;
         private bool _canPing;
         private bool _useEncryption;
         private bool _useCompression;
@@ -197,6 +103,9 @@ namespace Kairo.ViewModels
 
         public HostRoomPageViewModel()
         {
+            _rooms = new MinecraftRoomApiClient(_api);
+            _discovery.JavaAnnouncementReceived += OnJavaAnnouncementReceived;
+            _discovery.BedrockServerDiscovered += OnBedrockServerDiscovered;
             _pingCommand = new RelayCommand(() => RequestPingWindow?.Invoke(), () => CanPing);
             StartDetectionCommand = new AsyncRelayCommand(StartDetectionAsync);
             StopDetectionCommand = new RelayCommand(StopDetection);
@@ -230,6 +139,9 @@ namespace Kairo.ViewModels
         public void Dispose()
         {
             StopDetection();
+            _discovery.JavaAnnouncementReceived -= OnJavaAnnouncementReceived;
+            _discovery.BedrockServerDiscovered -= OnBedrockServerDiscovered;
+            _discovery.Dispose();
             _api.Dispose();
         }
 
@@ -240,36 +152,9 @@ namespace Kairo.ViewModels
         {
             if (!IsDetecting) return;
 
-            try
-            {
-                _detectionCts?.Cancel();
-                
-                // Stop Java listener
-                if (_javaDiscoveryListener != null)
-                {
-                    _javaDiscoveryListener.AnnouncementReceived -= OnJavaAnnouncementReceived;
-                    _ = _javaDiscoveryListener.StopAsync();
-                    _ = _javaDiscoveryListener.DisposeAsync();
-                    _javaDiscoveryListener = null;
-                }
-                
-                // Stop Bedrock listener
-                if (_bedrockDiscoveryListener != null)
-                {
-                    _bedrockDiscoveryListener.ServerDiscovered -= OnBedrockServerDiscovered;
-                    _ = _bedrockDiscoveryListener.StopAsync();
-                    _ = _bedrockDiscoveryListener.DisposeAsync();
-                    _bedrockDiscoveryListener = null;
-                }
-                
-                _detectionCts?.Dispose();
-                _detectionCts = null;
-            }
-            finally
-            {
-                IsDetecting = false;
-                StatusText = "探测已暂停";
-            }
+            _discovery.Stop();
+            IsDetecting = false;
+            StatusText = "探测已暂停";
         }
 
         public void SelectServer(DetectedServerViewModel server)
@@ -304,24 +189,12 @@ namespace Kairo.ViewModels
             try
             {
                 IsDetecting = true;
-                // Don't clear detected servers when resuming - keep existing discoveries
                 OnPropertyChanged(nameof(NoServersDetected));
-                StatusText = DetectedServers.Count > 0 
-                    ? $"继续探测服务器... (已发现 {DetectedServers.Count} 个)" 
+                StatusText = DetectedServers.Count > 0
+                    ? $"继续探测服务器... (已发现 {DetectedServers.Count} 个)"
                     : "正在探测本地 Minecraft 服务器...";
 
-                _detectionCts = new CancellationTokenSource();
-
-                // Start Java listener
-                _javaDiscoveryListener = new JavaLanDiscoveryListener();
-                _javaDiscoveryListener.AnnouncementReceived += OnJavaAnnouncementReceived;
-                await _javaDiscoveryListener.StartAsync(_detectionCts.Token);
-                
-                // Start Bedrock listener
-                _bedrockDiscoveryListener = new BedrockLanDiscoveryListener();
-                _bedrockDiscoveryListener.ServerDiscovered += OnBedrockServerDiscovered;
-                await _bedrockDiscoveryListener.StartAsync(_detectionCts.Token);
-                
+                await _discovery.StartAsync();
                 StatusText = "探测中... 请在 Minecraft 中对局域网开放";
             }
             catch (Exception ex)
@@ -376,34 +249,9 @@ namespace Kairo.ViewModels
         {
             if (!IsDetecting) return;
 
-            try
-            {
-                _detectionCts?.Cancel();
-                
-                if (_javaDiscoveryListener != null)
-                {
-                    _javaDiscoveryListener.AnnouncementReceived -= OnJavaAnnouncementReceived;
-                    _ = _javaDiscoveryListener.StopAsync();
-                    _ = _javaDiscoveryListener.DisposeAsync();
-                    _javaDiscoveryListener = null;
-                }
-                
-                if (_bedrockDiscoveryListener != null)
-                {
-                    _bedrockDiscoveryListener.ServerDiscovered -= OnBedrockServerDiscovered;
-                    _ = _bedrockDiscoveryListener.StopAsync();
-                    _ = _bedrockDiscoveryListener.DisposeAsync();
-                    _bedrockDiscoveryListener = null;
-                }
-                
-                _detectionCts?.Dispose();
-                _detectionCts = null;
-            }
-            finally
-            {
-                IsDetecting = false;
-                StatusText = "探测已停止";
-            }
+            _discovery.Stop();
+            IsDetecting = false;
+            StatusText = "探测已停止";
         }
 
         #endregion
@@ -451,7 +299,7 @@ namespace Kairo.ViewModels
                     SelectedNode = Nodes[0];
                 }
                 
-                CanPing = Nodes.Count > 0;
+                CanPing = Global.CurrentProvider.Type != FrpProviderType.Lolia && Nodes.Count > 0;
 
                 StatusText = $"已加载 {Nodes.Count} 个节点";
             }
@@ -510,24 +358,13 @@ namespace Kairo.ViewModels
 
                 StatusText = $"隧道创建成功 (ID: {tunnelId})，正在创建房间...";
 
-                // Step 3: Create room via API
-                var content = new FormUrlEncodedContent(new[]
+                var room = await _rooms.CreateRoomAsync(tunnelId);
+                if (room?.Status == 200)
                 {
-                    new KeyValuePair<string, string>("user_id", Global.Config.ID.ToString()),
-                    new KeyValuePair<string, string>("tunnel_id", tunnelId.ToString())
-                });
-
-                var resp = await _api.PutAsync($"{Global.CurrentProvider.ApiBaseUrl}/game/minecraft/game", content);
-                var body = await resp.Content.ReadAsStringAsync();
-                var json = JsonNode.Parse(body);
-
-                if (json?["status"]?.GetValue<int>() == 200)
-                {
-                    var code = json?["data"]?["code"]?.GetValue<string>();
+                    var code = room.Data?.Code ?? string.Empty;
                     ShowSnackbar("房间创建成功", $"房间代码: {code}", InfoBarSeverity.Success);
                     StatusText = $"房间已创建，代码: {code}";
 
-                    // Copy to clipboard
                     if (!string.IsNullOrEmpty(code))
                     {
                         await CopyToClipboardAsync(code);
@@ -536,7 +373,7 @@ namespace Kairo.ViewModels
                 }
                 else
                 {
-                    var msg = json?["message"]?.GetValue<string>() ?? "未知错误";
+                    var msg = room?.Message ?? "未知错误";
                     ShowSnackbar("创建房间失败", msg, InfoBarSeverity.Error);
                     StatusText = $"创建失败: {msg}";
                 }
