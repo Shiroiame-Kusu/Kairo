@@ -26,7 +26,11 @@ internal static class DebugConsoleManager
         if (AttachConsole(ATTACH_PARENT_PROCESS) || AllocConsole())
         {
             _consoleAllocated = true;
-            try { Console.Title = "Kairo Debug Console"; } catch { }
+            try { Console.Title = "Kairo Debug Console"; }
+            catch (System.Exception ex)
+            {
+                Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/Utils/App/DebugConsoleManager.cs:29", ex);
+            }
         }
     }
 

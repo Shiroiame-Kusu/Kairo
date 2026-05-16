@@ -129,7 +129,11 @@ internal static class FrpcProcessManager
                     _processes.Remove(proxyId);
                 }
                 AppLogger.Output(LogType.Info, FrpcLogDestinations, $"[FRPC] Proxy {proxyId} 进程已退出");
-                try { ProxyExited?.Invoke(proxyId); } catch { }
+                try { ProxyExited?.Invoke(proxyId); }
+                catch (System.Exception ex)
+                {
+                    Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/Utils/Frp/FrpcProcessManager.cs:132", ex);
+                }
             };
             if (!proc.Start())
             {

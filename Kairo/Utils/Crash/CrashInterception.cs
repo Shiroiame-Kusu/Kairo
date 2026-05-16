@@ -4,6 +4,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Controls;
+using Kairo.Utils.Logger;
 
 namespace Kairo.Utils
 {
@@ -48,7 +49,10 @@ namespace Kairo.Utils
                     HandleException(e.Exception, "TaskScheduler", parentWindow);
                     e.SetObserved();
                 }
-                catch { }
+                catch (System.Exception ex)
+                {
+                    Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/Utils/Crash/CrashInterception.cs:52", ex);
+                }
             };
         }
 
@@ -81,10 +85,16 @@ namespace Kairo.Utils
                         if (info.LastWriteTime < cutoff)
                             info.Delete();
                     }
-                    catch { }
+                    catch (System.Exception ex)
+                    {
+                        Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/Utils/Crash/CrashInterception.cs:85", ex);
+                    }
                 }
             }
-            catch { }
+            catch (System.Exception ex)
+            {
+                Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/Utils/Crash/CrashInterception.cs:88", ex);
+            }
         }
 
         private static void HandleException(Exception ex, string source, Window? parentWindow)
@@ -94,6 +104,7 @@ namespace Kairo.Utils
                 EnsureDirectory();
                 var crashId = DateTime.Now.ToString("yyyyMMdd_HHmmss_fff") + "_" + Guid.NewGuid().ToString("N")[..6];
                 var report = BuildCrashReport(ex, source, crashId);
+                LogCrash(report);
                 WriteCrashFiles(report, ex);
                 CrashLoggedSafe(ex, crashId);
                 if (CurrentOptions.ShowDialog && Interlocked.Exchange(ref _handling, 1) == 0)
@@ -104,13 +115,18 @@ namespace Kairo.Utils
             }
             catch (Exception handlerEx)
             {
+                Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/Utils/Crash/CrashInterception.cs:107", handlerEx);
                 Debug.WriteLine(handlerEx);
             }
         }
 
         private static void CrashLoggedSafe(Exception ex, string id)
         {
-            try { CrashLogged?.Invoke(ex, id); } catch { }
+            try { CrashLogged?.Invoke(ex, id); }
+            catch (System.Exception callbackEx)
+            {
+                Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/Utils/Crash/CrashInterception.cs:115", callbackEx);
+            }
         }
 
         public static string MergeException(Exception? e)

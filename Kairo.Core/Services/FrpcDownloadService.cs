@@ -79,12 +79,14 @@ public sealed class FrpcDownloadService
                         ProviderId = provider.Id
                     };
                 }
-                catch (OperationCanceledException)
+                catch (OperationCanceledException ex)
                 {
+                    Kairo.Core.Logging.CoreLogger.Output(Kairo.Core.Logging.CoreLogLevel.Error, "Unhandled exception in Kairo.Core/Services/FrpcDownloadService.cs:82", ex);
                     throw;
                 }
                 catch (Exception ex)
                 {
+                    Kairo.Core.Logging.CoreLogger.Output(Kairo.Core.Logging.CoreLogLevel.Error, "Unhandled exception in Kairo.Core/Services/FrpcDownloadService.cs:86", ex);
                     lastError = ex;
                     if (attempt < MaxAttempts)
                     {
@@ -114,8 +116,9 @@ public sealed class FrpcDownloadService
             var workDir = Path.GetFullPath(GetManagedDirectory(provider));
             return full.StartsWith(workDir + Path.DirectorySeparatorChar, StringComparison.Ordinal);
         }
-        catch
+        catch (System.Exception ex)
         {
+            Kairo.Core.Logging.CoreLogger.Output(Kairo.Core.Logging.CoreLogLevel.Error, "Unhandled exception in Kairo.Core/Services/FrpcDownloadService.cs:117", ex);
             return false;
         }
     }

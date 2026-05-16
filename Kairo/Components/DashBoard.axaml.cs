@@ -65,7 +65,11 @@ namespace Kairo.Components.DashBoard
 
         private void ApplyProviderIcon()
         {
-            try { Icon = ProviderBranding.LoadIcon(Global.CurrentProvider); } catch { }
+            try { Icon = ProviderBranding.LoadIcon(Global.CurrentProvider); }
+            catch (System.Exception ex)
+            {
+                Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/Components/DashBoard.axaml.cs:68", ex);
+            }
         }
 
         private void OnDashBoardOpened(object? sender, EventArgs e)
@@ -80,6 +84,7 @@ namespace Kairo.Components.DashBoard
                 }
                 catch (Exception ex)
                 {
+                    Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/Components/DashBoard.axaml.cs:81", ex);
                     OpenSnackbar("检测异常", ex.Message, InfoBarSeverity.Warning);
                 }
             }
@@ -108,8 +113,9 @@ namespace Kairo.Components.DashBoard
                     OpenSnackbar("更新 FRPC", "已打开下载窗口", InfoBarSeverity.Informational);
                 }
             }
-            catch
+            catch (System.Exception ex)
             {
+                Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/Components/DashBoard.axaml.cs:111", ex);
                 // ignore background update failures
             }
         }
@@ -134,7 +140,10 @@ namespace Kairo.Components.DashBoard
                     AvatarChanged?.Invoke(Avatar);
                 });
             }
-            catch { }
+            catch (System.Exception ex)
+            {
+                Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/Components/DashBoard.axaml.cs:137", ex);
+            }
         }
 
         private void NavView_OnSelectionChanged(object? sender, NavigationViewSelectionChangedEventArgs e)

@@ -36,8 +36,9 @@ namespace Kairo.Utils.Configuration
                 {
                     envDir = Path.GetFullPath(envDir);
                 }
-                catch
+                catch (System.Exception ex)
                 {
+                    Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/Utils/Configuration/ConfigManager.cs:39", ex);
                     envDir = null; // fallback
                 }
             }

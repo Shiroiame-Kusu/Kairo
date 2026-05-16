@@ -88,8 +88,9 @@ namespace Kairo.Utils.Configuration
             {
                 File.Move(TempSettingsFilePath, SettingsFilePath, true);
             }
-            catch (IOException)
+            catch (IOException ex)
             {
+                Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/Utils/Configuration/ConfigManager.Storage.cs:91", ex);
                 if (File.Exists(SettingsFilePath)) File.Delete(SettingsFilePath);
                 File.Move(TempSettingsFilePath, SettingsFilePath);
             }
@@ -101,7 +102,11 @@ namespace Kairo.Utils.Configuration
 
         private static void TryDeleteTemp()
         {
-            try { if (File.Exists(TempSettingsFilePath)) File.Delete(TempSettingsFilePath); } catch { }
+            try { if (File.Exists(TempSettingsFilePath)) File.Delete(TempSettingsFilePath); }
+            catch (System.Exception ex)
+            {
+                Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/Utils/Configuration/ConfigManager.Storage.cs:104", ex);
+            }
         }
 
         private static void BackupCorruptFile()

@@ -7,6 +7,13 @@ public sealed class FrpNode
     public string Host { get; init; } = string.Empty;
     public string Ip { get; init; } = string.Empty;
     public string Description { get; init; } = string.Empty;
+    public string RegionCode { get; init; } = string.Empty;
+    public string Status { get; init; } = string.Empty;
+    public string Sponsor { get; init; } = string.Empty;
+    public int Bandwidth { get; init; }
+    public decimal Load { get; init; }
+    public bool NeedKyc { get; init; }
+    public bool BeianRequired { get; init; }
     public IReadOnlyList<string> PortRanges { get; init; } = Array.Empty<string>();
     public IReadOnlyList<string> SupportedProtocols { get; init; } = Array.Empty<string>();
 }

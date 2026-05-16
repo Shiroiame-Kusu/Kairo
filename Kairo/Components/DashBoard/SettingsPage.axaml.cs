@@ -342,11 +342,13 @@ namespace Kairo.Components.DashBoard
                 }
                 catch (Exception exLaunch)
                 {
+                    Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/Components/DashBoard/SettingsPage.axaml.cs:343", exLaunch);
                     (Access.DashBoard as DashBoard)?.OpenSnackbar("启动更新失败", exLaunch.Message);
                 }
             }
             catch (Exception ex)
             {
+                Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/Components/DashBoard/SettingsPage.axaml.cs:348", ex);
                 (Access.DashBoard as DashBoard)?.OpenSnackbar("检查失败", ex.Message);
             }
             finally

@@ -80,12 +80,23 @@ internal static class FrpcArchiveExtractor
             using var process = Process.Start(psi);
             process?.WaitForExit(3000);
         }
-        catch { }
+        catch (System.Exception ex)
+        {
+            Kairo.Core.Logging.CoreLogger.Output(Kairo.Core.Logging.CoreLogLevel.Error, "Unhandled exception in Kairo.Core/Services/FrpcArchiveExtractor.cs:83", ex);
+        }
     }
 
     private static void TryCleanup(string archivePath, string extractDir)
     {
-        try { if (File.Exists(archivePath)) File.Delete(archivePath); } catch { }
-        try { if (Directory.Exists(extractDir)) Directory.Delete(extractDir, true); } catch { }
+        try { if (File.Exists(archivePath)) File.Delete(archivePath); }
+        catch (System.Exception ex)
+        {
+            Kairo.Core.Logging.CoreLogger.Output(Kairo.Core.Logging.CoreLogLevel.Error, "Unhandled exception in Kairo.Core/Services/FrpcArchiveExtractor.cs:88", ex);
+        }
+        try { if (Directory.Exists(extractDir)) Directory.Delete(extractDir, true); }
+        catch (System.Exception ex)
+        {
+            Kairo.Core.Logging.CoreLogger.Output(Kairo.Core.Logging.CoreLogLevel.Error, "Unhandled exception in Kairo.Core/Services/FrpcArchiveExtractor.cs:89", ex);
+        }
     }
 }

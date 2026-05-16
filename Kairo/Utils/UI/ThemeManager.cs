@@ -33,7 +33,11 @@ namespace Kairo.Utils
                 if (dark != Global.isDarkThemeEnabled)
                 {
                     Global.isDarkThemeEnabled = dark;
-                    try { ThemeChanged?.Invoke(); } catch { }
+                    try { ThemeChanged?.Invoke(); }
+                    catch (System.Exception ex)
+                    {
+                        Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/Utils/UI/ThemeManager.cs:36", ex);
+                    }
                 }
             }
 

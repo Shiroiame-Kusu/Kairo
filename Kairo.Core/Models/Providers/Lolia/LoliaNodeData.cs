@@ -22,6 +22,15 @@ public sealed class LoliaNodeData
     public string ServerAddress { get; init; } = string.Empty;
     public string Remark { get; init; } = string.Empty;
     public string Description { get; init; } = string.Empty;
+    public string RegionCode { get; init; } = string.Empty;
+    public string Status { get; init; } = string.Empty;
+    public string FrpsVersion { get; init; } = string.Empty;
+    public string AgentVersion { get; init; } = string.Empty;
+    public string Sponsor { get; init; } = string.Empty;
+    public int Bandwidth { get; init; }
+    public decimal Load { get; init; }
+    public bool NeedKyc { get; init; }
+    public bool BeianRequired { get; init; }
     public List<string> PortRanges { get; init; } = new();
     public List<string> SupportedProtocols { get; init; } = new();
 }

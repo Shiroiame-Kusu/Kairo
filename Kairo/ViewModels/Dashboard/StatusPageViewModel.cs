@@ -48,7 +48,11 @@ namespace Kairo.ViewModels
         {
             if (_subscribed)
             {
-                try { Logger.LineWritten -= OnLineWritten; } catch { }
+                try { Logger.LineWritten -= OnLineWritten; }
+                catch (System.Exception ex)
+                {
+                    Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/ViewModels/Dashboard/StatusPageViewModel.cs:51", ex);
+                }
                 _subscribed = false;
             }
         }

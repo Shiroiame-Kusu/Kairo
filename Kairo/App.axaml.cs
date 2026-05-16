@@ -27,10 +27,19 @@ public partial class App : Application
         // (SIGTERM, Environment.Exit, updater, etc.)
         AppDomain.CurrentDomain.ProcessExit += (_, _) =>
         {
-            try { FrpcProcessManager.StopAll(); } catch { }
+            try { FrpcProcessManager.StopAll(); }
+            catch (System.Exception ex)
+            {
+                Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/App.axaml.cs:30", ex);
+            }
         };
         ConfigManager.Init();
-        CoreLogger.Sink = (level, message) => Logger.OutputNetwork(level == CoreLogLevel.Warn ? LogType.Warn : LogType.DetailDebug, message);
+        CoreLogger.Sink = (level, message) => Logger.OutputNetwork(level switch
+        {
+            CoreLogLevel.Error => LogType.Error,
+            CoreLogLevel.Warn => LogType.Warn,
+            _ => LogType.DetailDebug
+        }, message);
         OAuthCallbackHandler.Init();
         AvaloniaXamlLoader.Load(this); // load XAML BEFORE applying theme so XAML doesn't overwrite our choice
         // Apply persisted theme AFTER XAML so user's preference wins over App.axaml RequestedThemeVariant
@@ -56,8 +65,16 @@ public partial class App : Application
             Access.MainWindow = desktop.MainWindow; // store reference for Logger dialogs
             desktop.Exit += async (_, __) =>
             {
-                try { await OAuthCallbackHandler.StopAsync(); } catch { }
-                try { FrpcProcessManager.StopAll(); } catch { }
+                try { await OAuthCallbackHandler.StopAsync(); }
+                catch (System.Exception ex)
+                {
+                    Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/App.axaml.cs:64", ex);
+                }
+                try { FrpcProcessManager.StopAll(); }
+                catch (System.Exception ex)
+                {
+                    Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/App.axaml.cs:65", ex);
+                }
             };
         }
 

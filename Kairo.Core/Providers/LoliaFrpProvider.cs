@@ -1,5 +1,4 @@
 using System.Text.Json;
-using System.Text.Json.Nodes;
 using Kairo.Core.Logging;
 using Kairo.Core.Models;
 
@@ -7,7 +6,9 @@ namespace Kairo.Core.Providers;
 
 public sealed class LoliaFrpProvider : IFrpProvider
 {
-    private const string ReleaseApiOrigin = "https://api.github.com/repos/Lolia-FRP/lolia-frp/releases/latest";
+    private const string GitHubOwner = "Lolia-FRP";
+    private const string GitHubRepo = "lolia-frp";
+    private const string ReleaseApiOrigin = $"https://api.github.com/repos/{GitHubOwner}/{GitHubRepo}/releases/latest";
     private const string ApiRoot = "https://api.lolia.link/api/v1";
     private const string OAuthClientId = "4qav2seu7hooz62f";
     private const string DefaultOAuthScope = "all node:read";
@@ -213,10 +214,17 @@ public sealed class LoliaFrpProvider : IFrpProvider
         return new FrpAssetSelection { Version = release.Version, Platform = platform, Architecture = arch, Asset = asset };
     }
 
-    public string GetDownloadUrl(FrpDownloadRelease release, FrpDownloadAsset asset, bool useMirror) => asset.DownloadUrl;
+    public string GetDownloadUrl(FrpDownloadRelease release, FrpDownloadAsset asset, bool useMirror)
+    {
+        return useMirror ? FrpProviderHelpers.ToGitHubReleaseMirrorUrl(asset.DownloadUrl) : asset.DownloadUrl;
+    }
 
-    public string? GetChecksumUrl(FrpDownloadRelease release, FrpDownloadAsset asset, bool useMirror) =>
-        release.Assets.FirstOrDefault(a => a.Name.Equals("sha256sum.txt", StringComparison.OrdinalIgnoreCase))?.DownloadUrl;
+    public string? GetChecksumUrl(FrpDownloadRelease release, FrpDownloadAsset asset, bool useMirror)
+    {
+        var checksum = release.Assets.FirstOrDefault(a => a.Name.Equals("sha256sum.txt", StringComparison.OrdinalIgnoreCase));
+        if (checksum == null) return null;
+        return useMirror ? FrpProviderHelpers.ToGitHubReleaseMirrorUrl(checksum.DownloadUrl) : checksum.DownloadUrl;
+    }
 
     private static async Task<FrpApiResult<LoliaOAuthTokenData>> RequestOAuthTokenAsync(HttpClient http, Dictionary<string, string> form, CancellationToken ct)
     {
@@ -241,8 +249,9 @@ public sealed class LoliaFrpProvider : IFrpProvider
                 ? FrpApiResult<LoliaOAuthTokenData>.Fail((int)response.StatusCode, "OAuth 响应格式错误")
                 : FrpApiResult<LoliaOAuthTokenData>.Ok(token, response.IsSuccessStatusCode ? 200 : (int)response.StatusCode, response.ReasonPhrase ?? string.Empty);
         }
-        catch (JsonException)
+        catch (JsonException ex)
         {
+            Kairo.Core.Logging.CoreLogger.Output(Kairo.Core.Logging.CoreLogLevel.Error, "Unhandled exception in Kairo.Core/Providers/LoliaFrpProvider.cs:252", ex);
             return FrpApiResult<LoliaOAuthTokenData>.Fail((int)response.StatusCode, "OAuth 响应格式错误");
         }
     }
@@ -296,8 +305,15 @@ public sealed class LoliaFrpProvider : IFrpProvider
             Host = host,
             Ip = ip,
             Description = FrpProviderHelpers.FirstNonEmpty(node.Description, node.Remark),
-            PortRanges = node.PortRanges,
-            SupportedProtocols = node.SupportedProtocols
+            RegionCode = node.RegionCode,
+            Status = node.Status,
+            Sponsor = node.Sponsor,
+            Bandwidth = node.Bandwidth,
+            Load = node.Load,
+            NeedKyc = node.NeedKyc,
+            BeianRequired = node.BeianRequired,
+            PortRanges = node.PortRanges is null ? Array.Empty<string>() : node.PortRanges,
+            SupportedProtocols = node.SupportedProtocols is null ? Array.Empty<string>() : node.SupportedProtocols
         };
     }
 }

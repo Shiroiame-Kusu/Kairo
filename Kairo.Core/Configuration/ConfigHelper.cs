@@ -49,7 +49,11 @@ public static class ConfigHelper
         if (!string.IsNullOrWhiteSpace(envDir))
         {
             try { envDir = Path.GetFullPath(envDir); }
-            catch { envDir = null; }
+            catch (System.Exception ex)
+            {
+                Kairo.Core.Logging.CoreLogger.Output(Kairo.Core.Logging.CoreLogLevel.Error, "Unhandled exception in Kairo.Core/Configuration/ConfigHelper.cs:52", ex);
+                envDir = null;
+            }
         }
         _configDirectory = envDir ?? Path.Combine(
             EnvironmentDetector.GetApplicationDataPath(), "Kairo");
@@ -82,7 +86,10 @@ public static class ConfigHelper
                 return JsonSerializer.Deserialize(json, typeInfo) ?? new T();
             }
         }
-        catch { }
+        catch (System.Exception ex)
+        {
+            Kairo.Core.Logging.CoreLogger.Output(Kairo.Core.Logging.CoreLogLevel.Error, "Unhandled exception in Kairo.Core/Configuration/ConfigHelper.cs:85", ex);
+        }
         return new T();
     }
 
@@ -97,6 +104,9 @@ public static class ConfigHelper
             var json = JsonSerializer.Serialize(config, typeInfo);
             File.WriteAllText(GetSettingsFilePath(), json);
         }
-        catch { }
+        catch (System.Exception ex)
+        {
+            Kairo.Core.Logging.CoreLogger.Output(Kairo.Core.Logging.CoreLogLevel.Error, "Unhandled exception in Kairo.Core/Configuration/ConfigHelper.cs:100", ex);
+        }
     }
 }

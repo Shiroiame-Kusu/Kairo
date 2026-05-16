@@ -9,26 +9,59 @@ namespace Kairo.Core.Logging;
 public enum CoreLogLevel
 {
     DetailDebug,
-    Warn
+    Warn,
+    Error
 }
 
 public static class CoreLogger
 {
+    private static readonly object FileLock = new();
+
     public static Action<CoreLogLevel, string>? Sink { get; set; }
 
     public static void Output(CoreLogLevel level, params object?[] objects)
     {
+        var message = BuildMessage(objects);
         var sink = Sink;
-        if (sink == null) return;
+        if (sink != null)
+        {
+            sink(level, message);
+            return;
+        }
 
+        var line = $"[{level}] {message}";
+        Console.Error.WriteLine(line);
+        TryWriteFallbackFile(line);
+    }
+
+    private static string BuildMessage(object?[] objects)
+    {
         var builder = new StringBuilder();
         foreach (var obj in objects)
         {
             if (obj == null) continue;
-            builder.Append(obj);
+            builder.Append(obj is Exception ex ? ex.ToString() : obj);
             builder.Append(' ');
         }
-        sink(level, builder.ToString().TrimEnd());
+        return builder.ToString().TrimEnd();
+    }
+
+    private static void TryWriteFallbackFile(string line)
+    {
+        try
+        {
+            var dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Kairo", "logs", "core");
+            Directory.CreateDirectory(dir);
+            var file = Path.Combine(dir, DateTime.Now.ToString("yyyy-MM-dd") + ".log");
+            lock (FileLock)
+            {
+                File.AppendAllText(file, $"{DateTime.Now:HH:mm:ss.fff} | {line}{Environment.NewLine}", Encoding.UTF8);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine("[CoreLogger fallback file error] " + ex);
+        }
     }
 }
 
@@ -224,8 +257,9 @@ public static class HttpClientLoggingExtensions
             if (trimmed.Length <= head + tail) return trimmed;
             return trimmed[..head] + "..." + trimmed[^tail..] + $" (len={trimmed.Length})";
         }
-        catch
+        catch (System.Exception ex)
         {
+            Kairo.Core.Logging.CoreLogger.Output(Kairo.Core.Logging.CoreLogLevel.Error, "Unhandled exception in Kairo.Core/Logging/HttpClientLoggingExtensions.cs:238", ex);
             return auth;
         }
     }

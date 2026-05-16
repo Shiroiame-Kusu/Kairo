@@ -199,6 +199,7 @@ namespace Kairo.ViewModels
             }
             catch (Exception ex)
             {
+                Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/ViewModels/Minecraft/HostRoomPageViewModel.cs:200", ex);
                 StatusText = $"探测失败: {ex.Message}";
                 ShowSnackbar("探测失败", ex.Message, InfoBarSeverity.Error);
                 IsDetecting = false;
@@ -278,8 +279,8 @@ namespace Kairo.ViewModels
                 Nodes.Clear();
                 foreach (var node in result.Data ?? Array.Empty<FrpNode>())
                 {
-                    string label = !string.IsNullOrWhiteSpace(node.Host) ? node.Host : node.Ip;
-                    string portRangeDisplay = node.PortRanges.Count > 0 ? string.Join(", ", node.PortRanges) : "—";
+                    var label = GetNodeLabel(node);
+                    var portRangeDisplay = node.PortRanges?.Count > 0 ? string.Join(", ", node.PortRanges) : "—";
 
                     if (node.Id > 0 && !string.IsNullOrWhiteSpace(label))
                     {
@@ -288,7 +289,7 @@ namespace Kairo.ViewModels
                             string.IsNullOrWhiteSpace(node.Name) ? label : node.Name,
                             label,
                             portRangeDisplay,
-                            string.IsNullOrWhiteSpace(node.Description) ? "暂无描述" : node.Description
+                            GetNodeDescription(node)
                         ));
                     }
                 }
@@ -305,8 +306,35 @@ namespace Kairo.ViewModels
             }
             catch (Exception ex)
             {
+                Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/ViewModels/Minecraft/HostRoomPageViewModel.cs:306", ex);
                 StatusText = $"获取节点失败: {ex.Message}";
             }
+        }
+
+        private static string GetNodeLabel(FrpNode node) =>
+            FirstNonEmpty(node.Ip, node.Host, node.Name, node.Id > 0 ? $"Node{node.Id}" : string.Empty);
+
+        private static string FirstNonEmpty(params string[] values)
+        {
+            foreach (var value in values)
+            {
+                if (!string.IsNullOrWhiteSpace(value)) return value;
+            }
+            return string.Empty;
+        }
+
+        private static string GetNodeDescription(FrpNode node)
+        {
+            var parts = new List<string>();
+            if (!string.IsNullOrWhiteSpace(node.RegionCode)) parts.Add($"地区: {node.RegionCode}");
+            if (!string.IsNullOrWhiteSpace(node.Status)) parts.Add($"状态: {node.Status}");
+            if (node.Bandwidth > 0) parts.Add($"带宽: {node.Bandwidth}Mbps");
+            if (node.Load > 0) parts.Add($"负载: {node.Load:0.##}%");
+            if (!string.IsNullOrWhiteSpace(node.Sponsor)) parts.Add($"赞助: {node.Sponsor}");
+            if (node.NeedKyc) parts.Add("需要实名");
+            if (node.BeianRequired) parts.Add("需要备案");
+            if (!string.IsNullOrWhiteSpace(node.Description)) parts.Add(node.Description);
+            return parts.Count == 0 ? "暂无描述" : string.Join(" · ", parts);
         }
 
         #endregion
@@ -380,6 +408,7 @@ namespace Kairo.ViewModels
             }
             catch (Exception ex)
             {
+                Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/ViewModels/Minecraft/HostRoomPageViewModel.cs:407", ex);
                 ShowSnackbar("创建房间异常", ex.Message, InfoBarSeverity.Error);
                 StatusText = $"创建异常: {ex.Message}";
             }
@@ -395,8 +424,9 @@ namespace Kairo.ViewModels
                 var result = await _api.GetRandomPortAsync(nodeId);
                 return result.Success ? result.Data : 0;
             }
-            catch
+            catch (System.Exception ex)
             {
+                Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/ViewModels/Minecraft/HostRoomPageViewModel.cs:424", ex);
                 return 0;
             }
         }
@@ -431,6 +461,7 @@ namespace Kairo.ViewModels
             }
             catch (Exception ex)
             {
+                Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/ViewModels/Minecraft/HostRoomPageViewModel.cs:458", ex);
                 ShowSnackbar("创建隧道异常", ex.Message, InfoBarSeverity.Error);
                 return 0;
             }
@@ -449,8 +480,9 @@ namespace Kairo.ViewModels
                     }
                 }
             }
-            catch
+            catch (System.Exception ex)
             {
+                Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/ViewModels/Minecraft/HostRoomPageViewModel.cs:478", ex);
                 // Ignore
             }
         }

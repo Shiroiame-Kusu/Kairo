@@ -25,7 +25,10 @@ namespace Kairo.Components
         private void CloseSafe()
         {
             try { Close(); }
-            catch { }
+            catch (System.Exception ex)
+            {
+                Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/Components/DownloadFrpcWindow.axaml.cs:28", ex);
+            }
         }
     }
 }

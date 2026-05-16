@@ -52,8 +52,9 @@ internal sealed class CliFrpcProcessRunner : IDisposable
                 await Task.Delay(1000, _cts.Token);
             }
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException ex)
         {
+            Kairo.Cli.Utils.Logger.Exception(ex, "Unhandled exception in Kairo.Cli/App/CliFrpcProcessRunner.cs:55");
         }
 
         KillAll();
@@ -80,10 +81,17 @@ internal sealed class CliFrpcProcessRunner : IDisposable
                     proc.WaitForExit(3000);
                 }
             }
-            catch { }
+            catch (System.Exception ex)
+            {
+                Kairo.Cli.Utils.Logger.Exception(ex, "Unhandled exception in Kairo.Cli/App/CliFrpcProcessRunner.cs:83");
+            }
             finally
             {
-                try { proc.Dispose(); } catch { }
+                try { proc.Dispose(); }
+                catch (System.Exception ex)
+                {
+                    Kairo.Cli.Utils.Logger.Exception(ex, "Unhandled exception in Kairo.Cli/App/CliFrpcProcessRunner.cs:86");
+                }
             }
         }
     }

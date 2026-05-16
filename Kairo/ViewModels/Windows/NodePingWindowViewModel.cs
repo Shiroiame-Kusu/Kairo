@@ -56,8 +56,9 @@ namespace Kairo.ViewModels
             {
                 _timer.Stop();
             }
-            catch
+            catch (System.Exception ex)
             {
+                Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/ViewModels/Windows/NodePingWindowViewModel.cs:59", ex);
             }
 
             _api.Dispose();
@@ -83,8 +84,9 @@ namespace Kairo.ViewModels
             {
                 _timer.Stop();
             }
-            catch
+            catch (System.Exception ex)
             {
+                Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/ViewModels/Windows/NodePingWindowViewModel.cs:86", ex);
             }
         }
 
@@ -138,6 +140,7 @@ namespace Kairo.ViewModels
             }
             catch (Exception ex)
             {
+                Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/ViewModels/Windows/NodePingWindowViewModel.cs:139", ex);
                 StatusText = $"获取失败: {ex.Message}";
             }
         }
@@ -183,6 +186,7 @@ namespace Kairo.ViewModels
             }
             catch (Exception ex)
             {
+                Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/ViewModels/Windows/NodePingWindowViewModel.cs:184", ex);
                 Dispatcher.UIThread.Post(() =>
                 {
                     row.LatencyMs = null;

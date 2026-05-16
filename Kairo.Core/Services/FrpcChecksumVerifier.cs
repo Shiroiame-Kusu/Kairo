@@ -33,8 +33,9 @@ internal sealed class FrpcChecksumVerifier
         {
             checksumContent = await _http.GetStringAsyncLogged(checksumUrl, ct);
         }
-        catch
+        catch (System.Exception ex)
         {
+            Kairo.Core.Logging.CoreLogger.Output(Kairo.Core.Logging.CoreLogLevel.Error, "Unhandled exception in Kairo.Core/Services/FrpcChecksumVerifier.cs:36", ex);
             return;
         }
 

@@ -76,8 +76,9 @@ public partial class MainWindow : Window
             if (_trayIcon != null)
                 _trayIcon.Icon = Icon;
         }
-        catch
+        catch (System.Exception ex)
         {
+            Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/MainWindow.axaml.cs:79", ex);
         }
     }
 
@@ -131,8 +132,9 @@ public partial class MainWindow : Window
             };
             _trayIcon.Clicked += (_, _) => ToggleWindowVisibility();
         }
-        catch
+        catch (System.Exception ex)
         {
+            Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/MainWindow.axaml.cs:134", ex);
         }
     }
 
@@ -143,8 +145,9 @@ public partial class MainWindow : Window
         {
             (Application.Current?.ApplicationLifetime as Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime)?.Shutdown();
         }
-        catch
+        catch (System.Exception ex)
         {
+            Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/MainWindow.axaml.cs:146", ex);
             Close();
         }
     }
@@ -224,7 +227,11 @@ public partial class MainWindow : Window
 
         if (Access.DashBoard is Window db)
         {
-            try { db.Close(); } catch { }
+            try { db.Close(); }
+            catch (System.Exception ex)
+            {
+                Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/MainWindow.axaml.cs:227", ex);
+            }
             Access.DashBoard = null;
         }
         if (Access.MainWindow is MainWindow mw)

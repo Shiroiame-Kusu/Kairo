@@ -79,8 +79,9 @@ public class FrpcDownloader : IDisposable
             Console.WriteLine($"[成功] frpc 已下载到: {result.FrpcPath}");
             return new DownloadResult { Success = true, FrpcPath = result.FrpcPath };
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException ex)
         {
+            Kairo.Cli.Utils.Logger.Exception(ex, "Unhandled exception in Kairo.Cli/Services/FrpcDownloader.cs:82");
             Logger.Warning("下载被取消");
             Logger.MethodExit("取消");
             return new DownloadResult { Success = false, Message = "下载已取消" };

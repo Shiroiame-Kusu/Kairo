@@ -11,7 +11,7 @@ class Program
     {
         // 解析日志相关参数（在正式解析前）
         var logLevel = LogLevel.Info;
-        var logToFile = false;
+        var logToFile = true;
         
         foreach (var arg in args)
         {
@@ -43,7 +43,9 @@ class Program
         Logger.Initialize(logLevel, logToFile);
         CoreLogger.Sink = (level, message) =>
         {
-            if (level == CoreLogLevel.Warn)
+            if (level == CoreLogLevel.Error)
+                Logger.Error(message);
+            else if (level == CoreLogLevel.Warn)
                 Logger.Warning(message);
             else
                 Logger.Debug(message);

@@ -49,8 +49,9 @@ public class RoomViewModel : ViewModelBase
             if (clipboard != null)
                 await clipboard.SetTextAsync(text);
         }
-        catch
+        catch (System.Exception ex)
         {
+            Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/ViewModels/Minecraft/RoomViewModel.cs:52", ex);
         }
     }
 }

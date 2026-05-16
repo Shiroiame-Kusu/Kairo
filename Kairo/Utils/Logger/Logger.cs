@@ -62,6 +62,8 @@ namespace Kairo.Utils.Logger
 
         public static void Output(LogType type, params object?[] objects) => OutputInternal(type, DefaultDestinations, objects);
 
+        public static void Exception(string context, Exception ex) => OutputInternal(LogType.Error, DefaultDestinations, new object?[] { context, ex });
+
         public static void Output(LogType type, LogDestination destinations, params object?[] objects) => OutputInternal(type, destinations, objects);
 
         public static void OutputNetwork(LogType type, params object?[] objects) => OutputInternal(type, GetNetworkDestinations(type), objects);
@@ -91,7 +93,8 @@ namespace Kairo.Utils.Logger
                 TryWriteFile(type, line);
             if (destinations.HasFlag(LogDestination.Event))
             {
-                try { LineWritten?.Invoke(type, line); } catch { }
+                try { LineWritten?.Invoke(type, line); }
+                catch (Exception ex) { Console.Error.WriteLine("[LOGGER EVENT ERROR] " + ex); }
             }
         }
 
@@ -152,7 +155,7 @@ namespace Kairo.Utils.Logger
             }
             catch (Exception ex)
             {
-                Console.WriteLine("[LOGGER ERROR] " + ex.Message);
+                Console.Error.WriteLine("[LOGGER ERROR] " + ex);
             }
         }
 
@@ -187,7 +190,7 @@ namespace Kairo.Utils.Logger
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine("[MSGBOX SNACKBAR ERROR] " + ex.Message);
+                    Console.Error.WriteLine("[MSGBOX SNACKBAR ERROR] " + ex);
                 }
                 return true;
             }
@@ -216,7 +219,7 @@ namespace Kairo.Utils.Logger
             }
             catch (Exception ex)
             {
-                Console.WriteLine("[LOGGER MSGBOX ERROR] " + ex);
+                Console.Error.WriteLine("[LOGGER MSGBOX ERROR] " + ex);
                 return false;
             }
         }

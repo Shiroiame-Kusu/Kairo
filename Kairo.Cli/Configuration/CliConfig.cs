@@ -21,7 +21,7 @@ public class CliConfig : BaseConfig
     /// <summary>
     /// 是否将日志写入文件
     /// </summary>
-    public bool LogToFile { get; set; } = false;
+    public bool LogToFile { get; set; } = true;
 }
 
 /// <summary>
@@ -50,8 +50,9 @@ public static class CliConfigManager
             ConfigHelper.EnsureConfigDirectoryExists();
             _config = ConfigHelper.Load(CliConfigJsonContext.Default.CliConfig);
         }
-        catch
+        catch (System.Exception ex)
         {
+            Kairo.Cli.Utils.Logger.Exception(ex, "Unhandled exception in Kairo.Cli/Configuration/CliConfig.cs:53");
             _config = new CliConfig();
         }
     }

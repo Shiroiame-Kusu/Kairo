@@ -20,10 +20,18 @@ internal static class FrpProviderHelpers
             var release = await ReadJsonAsync(resp, FrpModelsJsonContext.Default.GitHubReleaseData, cts.Token);
             return release == null ? null : ParseGitHubRelease(release);
         }
-        catch
+        catch (System.Exception ex)
         {
+            Kairo.Core.Logging.CoreLogger.Output(Kairo.Core.Logging.CoreLogLevel.Error, "Unhandled exception in Kairo.Core/Providers/FrpProviderHelpers.cs:23", ex);
             return null;
         }
+    }
+
+    public static string ToGitHubReleaseMirrorUrl(string downloadUrl)
+    {
+        const string githubPrefix = "https://github.com/";
+        if (!downloadUrl.StartsWith(githubPrefix, StringComparison.OrdinalIgnoreCase)) return downloadUrl;
+        return $"{AppConstants.GithubMirror}/github.com/{downloadUrl[githubPrefix.Length..]}";
     }
 
     public static async Task<T?> ReadJsonAsync<T>(HttpResponseMessage response, JsonTypeInfo<T> typeInfo, CancellationToken ct)

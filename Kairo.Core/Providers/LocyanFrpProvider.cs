@@ -9,8 +9,6 @@ public sealed class LocyanFrpProvider : IFrpProvider
     private const string GitHubRepo = "LoCyanFrpPureApp";
     private const int APPID = 1;
     private const string ReleaseApiOrigin = $"https://api.github.com/repos/{GitHubOwner}/{GitHubRepo}/releases/latest";
-    private const string ReleaseApiMirror = $"https://{AppConstants.GithubMirror}/repos/{GitHubOwner}/{GitHubRepo}/releases/latest";
-    private const string DownloadMirrorRoot = "https://mirrors.locyan.cn/github-release/LoCyan-Team/LoCyanFrpPureApp";
 
     public FrpProviderType Type => FrpProviderType.Locyan;
     public string Id => "locyan";
@@ -216,8 +214,7 @@ public sealed class LocyanFrpProvider : IFrpProvider
 
     public async Task<FrpDownloadRelease?> GetLatestFrpcReleaseAsync(HttpClient http, CancellationToken ct = default)
     {
-        return await FrpProviderHelpers.TryGetGitHubReleaseAsync(http, ReleaseApiMirror, ct)
-            ?? await FrpProviderHelpers.TryGetGitHubReleaseAsync(http, ReleaseApiOrigin, ct);
+        return await FrpProviderHelpers.TryGetGitHubReleaseAsync(http, ReleaseApiOrigin, ct);
     }
 
     public FrpAssetSelection SelectBestAsset(FrpDownloadRelease release)
@@ -232,8 +229,7 @@ public sealed class LocyanFrpProvider : IFrpProvider
 
     public string GetDownloadUrl(FrpDownloadRelease release, FrpDownloadAsset asset, bool useMirror)
     {
-        if (!useMirror) return asset.DownloadUrl;
-        return $"{DownloadMirrorRoot}/{Uri.EscapeDataString(release.ReleaseName)}/{Uri.EscapeDataString(asset.Name)}";
+        return useMirror ? FrpProviderHelpers.ToGitHubReleaseMirrorUrl(asset.DownloadUrl) : asset.DownloadUrl;
     }
 
     public string? GetChecksumUrl(FrpDownloadRelease release, FrpDownloadAsset asset, bool useMirror)
@@ -242,8 +238,7 @@ public sealed class LocyanFrpProvider : IFrpProvider
         var checksum = release.Assets.FirstOrDefault(a =>
             FrpProviderHelpers.IsChecksumAsset(a.Name) && a.Name.Contains(prefix, StringComparison.OrdinalIgnoreCase));
         if (checksum == null) return null;
-        if (!useMirror) return checksum.DownloadUrl;
-        return $"{DownloadMirrorRoot}/{Uri.EscapeDataString(release.ReleaseName)}/{Uri.EscapeDataString(checksum.Name)}";
+        return useMirror ? FrpProviderHelpers.ToGitHubReleaseMirrorUrl(checksum.DownloadUrl) : checksum.DownloadUrl;
     }
 
     private static FrpUserProfile ParseUser(LocyanUserData user) => new()

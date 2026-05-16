@@ -110,7 +110,10 @@ public static class EnvironmentDetector
                     return true;
             }
         }
-        catch { }
+        catch (System.Exception ex)
+        {
+            Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/Utils/App/EnvironmentDetector.cs:113", ex);
+        }
 
         return false;
     }

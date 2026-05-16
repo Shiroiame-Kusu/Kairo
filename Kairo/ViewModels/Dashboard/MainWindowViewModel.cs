@@ -377,8 +377,9 @@ namespace Kairo.ViewModels
                         IsLoggingIn = false;
                     });
                 }
-                catch (TaskCanceledException)
+                catch (TaskCanceledException ex)
                 {
+                    Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/ViewModels/Dashboard/MainWindowViewModel.cs:380", ex);
                 }
             });
         }
