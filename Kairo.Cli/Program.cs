@@ -1,3 +1,4 @@
+using Kairo.Core.Logging;
 using Kairo.Cli.Configuration;
 using Kairo.Cli.Services;
 using Kairo.Cli.Utils;
@@ -40,7 +41,14 @@ class Program
         
         // 初始化日志系统
         Logger.Initialize(logLevel, logToFile);
-        
+        CoreLogger.Sink = (level, message) =>
+        {
+            if (level == CoreLogLevel.Warn)
+                Logger.Warning(message);
+            else
+                Logger.Debug(message);
+        };
+
         Logger.Debug($"命令行参数: {string.Join(" ", args)}");
         Logger.Debug($"配置目录: {Kairo.Core.Configuration.ConfigHelper.GetConfigDirectory()}");
         Logger.Debug($"运行时: {System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription}");

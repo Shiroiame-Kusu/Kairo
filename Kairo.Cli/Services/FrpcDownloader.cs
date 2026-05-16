@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using Kairo.Core;
+using Kairo.Core.Models;
 using Kairo.Core.Providers;
 using Kairo.Core.Services;
 using Kairo.Cli.Configuration;

@@ -47,7 +47,7 @@ public class ApiClient : IDisposable
         Logger.MethodEntry($"code长度={code.Length}");
         try
         {
-            var redirectUri = _provider.Type == FrpProviderType.Lolia ? "http://127.0.0.1:10000/oauth/callback" : string.Empty;
+            var redirectUri = _provider.Type == FrpProviderType.Lolia ? BuildLoopbackCallbackUri() : string.Empty;
             var tokenResult = await _provider.ExchangeCodeForRefreshTokenAsync(_http, code, redirectUri, codeVerifier);
             if (!tokenResult.Success || string.IsNullOrWhiteSpace(tokenResult.Data))
             {
@@ -66,6 +66,12 @@ public class ApiClient : IDisposable
             Logger.MethodExit("异常");
             return new LoginResult { Success = false, Message = ex.Message };
         }
+    }
+
+    private static string BuildLoopbackCallbackUri()
+    {
+        var port = CliConfigManager.Config.OAuthPort > 0 ? CliConfigManager.Config.OAuthPort : 10000;
+        return $"http://127.0.0.1:{port}/oauth/callback";
     }
 
     /// <summary>
@@ -190,6 +196,7 @@ public class ApiClient : IDisposable
         {
             Id = tunnel.Id,
             Name = tunnel.ProxyName,
+            Token = tunnel.Token,
             Type = tunnel.ProxyType,
             LocalIp = tunnel.LocalIp,
             LocalPort = tunnel.LocalPort,
@@ -205,6 +212,7 @@ public class ApiClient : IDisposable
     {
         Id = tunnel.Id,
         ProxyName = tunnel.Name,
+        Token = tunnel.Token,
         ProxyType = tunnel.Type,
         LocalIp = tunnel.LocalIp,
         LocalPort = tunnel.LocalPort,
