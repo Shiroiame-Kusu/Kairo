@@ -26,7 +26,7 @@ namespace Kairo.Utils
             }
             catch (System.Exception logEx)
             {
-                Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/Utils/Crash/CrashInterception.Report.cs:27", logEx);
+                AppLogger.Exception("Unhandled exception in Kairo/Utils/Crash/CrashInterception.Report.cs:27", logEx);
             }
 
             var now = DateTime.Now;
@@ -75,7 +75,7 @@ namespace Kairo.Utils
             }
             catch (System.Exception ex)
             {
-                Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/Utils/Crash/CrashInterception.Report.cs:73", ex);
+                AppLogger.Exception("Unhandled exception in Kairo/Utils/Crash/CrashInterception.Report.cs:73", ex);
             }
             return d;
         }
@@ -92,7 +92,7 @@ namespace Kairo.Utils
             }
             catch (System.Exception ex)
             {
-                Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/Utils/Crash/CrashInterception.Report.cs:87", ex);
+                AppLogger.Exception("Unhandled exception in Kairo/Utils/Crash/CrashInterception.Report.cs:87", ex);
                 _machineHash = "UNKNOWN";
             }
             return _machineHash;

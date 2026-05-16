@@ -123,7 +123,7 @@ namespace Kairo.ViewModels
             }
             catch (Exception ex)
             {
-                Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/ViewModels/Minecraft/JoinRoomPageViewModel.cs:124", ex);
+                AppLogger.Exception("Unhandled exception in Kairo/ViewModels/Minecraft/JoinRoomPageViewModel.cs:124", ex);
                 ShowSnackbar("刷新房间失败", ex.Message, InfoBarSeverity.Error);
             }
         }
@@ -151,7 +151,7 @@ namespace Kairo.ViewModels
             }
             catch (Exception ex)
             {
-                Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/ViewModels/Minecraft/JoinRoomPageViewModel.cs:151", ex);
+                AppLogger.Exception("Unhandled exception in Kairo/ViewModels/Minecraft/JoinRoomPageViewModel.cs:151", ex);
                 ShowSnackbar("删除异常", ex.Message, InfoBarSeverity.Error);
             }
         }
@@ -210,7 +210,7 @@ namespace Kairo.ViewModels
             }
             catch (Exception ex)
             {
-                Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/ViewModels/Minecraft/JoinRoomPageViewModel.cs:209", ex);
+                AppLogger.Exception("Unhandled exception in Kairo/ViewModels/Minecraft/JoinRoomPageViewModel.cs:209", ex);
                 ShowSnackbar("加入房间异常", ex.Message, InfoBarSeverity.Error);
                 StatusText = $"加入异常: {ex.Message}";
             }

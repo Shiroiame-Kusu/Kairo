@@ -36,7 +36,7 @@ namespace Kairo.Utils
                     try { ThemeChanged?.Invoke(); }
                     catch (System.Exception ex)
                     {
-                        Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/Utils/UI/ThemeManager.cs:36", ex);
+                        AppLogger.Exception("Unhandled exception in Kairo/Utils/UI/ThemeManager.cs:36", ex);
                     }
                 }
             }

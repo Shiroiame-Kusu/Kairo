@@ -208,7 +208,7 @@ namespace Kairo.ViewModels
             }
             catch (Exception ex)
             {
-                Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/ViewModels/Windows/CreateProxyWindowViewModel.cs:209", ex);
+                AppLogger.Exception("Unhandled exception in Kairo/ViewModels/Windows/CreateProxyWindowViewModel.cs:209", ex);
                 StatusText = $"获取节点失败: {ex.Message}";
                 CanPing = false;
             }
@@ -296,7 +296,7 @@ namespace Kairo.ViewModels
             }
             catch (Exception ex)
             {
-                Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/ViewModels/Windows/CreateProxyWindowViewModel.cs:296", ex);
+                AppLogger.Exception("Unhandled exception in Kairo/ViewModels/Windows/CreateProxyWindowViewModel.cs:296", ex);
                 StatusText = $"创建失败: {ex.Message}";
             }
         }
@@ -339,7 +339,7 @@ namespace Kairo.ViewModels
             }
             catch (System.Exception ex)
             {
-                Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/ViewModels/Windows/CreateProxyWindowViewModel.cs:338", ex);
+                AppLogger.Exception("Unhandled exception in Kairo/ViewModels/Windows/CreateProxyWindowViewModel.cs:338", ex);
                 return 0;
             }
         }

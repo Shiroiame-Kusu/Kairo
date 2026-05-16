@@ -108,7 +108,7 @@ namespace Kairo.ViewModels
             }
             catch (Exception ex)
             {
-                Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/ViewModels/Dashboard/HomePageViewModel.cs:109", ex);
+                AppLogger.Exception("Unhandled exception in Kairo/ViewModels/Dashboard/HomePageViewModel.cs:109", ex);
                 Announcement = "获取公告异常: " + ex.Message;
             }
         }
@@ -132,7 +132,7 @@ namespace Kairo.ViewModels
             }
             catch (System.Exception ex)
             {
-                Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/ViewModels/Dashboard/HomePageViewModel.cs:132", ex);
+                AppLogger.Exception("Unhandled exception in Kairo/ViewModels/Dashboard/HomePageViewModel.cs:132", ex);
             }
         }
 
@@ -164,7 +164,7 @@ namespace Kairo.ViewModels
             }
             catch (Exception ex)
             {
-                Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/ViewModels/Dashboard/HomePageViewModel.cs:163", ex);
+                AppLogger.Exception("Unhandled exception in Kairo/ViewModels/Dashboard/HomePageViewModel.cs:163", ex);
                 (Access.DashBoard as Components.DashBoard.DashBoard)?.OpenSnackbar("签到异常", ex.Message, InfoBarSeverity.Error);
             }
             finally

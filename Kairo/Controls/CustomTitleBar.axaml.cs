@@ -159,7 +159,7 @@ public partial class CustomTitleBar : UserControl
                 try { _window.BeginMoveDrag(e); }
                 catch (System.Exception ex)
                 {
-                    Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/Controls/CustomTitleBar.axaml.cs:159", ex);
+                    AppLogger.Exception("Unhandled exception in Kairo/Controls/CustomTitleBar.axaml.cs:159", ex);
                     /* ignore */
                 }
             }

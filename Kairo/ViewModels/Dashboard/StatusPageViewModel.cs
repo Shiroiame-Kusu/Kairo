@@ -40,6 +40,7 @@ namespace Kairo.ViewModels
             if (!_subscribed)
             {
                 Logger.LineWritten += OnLineWritten;
+                Logger.Cleared += OnLogsCleared;
                 _subscribed = true;
             }
         }
@@ -48,10 +49,14 @@ namespace Kairo.ViewModels
         {
             if (_subscribed)
             {
-                try { Logger.LineWritten -= OnLineWritten; }
+                try
+                {
+                    Logger.LineWritten -= OnLineWritten;
+                    Logger.Cleared -= OnLogsCleared;
+                }
                 catch (System.Exception ex)
                 {
-                    Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/ViewModels/Dashboard/StatusPageViewModel.cs:51", ex);
+                    AppLogger.Exception("Unhandled exception in Kairo/ViewModels/Dashboard/StatusPageViewModel.cs:51", ex);
                 }
                 _subscribed = false;
             }
@@ -63,6 +68,15 @@ namespace Kairo.ViewModels
             {
                 AddLine(type, line);
                 _lastGlobalIndex++;
+            });
+        }
+
+        private void OnLogsCleared()
+        {
+            Dispatcher.UIThread.Post(() =>
+            {
+                Lines.Clear();
+                _lastGlobalIndex = 0;
             });
         }
 

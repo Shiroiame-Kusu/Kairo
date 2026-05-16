@@ -51,7 +51,7 @@ namespace Kairo.Utils
                 }
                 catch (System.Exception ex)
                 {
-                    Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/Utils/Crash/CrashInterception.cs:52", ex);
+                    AppLogger.Exception("Unhandled exception in Kairo/Utils/Crash/CrashInterception.cs:52", ex);
                 }
             };
         }
@@ -87,13 +87,13 @@ namespace Kairo.Utils
                     }
                     catch (System.Exception ex)
                     {
-                        Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/Utils/Crash/CrashInterception.cs:85", ex);
+                        AppLogger.Exception("Unhandled exception in Kairo/Utils/Crash/CrashInterception.cs:85", ex);
                     }
                 }
             }
             catch (System.Exception ex)
             {
-                Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/Utils/Crash/CrashInterception.cs:88", ex);
+                AppLogger.Exception("Unhandled exception in Kairo/Utils/Crash/CrashInterception.cs:88", ex);
             }
         }
 
@@ -115,7 +115,7 @@ namespace Kairo.Utils
             }
             catch (Exception handlerEx)
             {
-                Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/Utils/Crash/CrashInterception.cs:107", handlerEx);
+                AppLogger.Exception("Unhandled exception in Kairo/Utils/Crash/CrashInterception.cs:107", handlerEx);
                 Debug.WriteLine(handlerEx);
             }
         }
@@ -125,7 +125,7 @@ namespace Kairo.Utils
             try { CrashLogged?.Invoke(ex, id); }
             catch (System.Exception callbackEx)
             {
-                Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/Utils/Crash/CrashInterception.cs:115", callbackEx);
+                AppLogger.Exception("Unhandled exception in Kairo/Utils/Crash/CrashInterception.cs:115", callbackEx);
             }
         }
 

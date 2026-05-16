@@ -66,7 +66,7 @@ internal sealed class MinecraftLanForwardingService : IDisposable
         }
         catch (System.Exception ex)
         {
-            Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/Utils/Minecraft/MinecraftLanForwardingService.cs:67", ex);
+            AppLogger.Exception("Unhandled exception in Kairo/Utils/Minecraft/MinecraftLanForwardingService.cs:67", ex);
             await StopAsync();
             throw;
         }
@@ -83,7 +83,7 @@ internal sealed class MinecraftLanForwardingService : IDisposable
             }
             catch (System.Exception ex)
             {
-                Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/Utils/Minecraft/MinecraftLanForwardingService.cs:83", ex);
+                AppLogger.Exception("Unhandled exception in Kairo/Utils/Minecraft/MinecraftLanForwardingService.cs:83", ex);
             }
             finally
             {
@@ -100,7 +100,7 @@ internal sealed class MinecraftLanForwardingService : IDisposable
             }
             catch (System.Exception ex)
             {
-                Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/Utils/Minecraft/MinecraftLanForwardingService.cs:97", ex);
+                AppLogger.Exception("Unhandled exception in Kairo/Utils/Minecraft/MinecraftLanForwardingService.cs:97", ex);
             }
             finally
             {

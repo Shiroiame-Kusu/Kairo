@@ -74,7 +74,7 @@ public partial class StatusPage : UserControl
             }
             catch (System.Exception ex)
             {
-                Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/Components/DashBoard/StatusPage.axaml.cs:75", ex);
+                AppLogger.Exception("Unhandled exception in Kairo/Components/DashBoard/StatusPage.axaml.cs:75", ex);
             }
         });
     }

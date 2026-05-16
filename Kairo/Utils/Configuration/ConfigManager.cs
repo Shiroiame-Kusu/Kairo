@@ -5,7 +5,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Kairo.Utils.Logger;
 using Kairo.Utils.Serialization;
-using AppLogger = Kairo.Utils.Logger.Logger; // alias added
 
 namespace Kairo.Utils.Configuration
 {
@@ -38,7 +37,7 @@ namespace Kairo.Utils.Configuration
                 }
                 catch (System.Exception ex)
                 {
-                    Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/Utils/Configuration/ConfigManager.cs:39", ex);
+                    AppLogger.Exception("Unhandled exception in Kairo/Utils/Configuration/ConfigManager.cs:39", ex);
                     envDir = null; // fallback
                 }
             }

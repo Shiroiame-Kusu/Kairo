@@ -42,7 +42,7 @@ public partial class CreateProxyWindow : Window
         }
         catch (Exception ex)
         {
-            Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/Components/CreateProxyWindow.axaml.cs:43", ex);
+            AppLogger.Exception("Unhandled exception in Kairo/Components/CreateProxyWindow.axaml.cs:43", ex);
             _viewModel.StatusText = "打开 Ping 窗口失败: " + ex.Message;
         }
     }
@@ -52,7 +52,7 @@ public partial class CreateProxyWindow : Window
         try { Close(); }
         catch (System.Exception ex)
         {
-            Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/Components/CreateProxyWindow.axaml.cs:52", ex);
+            AppLogger.Exception("Unhandled exception in Kairo/Components/CreateProxyWindow.axaml.cs:52", ex);
         }
     }
 }

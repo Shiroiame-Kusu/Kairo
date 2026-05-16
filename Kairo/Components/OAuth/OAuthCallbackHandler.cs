@@ -84,7 +84,7 @@ namespace Kairo.Components.OAuth
             }
             catch (System.Exception ex)
             {
-                Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/Components/OAuth/OAuthCallbackHandler.cs:85", ex);
+                AppLogger.Exception("Unhandled exception in Kairo/Components/OAuth/OAuthCallbackHandler.cs:85", ex);
             }
         }
         public static void Stop()
@@ -93,7 +93,7 @@ namespace Kairo.Components.OAuth
             try { StopAsync().GetAwaiter().GetResult(); }
             catch (System.Exception ex)
             {
-                Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/Components/OAuth/OAuthCallbackHandler.cs:90", ex);
+                AppLogger.Exception("Unhandled exception in Kairo/Components/OAuth/OAuthCallbackHandler.cs:90", ex);
             }
         }
         private static bool IsPortInUse(int port)

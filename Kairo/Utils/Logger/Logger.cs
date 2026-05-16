@@ -31,6 +31,7 @@ namespace Kairo.Utils.Logger
         private static int _totalLines; // monotonically increasing count of all lines ever logged (since process start)
 
         public static event Action<LogType, string>? LineWritten; // UI or other subscribers can hook
+        public static event Action? Cleared;
 
         public static bool EnableFileLogging { get; set; } = true;
         public static string LogDirectory { get; set; } = Path.Combine("logs", "app");
@@ -67,6 +68,18 @@ namespace Kairo.Utils.Logger
         public static void Output(LogType type, LogDestination destinations, params object?[] objects) => OutputInternal(type, destinations, objects);
 
         public static void OutputNetwork(LogType type, params object?[] objects) => OutputInternal(type, GetNetworkDestinations(type), objects);
+
+        public static void ClearCache()
+        {
+            lock (_cacheLock)
+            {
+                LogPreProcess.Process.Cache.Clear();
+                _totalLines = 0;
+            }
+
+            try { Cleared?.Invoke(); }
+            catch (Exception ex) { Console.Error.WriteLine("[LOGGER CLEAR EVENT ERROR] " + ex); }
+        }
 
         private static void OutputInternal(LogType type, LogDestination destinations, object?[] objects)
         {

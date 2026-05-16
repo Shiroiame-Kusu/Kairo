@@ -108,7 +108,7 @@ namespace Kairo.ViewModels
             try { _cts.Cancel(); }
             catch (System.Exception ex)
             {
-                Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/ViewModels/Windows/DownloadFrpcWindowViewModel.cs:108", ex);
+                AppLogger.Exception("Unhandled exception in Kairo/ViewModels/Windows/DownloadFrpcWindowViewModel.cs:108", ex);
             }
             _cts.Dispose();
             _http.Dispose();
@@ -162,7 +162,7 @@ namespace Kairo.ViewModels
             }
             catch (OperationCanceledException ex)
             {
-                Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/ViewModels/Windows/DownloadFrpcWindowViewModel.cs:159", ex);
+                AppLogger.Exception("Unhandled exception in Kairo/ViewModels/Windows/DownloadFrpcWindowViewModel.cs:159", ex);
                 SetStatus("已取消");
                 Dispatcher.UIThread.Post(() =>
                 {
@@ -172,7 +172,7 @@ namespace Kairo.ViewModels
             }
             catch (Exception ex)
             {
-                Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/ViewModels/Windows/DownloadFrpcWindowViewModel.cs:168", ex);
+                AppLogger.Exception("Unhandled exception in Kairo/ViewModels/Windows/DownloadFrpcWindowViewModel.cs:168", ex);
                 SetStatus("失败: " + ex.Message);
                 Dispatcher.UIThread.Post(() =>
                 {

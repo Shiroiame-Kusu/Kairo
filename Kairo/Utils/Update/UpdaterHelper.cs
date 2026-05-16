@@ -4,7 +4,6 @@ using System.IO;
 using Kairo.Core;
 using Kairo.Utils.Configuration;
 using Kairo.Utils.Logger;
-using AppLogger = Kairo.Utils.Logger.Logger;
 
 namespace Kairo.Utils;
 
@@ -104,14 +103,14 @@ public static class UpdaterHelper
         try { FrpcProcessManager.StopAll(); }
         catch (System.Exception ex)
         {
-            Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/Utils/Update/UpdaterHelper.cs:104", ex);
+            AppLogger.Exception("Unhandled exception in Kairo/Utils/Update/UpdaterHelper.cs:104", ex);
         }
         
         // Flush any pending I/O
         try { ConfigManager.Save(); }
         catch (System.Exception ex)
         {
-            Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/Utils/Update/UpdaterHelper.cs:107", ex);
+            AppLogger.Exception("Unhandled exception in Kairo/Utils/Update/UpdaterHelper.cs:107", ex);
         }
 
         // Exit the application

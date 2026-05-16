@@ -78,7 +78,7 @@ public partial class MainWindow : Window
         }
         catch (System.Exception ex)
         {
-            Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/MainWindow.axaml.cs:79", ex);
+            AppLogger.Exception("Unhandled exception in Kairo/MainWindow.axaml.cs:79", ex);
         }
     }
 
@@ -134,7 +134,7 @@ public partial class MainWindow : Window
         }
         catch (System.Exception ex)
         {
-            Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/MainWindow.axaml.cs:134", ex);
+            AppLogger.Exception("Unhandled exception in Kairo/MainWindow.axaml.cs:134", ex);
         }
     }
 
@@ -147,7 +147,7 @@ public partial class MainWindow : Window
         }
         catch (System.Exception ex)
         {
-            Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/MainWindow.axaml.cs:146", ex);
+            AppLogger.Exception("Unhandled exception in Kairo/MainWindow.axaml.cs:146", ex);
             Close();
         }
     }
@@ -230,7 +230,7 @@ public partial class MainWindow : Window
             try { db.Close(); }
             catch (System.Exception ex)
             {
-                Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/MainWindow.axaml.cs:227", ex);
+                AppLogger.Exception("Unhandled exception in Kairo/MainWindow.axaml.cs:227", ex);
             }
             Access.DashBoard = null;
         }

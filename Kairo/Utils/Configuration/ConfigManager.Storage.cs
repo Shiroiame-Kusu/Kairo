@@ -5,7 +5,6 @@ using System.Text;
 using System.Text.Json;
 using Kairo.Utils.Logger;
 using Kairo.Utils.Serialization;
-using AppLogger = Kairo.Utils.Logger.Logger;
 
 namespace Kairo.Utils.Configuration
 {
@@ -90,7 +89,7 @@ namespace Kairo.Utils.Configuration
             }
             catch (IOException ex)
             {
-                Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/Utils/Configuration/ConfigManager.Storage.cs:91", ex);
+                AppLogger.Exception("Unhandled exception in Kairo/Utils/Configuration/ConfigManager.Storage.cs:91", ex);
                 if (File.Exists(SettingsFilePath)) File.Delete(SettingsFilePath);
                 File.Move(TempSettingsFilePath, SettingsFilePath);
             }
@@ -105,7 +104,7 @@ namespace Kairo.Utils.Configuration
             try { if (File.Exists(TempSettingsFilePath)) File.Delete(TempSettingsFilePath); }
             catch (System.Exception ex)
             {
-                Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/Utils/Configuration/ConfigManager.Storage.cs:104", ex);
+                AppLogger.Exception("Unhandled exception in Kairo/Utils/Configuration/ConfigManager.Storage.cs:104", ex);
             }
         }
 

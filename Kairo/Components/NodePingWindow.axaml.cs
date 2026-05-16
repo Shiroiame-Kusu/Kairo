@@ -32,7 +32,7 @@ public partial class NodePingWindow : Window
         try { Close(); }
         catch (System.Exception ex)
         {
-            Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/Components/NodePingWindow.axaml.cs:33", ex);
+            AppLogger.Exception("Unhandled exception in Kairo/Components/NodePingWindow.axaml.cs:33", ex);
         }
     }
 }

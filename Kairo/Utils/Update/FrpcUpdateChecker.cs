@@ -34,7 +34,7 @@ namespace Kairo.Utils
             }
             catch (System.Exception ex)
             {
-                Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/Utils/Update/FrpcUpdateChecker.cs:35", ex);
+                AppLogger.Exception("Unhandled exception in Kairo/Utils/Update/FrpcUpdateChecker.cs:35", ex);
                 return true;
             }
         }
@@ -118,7 +118,7 @@ namespace Kairo.Utils
                     try { proc.Kill(true); }
                     catch (System.Exception ex)
                     {
-                        Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/Utils/Update/FrpcUpdateChecker.cs:117", ex);
+                        AppLogger.Exception("Unhandled exception in Kairo/Utils/Update/FrpcUpdateChecker.cs:117", ex);
                     }
                     return null;
                 }
@@ -128,7 +128,7 @@ namespace Kairo.Utils
             }
             catch (System.Exception ex)
             {
-                Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/Utils/Update/FrpcUpdateChecker.cs:124", ex);
+                AppLogger.Exception("Unhandled exception in Kairo/Utils/Update/FrpcUpdateChecker.cs:124", ex);
                 return null;
             }
         }

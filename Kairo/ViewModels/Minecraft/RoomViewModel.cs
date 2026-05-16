@@ -51,7 +51,7 @@ public class RoomViewModel : ViewModelBase
         }
         catch (System.Exception ex)
         {
-            Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/ViewModels/Minecraft/RoomViewModel.cs:52", ex);
+            AppLogger.Exception("Unhandled exception in Kairo/ViewModels/Minecraft/RoomViewModel.cs:52", ex);
         }
     }
 }

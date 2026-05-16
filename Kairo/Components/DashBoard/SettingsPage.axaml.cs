@@ -243,6 +243,7 @@ namespace Kairo.Components.DashBoard
             Global.Config.ID = 0;
             Global.Config.FrpToken = string.Empty;
             ConfigManager.Save();
+            AppLogger.ClearCache();
             (Access.DashBoard as DashBoard)?.OpenSnackbar("已退出", "请重新登录");
 
             if (Access.MainWindow is MainWindow mw)
@@ -342,13 +343,13 @@ namespace Kairo.Components.DashBoard
                 }
                 catch (Exception exLaunch)
                 {
-                    Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/Components/DashBoard/SettingsPage.axaml.cs:343", exLaunch);
+                    AppLogger.Exception("Unhandled exception in Kairo/Components/DashBoard/SettingsPage.axaml.cs:343", exLaunch);
                     (Access.DashBoard as DashBoard)?.OpenSnackbar("启动更新失败", exLaunch.Message);
                 }
             }
             catch (Exception ex)
             {
-                Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/Components/DashBoard/SettingsPage.axaml.cs:348", ex);
+                AppLogger.Exception("Unhandled exception in Kairo/Components/DashBoard/SettingsPage.axaml.cs:348", ex);
                 (Access.DashBoard as DashBoard)?.OpenSnackbar("检查失败", ex.Message);
             }
             finally

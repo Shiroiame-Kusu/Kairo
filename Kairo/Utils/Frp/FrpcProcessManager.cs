@@ -8,7 +8,6 @@ using System.Threading.Tasks;
 using Kairo.Core.Models;
 using Kairo.Core.Providers;
 using Kairo.Utils.Logger;
-using AppLogger = Kairo.Utils.Logger.Logger;
 
 namespace Kairo.Utils;
 
@@ -132,7 +131,7 @@ internal static class FrpcProcessManager
                 try { ProxyExited?.Invoke(proxyId); }
                 catch (System.Exception ex)
                 {
-                    Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/Utils/Frp/FrpcProcessManager.cs:132", ex);
+                    AppLogger.Exception("Unhandled exception in Kairo/Utils/Frp/FrpcProcessManager.cs:132", ex);
                 }
             };
             if (!proc.Start())

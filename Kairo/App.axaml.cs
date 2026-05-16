@@ -30,7 +30,7 @@ public partial class App : Application
             try { FrpcProcessManager.StopAll(); }
             catch (System.Exception ex)
             {
-                Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/App.axaml.cs:30", ex);
+                AppLogger.Exception("Unhandled exception in Kairo/App.axaml.cs:30", ex);
             }
         };
         ConfigManager.Init();
@@ -68,12 +68,12 @@ public partial class App : Application
                 try { await OAuthCallbackHandler.StopAsync(); }
                 catch (System.Exception ex)
                 {
-                    Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/App.axaml.cs:64", ex);
+                    AppLogger.Exception("Unhandled exception in Kairo/App.axaml.cs:64", ex);
                 }
                 try { FrpcProcessManager.StopAll(); }
                 catch (System.Exception ex)
                 {
-                    Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/App.axaml.cs:65", ex);
+                    AppLogger.Exception("Unhandled exception in Kairo/App.axaml.cs:65", ex);
                 }
             };
         }

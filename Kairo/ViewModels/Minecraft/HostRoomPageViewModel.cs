@@ -199,7 +199,7 @@ namespace Kairo.ViewModels
             }
             catch (Exception ex)
             {
-                Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/ViewModels/Minecraft/HostRoomPageViewModel.cs:200", ex);
+                AppLogger.Exception("Unhandled exception in Kairo/ViewModels/Minecraft/HostRoomPageViewModel.cs:200", ex);
                 StatusText = $"探测失败: {ex.Message}";
                 ShowSnackbar("探测失败", ex.Message, InfoBarSeverity.Error);
                 IsDetecting = false;
@@ -306,7 +306,7 @@ namespace Kairo.ViewModels
             }
             catch (Exception ex)
             {
-                Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/ViewModels/Minecraft/HostRoomPageViewModel.cs:306", ex);
+                AppLogger.Exception("Unhandled exception in Kairo/ViewModels/Minecraft/HostRoomPageViewModel.cs:306", ex);
                 StatusText = $"获取节点失败: {ex.Message}";
             }
         }
@@ -408,7 +408,7 @@ namespace Kairo.ViewModels
             }
             catch (Exception ex)
             {
-                Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/ViewModels/Minecraft/HostRoomPageViewModel.cs:407", ex);
+                AppLogger.Exception("Unhandled exception in Kairo/ViewModels/Minecraft/HostRoomPageViewModel.cs:407", ex);
                 ShowSnackbar("创建房间异常", ex.Message, InfoBarSeverity.Error);
                 StatusText = $"创建异常: {ex.Message}";
             }
@@ -426,7 +426,7 @@ namespace Kairo.ViewModels
             }
             catch (System.Exception ex)
             {
-                Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/ViewModels/Minecraft/HostRoomPageViewModel.cs:424", ex);
+                AppLogger.Exception("Unhandled exception in Kairo/ViewModels/Minecraft/HostRoomPageViewModel.cs:424", ex);
                 return 0;
             }
         }
@@ -461,7 +461,7 @@ namespace Kairo.ViewModels
             }
             catch (Exception ex)
             {
-                Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/ViewModels/Minecraft/HostRoomPageViewModel.cs:458", ex);
+                AppLogger.Exception("Unhandled exception in Kairo/ViewModels/Minecraft/HostRoomPageViewModel.cs:458", ex);
                 ShowSnackbar("创建隧道异常", ex.Message, InfoBarSeverity.Error);
                 return 0;
             }
@@ -482,7 +482,7 @@ namespace Kairo.ViewModels
             }
             catch (System.Exception ex)
             {
-                Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/ViewModels/Minecraft/HostRoomPageViewModel.cs:478", ex);
+                AppLogger.Exception("Unhandled exception in Kairo/ViewModels/Minecraft/HostRoomPageViewModel.cs:478", ex);
                 // Ignore
             }
         }

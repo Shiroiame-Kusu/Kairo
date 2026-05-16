@@ -106,7 +106,7 @@ namespace Kairo.ViewModels
             }
             catch (Exception ex)
             {
-                Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/ViewModels/Proxy/ProxyListPageViewModel.cs:107", ex);
+                AppLogger.Exception("Unhandled exception in Kairo/ViewModels/Proxy/ProxyListPageViewModel.cs:107", ex);
                 AccessSnackbar("异常", ex.Message, InfoBarSeverity.Error);
             }
         }
@@ -129,7 +129,7 @@ namespace Kairo.ViewModels
             }
             catch (Exception ex)
             {
-                Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/ViewModels/Proxy/ProxyListPageViewModel.cs:129", ex);
+                AppLogger.Exception("Unhandled exception in Kairo/ViewModels/Proxy/ProxyListPageViewModel.cs:129", ex);
                 AccessSnackbar("异常", ex.Message, InfoBarSeverity.Error);
             }
         }
@@ -217,7 +217,7 @@ namespace Kairo.ViewModels
             }
             catch (System.Exception ex)
             {
-                Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/ViewModels/Proxy/ProxyListPageViewModel.cs:216", ex);
+                AppLogger.Exception("Unhandled exception in Kairo/ViewModels/Proxy/ProxyListPageViewModel.cs:216", ex);
                 // Ignore clipboard errors
             }
         }

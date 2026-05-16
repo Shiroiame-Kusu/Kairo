@@ -58,7 +58,7 @@ public partial class ProxyListPage : UserControl
         }
         catch (Exception ex)
         {
-            Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/Components/DashBoard/ProxyListPage.axaml.cs:59", ex);
+            AppLogger.Exception("Unhandled exception in Kairo/Components/DashBoard/ProxyListPage.axaml.cs:59", ex);
             (Access.DashBoard as DashBoard)?.OpenSnackbar("打开失败", ex.Message, FluentAvalonia.UI.Controls.InfoBarSeverity.Error);
         }
     }
@@ -75,7 +75,7 @@ public partial class ProxyListPage : UserControl
         }
         catch (Exception ex)
         {
-            Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/Components/DashBoard/ProxyListPage.axaml.cs:75", ex);
+            AppLogger.Exception("Unhandled exception in Kairo/Components/DashBoard/ProxyListPage.axaml.cs:75", ex);
             (Access.DashBoard as DashBoard)?.OpenSnackbar("打开失败", ex.Message, FluentAvalonia.UI.Controls.InfoBarSeverity.Error);
         }
     }

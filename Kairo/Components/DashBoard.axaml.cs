@@ -68,7 +68,7 @@ namespace Kairo.Components.DashBoard
             try { Icon = ProviderBranding.LoadIcon(Global.CurrentProvider); }
             catch (System.Exception ex)
             {
-                Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/Components/DashBoard.axaml.cs:68", ex);
+                AppLogger.Exception("Unhandled exception in Kairo/Components/DashBoard.axaml.cs:68", ex);
             }
         }
 
@@ -84,7 +84,7 @@ namespace Kairo.Components.DashBoard
                 }
                 catch (Exception ex)
                 {
-                    Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/Components/DashBoard.axaml.cs:81", ex);
+                    AppLogger.Exception("Unhandled exception in Kairo/Components/DashBoard.axaml.cs:81", ex);
                     OpenSnackbar("检测异常", ex.Message, InfoBarSeverity.Warning);
                 }
             }
@@ -115,7 +115,7 @@ namespace Kairo.Components.DashBoard
             }
             catch (System.Exception ex)
             {
-                Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/Components/DashBoard.axaml.cs:111", ex);
+                AppLogger.Exception("Unhandled exception in Kairo/Components/DashBoard.axaml.cs:111", ex);
                 // ignore background update failures
             }
         }
@@ -142,7 +142,7 @@ namespace Kairo.Components.DashBoard
             }
             catch (System.Exception ex)
             {
-                Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/Components/DashBoard.axaml.cs:137", ex);
+                AppLogger.Exception("Unhandled exception in Kairo/Components/DashBoard.axaml.cs:137", ex);
             }
         }
 

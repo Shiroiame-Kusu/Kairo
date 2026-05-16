@@ -44,7 +44,7 @@ namespace Kairo.Utils
             }
             catch (Exception fileEx)
             {
-                Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/Utils/Crash/CrashInterception.Files.cs:45", fileEx);
+                AppLogger.Exception("Unhandled exception in Kairo/Utils/Crash/CrashInterception.Files.cs:45", fileEx);
                 Debug.WriteLine(fileEx);
             }
         }

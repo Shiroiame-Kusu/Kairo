@@ -33,14 +33,14 @@ namespace Kairo.Utils
                     }
                     catch (System.Exception ex)
                     {
-                        Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/Utils/Crash/CrashInterception.Dialog.cs:34", ex);
+                        AppLogger.Exception("Unhandled exception in Kairo/Utils/Crash/CrashInterception.Dialog.cs:34", ex);
                         window.Show();
                     }
                 });
             }
             catch (Exception ex)
             {
-                Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/Utils/Crash/CrashInterception.Dialog.cs:37", ex);
+                AppLogger.Exception("Unhandled exception in Kairo/Utils/Crash/CrashInterception.Dialog.cs:37", ex);
                 Debug.WriteLine(ex);
             }
         }
@@ -106,7 +106,7 @@ namespace Kairo.Utils
                 try { json = SerializeCrashReport(report, indented: true); }
                 catch (System.Exception ex)
                 {
-                    Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/Utils/Crash/CrashInterception.Dialog.cs:102", ex);
+                    AppLogger.Exception("Unhandled exception in Kairo/Utils/Crash/CrashInterception.Dialog.cs:102", ex);
                     json = "<json serialization failed>";
                 }
                 items.Add(new TabItem
@@ -140,7 +140,7 @@ namespace Kairo.Utils
                 }
                 catch (Exception copyEx)
                 {
-                    Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/Utils/Crash/CrashInterception.Dialog.cs:132", copyEx);
+                    AppLogger.Exception("Unhandled exception in Kairo/Utils/Crash/CrashInterception.Dialog.cs:132", copyEx);
                     Debug.WriteLine(copyEx);
                 }
             };
@@ -162,14 +162,14 @@ namespace Kairo.Utils
                         }
                         catch (Exception startEx)
                         {
-                            Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/Utils/Crash/CrashInterception.Dialog.cs:153", startEx);
+                            AppLogger.Exception("Unhandled exception in Kairo/Utils/Crash/CrashInterception.Dialog.cs:153", startEx);
                             Debug.WriteLine(startEx);
                         }
                     }
                 }
                 catch (Exception folderEx)
                 {
-                    Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/Utils/Crash/CrashInterception.Dialog.cs:159", folderEx);
+                    AppLogger.Exception("Unhandled exception in Kairo/Utils/Crash/CrashInterception.Dialog.cs:159", folderEx);
                     Debug.WriteLine(folderEx);
                 }
             };

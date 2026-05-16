@@ -27,7 +27,7 @@ internal sealed class BigDecimalJsonConverter : JsonConverter<BigDecimal>
         }
         catch (System.Exception ex)
         {
-            Kairo.Utils.Logger.Logger.Exception("Unhandled exception in Kairo/Utils/Serialization/BigDecimalJsonConverter.cs:28", ex);
+            AppLogger.Exception("Unhandled exception in Kairo/Utils/Serialization/BigDecimalJsonConverter.cs:28", ex);
             // 忽略初始化错误
         }
         finally
