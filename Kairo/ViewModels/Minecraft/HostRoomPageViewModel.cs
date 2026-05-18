@@ -103,6 +103,7 @@ namespace Kairo.ViewModels
 
         public HostRoomPageViewModel()
         {
+            _useEncryption = Global.CurrentProvider.Type == FrpProviderType.Lolia;
             _rooms = new MinecraftRoomApiClient(_api);
             _discovery.JavaAnnouncementReceived += OnJavaAnnouncementReceived;
             _discovery.BedrockServerDiscovered += OnBedrockServerDiscovered;

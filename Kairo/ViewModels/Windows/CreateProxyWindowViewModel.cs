@@ -131,6 +131,7 @@ namespace Kairo.ViewModels
 
         public CreateProxyWindowViewModel()
         {
+            _useEncryption = Global.CurrentProvider.Type == FrpProviderType.Lolia;
             CreateCommand = new AsyncRelayCommand(CreateAsync);
             CancelCommand = new RelayCommand(() => RequestClose?.Invoke());
             _pingCommand = new RelayCommand(() => RequestPingWindow?.Invoke(), () => CanPing);
