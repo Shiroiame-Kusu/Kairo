@@ -101,14 +101,14 @@ public static class UpdaterHelper
 
         // Stop all frpc processes before exiting
         try { FrpcProcessManager.StopAll(); }
-        catch (System.Exception ex)
+        catch (Exception ex)
         {
             AppLogger.Exception("Unhandled exception in Kairo/Utils/Update/UpdaterHelper.cs:104", ex);
         }
         
         // Flush any pending I/O
         try { ConfigManager.Save(); }
-        catch (System.Exception ex)
+        catch (Exception ex)
         {
             AppLogger.Exception("Unhandled exception in Kairo/Utils/Update/UpdaterHelper.cs:107", ex);
         }

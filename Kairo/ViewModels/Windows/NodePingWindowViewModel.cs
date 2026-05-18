@@ -56,7 +56,7 @@ namespace Kairo.ViewModels
             {
                 _timer.Stop();
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
                 AppLogger.Exception("Unhandled exception in Kairo/ViewModels/Windows/NodePingWindowViewModel.cs:59", ex);
             }
@@ -84,7 +84,7 @@ namespace Kairo.ViewModels
             {
                 _timer.Stop();
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
                 AppLogger.Exception("Unhandled exception in Kairo/ViewModels/Windows/NodePingWindowViewModel.cs:86", ex);
             }

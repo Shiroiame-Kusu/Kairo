@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using System.Windows.Input;
 using FluentAvalonia.UI.Controls;
 using Kairo.Utils;
+using Kairo.Components.DashBoard;
 
 namespace Kairo.ViewModels
 {
@@ -88,9 +89,9 @@ namespace Kairo.ViewModels
             StatusText = message;
         }
 
-        private void ShowSnackbar(string title, string? message, InfoBarSeverity severity)
+        private void ShowSnackbar(string title, string? message, FAInfoBarSeverity severity)
         {
-            (Access.DashBoard as Components.DashBoard.DashBoard)?.OpenSnackbar(title, message, severity);
+            (Access.DashBoard as DashBoard)?.OpenSnackbar(title, message, severity);
         }
 
         #region Rooms
@@ -124,7 +125,7 @@ namespace Kairo.ViewModels
             catch (Exception ex)
             {
                 AppLogger.Exception("Unhandled exception in Kairo/ViewModels/Minecraft/JoinRoomPageViewModel.cs:124", ex);
-                ShowSnackbar("刷新房间失败", ex.Message, InfoBarSeverity.Error);
+                ShowSnackbar("刷新房间失败", ex.Message, FAInfoBarSeverity.Error);
             }
         }
 
@@ -134,25 +135,25 @@ namespace Kairo.ViewModels
             {
                 if (!Global.CurrentProvider.SupportsMinecraftRooms)
                 {
-                    ShowSnackbar("功能不可用", $"{Global.CurrentProvider.DisplayName} 暂不支持 Minecraft 联机房间", InfoBarSeverity.Warning);
+                    ShowSnackbar("功能不可用", $"{Global.CurrentProvider.DisplayName} 暂不支持 Minecraft 联机房间", FAInfoBarSeverity.Warning);
                     return;
                 }
 
                 var result = await _rooms.DeleteRoomAsync(room.Code);
                 if (result?.Status == 200)
                 {
-                    ShowSnackbar("删除成功", $"房间 {room.Name} 及关联隧道已删除", InfoBarSeverity.Success);
+                    ShowSnackbar("删除成功", $"房间 {room.Name} 及关联隧道已删除", FAInfoBarSeverity.Success);
                     await RefreshMyRoomsAsync();
                 }
                 else
                 {
-                    ShowSnackbar("删除失败", result?.Message, InfoBarSeverity.Error);
+                    ShowSnackbar("删除失败", result?.Message, FAInfoBarSeverity.Error);
                 }
             }
             catch (Exception ex)
             {
                 AppLogger.Exception("Unhandled exception in Kairo/ViewModels/Minecraft/JoinRoomPageViewModel.cs:151", ex);
-                ShowSnackbar("删除异常", ex.Message, InfoBarSeverity.Error);
+                ShowSnackbar("删除异常", ex.Message, FAInfoBarSeverity.Error);
             }
         }
 
@@ -164,13 +165,13 @@ namespace Kairo.ViewModels
         {
             if (!Global.CurrentProvider.SupportsMinecraftRooms)
             {
-                ShowSnackbar("功能不可用", $"{Global.CurrentProvider.DisplayName} 暂不支持 Minecraft 联机房间", InfoBarSeverity.Warning);
+                ShowSnackbar("功能不可用", $"{Global.CurrentProvider.DisplayName} 暂不支持 Minecraft 联机房间", FAInfoBarSeverity.Warning);
                 return;
             }
 
             if (string.IsNullOrWhiteSpace(JoinRoomCode))
             {
-                ShowSnackbar("请输入房间代码", null, InfoBarSeverity.Warning);
+                ShowSnackbar("请输入房间代码", null, FAInfoBarSeverity.Warning);
                 return;
             }
 
@@ -182,7 +183,7 @@ namespace Kairo.ViewModels
                 if (room?.Status != 200)
                 {
                     var msg = room?.Message ?? "房间不存在";
-                    ShowSnackbar("加入失败", msg, InfoBarSeverity.Error);
+                    ShowSnackbar("加入失败", msg, FAInfoBarSeverity.Error);
                     StatusText = msg;
                     return;
                 }
@@ -196,7 +197,7 @@ namespace Kairo.ViewModels
 
                 if (string.IsNullOrEmpty(host) || port == 0)
                 {
-                    ShowSnackbar("房间信息无效", "无法获取服务器地址", InfoBarSeverity.Error);
+                    ShowSnackbar("房间信息无效", "无法获取服务器地址", FAInfoBarSeverity.Error);
                     return;
                 }
 
@@ -206,12 +207,12 @@ namespace Kairo.ViewModels
                 IsForwarderActive = _forwarding.IsActive;
                 ForwarderStatus = forwarding.ForwarderStatus;
                 StatusText = forwarding.StatusText;
-                ShowSnackbar("加入成功", forwarding.SuccessMessage, InfoBarSeverity.Success);
+                ShowSnackbar("加入成功", forwarding.SuccessMessage, FAInfoBarSeverity.Success);
             }
             catch (Exception ex)
             {
                 AppLogger.Exception("Unhandled exception in Kairo/ViewModels/Minecraft/JoinRoomPageViewModel.cs:209", ex);
-                ShowSnackbar("加入房间异常", ex.Message, InfoBarSeverity.Error);
+                ShowSnackbar("加入房间异常", ex.Message, FAInfoBarSeverity.Error);
                 StatusText = $"加入异常: {ex.Message}";
             }
         }

@@ -54,7 +54,7 @@ namespace Kairo.ViewModels
                     Logger.LineWritten -= OnLineWritten;
                     Logger.Cleared -= OnLogsCleared;
                 }
-                catch (System.Exception ex)
+                catch (Exception ex)
                 {
                     AppLogger.Exception("Unhandled exception in Kairo/ViewModels/Dashboard/StatusPageViewModel.cs:51", ex);
                 }
@@ -123,7 +123,7 @@ namespace Kairo.ViewModels
         private void StopAllTunnels()
         {
             int stopped = FrpcProcessManager.StopAll();
-            (Access.DashBoard as DashBoard)?.OpenSnackbar("已停止", $"结束 {stopped} 个隧道", InfoBarSeverity.Informational);
+            (Access.DashBoard as DashBoard)?.OpenSnackbar("已停止", $"结束 {stopped} 个隧道", FAInfoBarSeverity.Informational);
         }
 
         public void Dispose()

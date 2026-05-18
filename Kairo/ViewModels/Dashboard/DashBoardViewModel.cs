@@ -12,7 +12,7 @@ namespace Kairo.ViewModels
         private string _selectedTag = "home";
         private string _snackbarTitle = string.Empty;
         private string _snackbarMessage = string.Empty;
-        private InfoBarSeverity _snackbarSeverity = InfoBarSeverity.Informational;
+        private FAInfoBarSeverity _snackbarSeverity = FAInfoBarSeverity.Informational;
         private bool _isSnackbarOpen;
 
         public string SelectedTag
@@ -33,7 +33,7 @@ namespace Kairo.ViewModels
             private set => SetProperty(ref _snackbarMessage, value);
         }
 
-        public InfoBarSeverity SnackbarSeverity
+        public FAInfoBarSeverity SnackbarSeverity
         {
             get => _snackbarSeverity;
             private set => SetProperty(ref _snackbarSeverity, value);
@@ -53,7 +53,7 @@ namespace Kairo.ViewModels
 
         public IImage IconSource => ProviderBranding.GetIconImage(Global.CurrentProvider);
 
-        public void ShowSnackbar(string title, string? message, InfoBarSeverity severity = InfoBarSeverity.Informational)
+        public void ShowSnackbar(string title, string? message, FAInfoBarSeverity severity = FAInfoBarSeverity.Informational)
         {
             SnackbarTitle = title;
             SnackbarMessage = message ?? string.Empty;

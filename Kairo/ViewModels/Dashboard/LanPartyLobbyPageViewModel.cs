@@ -1,8 +1,9 @@
+using FluentAvalonia.UI.Controls;
 namespace Kairo.ViewModels
 {
     /// <summary>
     /// ViewModel for the LAN Party Lobby page container.
-    /// This page hosts sub-pages (HostRoomPage and JoinRoomPage) via NavigationView.
+    /// This page hosts sub-pages (HostRoomPage and JoinRoomPage) via FANavigationView.
     /// </summary>
     public class LanPartyLobbyPageViewModel : ViewModelBase
     {

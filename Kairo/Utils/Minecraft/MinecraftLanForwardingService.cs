@@ -64,7 +64,7 @@ internal sealed class MinecraftLanForwardingService : IDisposable
                 SuccessMessage = "在 Minecraft 多人游戏中可以看到房间"
             };
         }
-        catch (System.Exception ex)
+        catch (Exception ex)
         {
             AppLogger.Exception("Unhandled exception in Kairo/Utils/Minecraft/MinecraftLanForwardingService.cs:67", ex);
             await StopAsync();
@@ -81,7 +81,7 @@ internal sealed class MinecraftLanForwardingService : IDisposable
                 await _javaForwarder.StopAsync();
                 await _javaForwarder.DisposeAsync();
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
                 AppLogger.Exception("Unhandled exception in Kairo/Utils/Minecraft/MinecraftLanForwardingService.cs:83", ex);
             }
@@ -98,7 +98,7 @@ internal sealed class MinecraftLanForwardingService : IDisposable
                 await _bedrockForwarder.StopAsync();
                 await _bedrockForwarder.DisposeAsync();
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
                 AppLogger.Exception("Unhandled exception in Kairo/Utils/Minecraft/MinecraftLanForwardingService.cs:97", ex);
             }

@@ -24,7 +24,7 @@ namespace Kairo.Utils
                         recentLogs.Add(cache[i]);
                 }
             }
-            catch (System.Exception logEx)
+            catch (Exception logEx)
             {
                 AppLogger.Exception("Unhandled exception in Kairo/Utils/Crash/CrashInterception.Report.cs:27", logEx);
             }
@@ -73,7 +73,7 @@ namespace Kairo.Utils
                 Add("UptimeSeconds", (now - Global.StartTime).TotalSeconds.ToString("F0"));
                 Add("UserInteractive", Environment.UserInteractive.ToString());
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
                 AppLogger.Exception("Unhandled exception in Kairo/Utils/Crash/CrashInterception.Report.cs:73", ex);
             }
@@ -90,7 +90,7 @@ namespace Kairo.Utils
                 var bytes = md5.ComputeHash(Encoding.UTF8.GetBytes(raw));
                 _machineHash = Convert.ToHexString(bytes)[..12];
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
                 AppLogger.Exception("Unhandled exception in Kairo/Utils/Crash/CrashInterception.Report.cs:87", ex);
                 _machineHash = "UNKNOWN";

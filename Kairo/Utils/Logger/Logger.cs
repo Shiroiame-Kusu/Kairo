@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using Avalonia.Controls;
@@ -7,8 +8,10 @@ using Avalonia.Threading;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.VisualTree;
-using FluentAvalonia.UI.Controls; // for InfoBarSeverity
+using FluentAvalonia.UI.Controls; // for FAInfoBarSeverity
 using Kairo.Components.DashBoard; // for DashBoard cast
+using Avalonia.Layout;
+using Avalonia.Media;
 
 namespace Kairo.Utils.Logger
 {
@@ -43,21 +46,21 @@ namespace Kairo.Utils.Logger
         private static bool ShouldEmitToConsole(LogType type) => true; // always mirror logs to console regardless of build/debug flags
 
         // New: expose a snapshot of cached lines for late subscribers / page reloads
-        public static System.Collections.Generic.List<(LogType, string)> GetCacheSnapshot()
+        public static List<(LogType, string)> GetCacheSnapshot()
         {
             lock (_cacheLock)
             {
-                return new System.Collections.Generic.List<(LogType, string)>(LogPreProcess.Process.Cache);
+                return new List<(LogType, string)>(LogPreProcess.Process.Cache);
             }
         }
 
         // Newer: snapshot returning base global index so UI can recover after trimming
-        public static (System.Collections.Generic.List<(LogType, string)> snapshot, int baseIndex) GetCacheSnapshotWithBase()
+        public static (List<(LogType, string)> snapshot, int baseIndex) GetCacheSnapshotWithBase()
         {
             lock (_cacheLock)
             {
                 int baseIndex = _totalLines - LogPreProcess.Process.Cache.Count; // global index of first cached item
-                return (new System.Collections.Generic.List<(LogType, string)>(LogPreProcess.Process.Cache), baseIndex);
+                return (new List<(LogType, string)>(LogPreProcess.Process.Cache), baseIndex);
             }
         }
 
@@ -198,7 +201,7 @@ namespace Kairo.Utils.Logger
                         title = "执行失败";
                         body = text;
                     }
-                    var severity = icon == 48 ? InfoBarSeverity.Warning : InfoBarSeverity.Error;
+                    var severity = icon == 48 ? FAInfoBarSeverity.Warning : FAInfoBarSeverity.Error;
                     (Access.DashBoard as DashBoard)?.OpenSnackbar(title, body, severity);
                 }
                 catch (Exception ex)
@@ -249,13 +252,13 @@ namespace Kairo.Utils.Logger
                 Content = new TextBlock
                 {
                     Text = text,
-                    TextWrapping = Avalonia.Media.TextWrapping.Wrap
+                    TextWrapping = TextWrapping.Wrap
                 }
             });
             var panel = new StackPanel
             {
-                Orientation = Avalonia.Layout.Orientation.Horizontal,
-                HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Right,
+                Orientation = Orientation.Horizontal,
+                HorizontalAlignment = HorizontalAlignment.Right,
                 Spacing = 8
             };
             var okContent = buttons <= 1 ? "确定" : "是";
@@ -277,7 +280,7 @@ namespace Kairo.Utils.Logger
 
         private static void CloseOwner(Control control)
         {
-            if (control.GetVisualRoot() is Window w)
+            if (TopLevel.GetTopLevel(control) is Window w)
                 w.Close();
         }
 

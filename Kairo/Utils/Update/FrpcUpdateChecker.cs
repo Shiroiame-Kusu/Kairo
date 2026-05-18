@@ -32,7 +32,7 @@ namespace Kairo.Utils
                 var lastTime = DateTimeOffset.FromUnixTimeSeconds(last);
                 return DateTimeOffset.UtcNow - lastTime >= CheckInterval;
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
                 AppLogger.Exception("Unhandled exception in Kairo/Utils/Update/FrpcUpdateChecker.cs:35", ex);
                 return true;
@@ -116,7 +116,7 @@ namespace Kairo.Utils
                 if (!proc.WaitForExit(2000))
                 {
                     try { proc.Kill(true); }
-                    catch (System.Exception ex)
+                    catch (Exception ex)
                     {
                         AppLogger.Exception("Unhandled exception in Kairo/Utils/Update/FrpcUpdateChecker.cs:117", ex);
                     }
@@ -126,7 +126,7 @@ namespace Kairo.Utils
                 var output = (await outputTask) + "\n" + (await errorTask);
                 return ParseVersionFromText(output);
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
                 AppLogger.Exception("Unhandled exception in Kairo/Utils/Update/FrpcUpdateChecker.cs:124", ex);
                 return null;

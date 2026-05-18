@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using Avalonia.Controls;
+using Avalonia.Input.Platform;
 using Avalonia.Threading;
 using FluentAvalonia.UI.Controls;
 using Kairo.Core.Models;
@@ -11,6 +12,7 @@ using Kairo.Core.Providers;
 using HakuuLib.MultiplayerLAN.Minecraft.Java.Discovery;
 using HakuuLib.MultiplayerLAN.Minecraft.Bedrock.Discovery;
 using Kairo.Utils;
+using Kairo.Components.DashBoard;
 
 namespace Kairo.ViewModels
 {
@@ -176,9 +178,9 @@ namespace Kairo.ViewModels
             SelectedNode = node;
         }
 
-        private void ShowSnackbar(string title, string? message, InfoBarSeverity severity)
+        private void ShowSnackbar(string title, string? message, FAInfoBarSeverity severity)
         {
-            (Access.DashBoard as Components.DashBoard.DashBoard)?.OpenSnackbar(title, message, severity);
+            (Access.DashBoard as DashBoard)?.OpenSnackbar(title, message, severity);
         }
 
         #region Detection
@@ -202,7 +204,7 @@ namespace Kairo.ViewModels
             {
                 AppLogger.Exception("Unhandled exception in Kairo/ViewModels/Minecraft/HostRoomPageViewModel.cs:200", ex);
                 StatusText = $"探测失败: {ex.Message}";
-                ShowSnackbar("探测失败", ex.Message, InfoBarSeverity.Error);
+                ShowSnackbar("探测失败", ex.Message, FAInfoBarSeverity.Error);
                 IsDetecting = false;
             }
         }
@@ -346,19 +348,19 @@ namespace Kairo.ViewModels
         {
             if (!Global.CurrentProvider.SupportsMinecraftRooms)
             {
-                ShowSnackbar("功能不可用", $"{Global.CurrentProvider.DisplayName} 暂不支持 Minecraft 联机房间", InfoBarSeverity.Warning);
+                ShowSnackbar("功能不可用", $"{Global.CurrentProvider.DisplayName} 暂不支持 Minecraft 联机房间", FAInfoBarSeverity.Warning);
                 return;
             }
 
             if (SelectedServer == null)
             {
-                ShowSnackbar("请选择服务器", "请先选择一个探测到的本地服务器", InfoBarSeverity.Warning);
+                ShowSnackbar("请选择服务器", "请先选择一个探测到的本地服务器", FAInfoBarSeverity.Warning);
                 return;
             }
 
             if (SelectedNode == null)
             {
-                ShowSnackbar("请选择节点", "请先选择用于映射的节点", InfoBarSeverity.Warning);
+                ShowSnackbar("请选择节点", "请先选择用于映射的节点", FAInfoBarSeverity.Warning);
                 return;
             }
 
@@ -370,7 +372,7 @@ namespace Kairo.ViewModels
                 int remotePort = await TryGetRandomPortAsync(SelectedNode.Id);
                 if (remotePort <= 0)
                 {
-                    ShowSnackbar("获取端口失败", "无法获取节点随机端口", InfoBarSeverity.Error);
+                    ShowSnackbar("获取端口失败", "无法获取节点随机端口", FAInfoBarSeverity.Error);
                     return;
                 }
 
@@ -391,26 +393,26 @@ namespace Kairo.ViewModels
                 if (room?.Status == 200)
                 {
                     var code = room.Data?.Code ?? string.Empty;
-                    ShowSnackbar("房间创建成功", $"房间代码: {code}", InfoBarSeverity.Success);
+                    ShowSnackbar("房间创建成功", $"房间代码: {code}", FAInfoBarSeverity.Success);
                     StatusText = $"房间已创建，代码: {code}";
 
                     if (!string.IsNullOrEmpty(code))
                     {
                         await CopyToClipboardAsync(code);
-                        ShowSnackbar("已复制", "房间代码已复制到剪贴板", InfoBarSeverity.Informational);
+                        ShowSnackbar("已复制", "房间代码已复制到剪贴板", FAInfoBarSeverity.Informational);
                     }
                 }
                 else
                 {
                     var msg = room?.Message ?? "未知错误";
-                    ShowSnackbar("创建房间失败", msg, InfoBarSeverity.Error);
+                    ShowSnackbar("创建房间失败", msg, FAInfoBarSeverity.Error);
                     StatusText = $"创建失败: {msg}";
                 }
             }
             catch (Exception ex)
             {
                 AppLogger.Exception("Unhandled exception in Kairo/ViewModels/Minecraft/HostRoomPageViewModel.cs:407", ex);
-                ShowSnackbar("创建房间异常", ex.Message, InfoBarSeverity.Error);
+                ShowSnackbar("创建房间异常", ex.Message, FAInfoBarSeverity.Error);
                 StatusText = $"创建异常: {ex.Message}";
             }
         }
@@ -425,7 +427,7 @@ namespace Kairo.ViewModels
                 var result = await _api.GetRandomPortAsync(nodeId);
                 return result.Success ? result.Data : 0;
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
                 AppLogger.Exception("Unhandled exception in Kairo/ViewModels/Minecraft/HostRoomPageViewModel.cs:424", ex);
                 return 0;
@@ -456,14 +458,14 @@ namespace Kairo.ViewModels
                     return result.Data.TunnelId;
                 }
 
-                ShowSnackbar("创建隧道失败", result.Message, InfoBarSeverity.Error);
+                ShowSnackbar("创建隧道失败", result.Message, FAInfoBarSeverity.Error);
                 StatusText = result.Message;
                 return 0;
             }
             catch (Exception ex)
             {
                 AppLogger.Exception("Unhandled exception in Kairo/ViewModels/Minecraft/HostRoomPageViewModel.cs:458", ex);
-                ShowSnackbar("创建隧道异常", ex.Message, InfoBarSeverity.Error);
+                ShowSnackbar("创建隧道异常", ex.Message, FAInfoBarSeverity.Error);
                 return 0;
             }
         }
@@ -481,7 +483,7 @@ namespace Kairo.ViewModels
                     }
                 }
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
                 AppLogger.Exception("Unhandled exception in Kairo/ViewModels/Minecraft/HostRoomPageViewModel.cs:478", ex);
                 // Ignore

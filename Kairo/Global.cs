@@ -11,7 +11,6 @@ namespace Kairo
     internal static class Global
     {
         public static readonly DateTime StartTime = DateTime.Now;
-        public static bool LoginedByConsole = false;
         public const string Version = AppConstants.Version;
         public const string VersionName = AppConstants.VersionName;
         public const ReleaseChannel Branch = AppConstants.Branch;

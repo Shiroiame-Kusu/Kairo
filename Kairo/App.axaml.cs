@@ -3,6 +3,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
+using Avalonia.Media;
 using Avalonia.Threading;
 using Kairo.Components.OAuth;
 using Kairo.Core.Logging;
@@ -14,6 +15,23 @@ namespace Kairo;
 
 public partial class App : Application
 {
+    public static readonly AttachedProperty<bool> UseGrayscaleTextRenderingProperty = AvaloniaProperty.RegisterAttached<App, Visual, bool>(
+        "UseGrayscaleTextRendering",
+        false);
+
+    static App()
+    {
+        UseGrayscaleTextRenderingProperty.Changed.AddClassHandler<Visual>((visual, e) =>
+        {
+            if (e.NewValue is true)
+                ApplyTextRenderingOptions(visual);
+        });
+    }
+
+    public static bool GetUseGrayscaleTextRendering(Visual visual) => visual.GetValue(UseGrayscaleTextRenderingProperty);
+
+    public static void SetUseGrayscaleTextRendering(Visual visual, bool value) => visual.SetValue(UseGrayscaleTextRenderingProperty, value);
+
     public override void Initialize()
     {   
         // Skip heavy initialization in design mode
@@ -28,7 +46,7 @@ public partial class App : Application
         AppDomain.CurrentDomain.ProcessExit += (_, _) =>
         {
             try { FrpcProcessManager.StopAll(); }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
                 AppLogger.Exception("Unhandled exception in Kairo/App.axaml.cs:30", ex);
             }
@@ -66,12 +84,12 @@ public partial class App : Application
             desktop.Exit += async (_, __) =>
             {
                 try { await OAuthCallbackHandler.StopAsync(); }
-                catch (System.Exception ex)
+                catch (Exception ex)
                 {
                     AppLogger.Exception("Unhandled exception in Kairo/App.axaml.cs:64", ex);
                 }
                 try { FrpcProcessManager.StopAll(); }
-                catch (System.Exception ex)
+                catch (Exception ex)
                 {
                     AppLogger.Exception("Unhandled exception in Kairo/App.axaml.cs:65", ex);
                 }
@@ -79,5 +97,12 @@ public partial class App : Application
         }
 
         base.OnFrameworkInitializationCompleted();
+    }
+
+    private static void ApplyTextRenderingOptions(Visual visual)
+    {
+        TextOptions.SetTextRenderingMode(visual, TextRenderingMode.Antialias);
+        TextOptions.SetTextHintingMode(visual, TextHintingMode.Strong);
+        TextOptions.SetBaselinePixelAlignment(visual, BaselinePixelAlignment.Aligned);
     }
 }

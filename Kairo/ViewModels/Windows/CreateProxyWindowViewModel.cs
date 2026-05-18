@@ -338,7 +338,7 @@ namespace Kairo.ViewModels
                 var result = await api.GetRandomPortAsync(nodeId);
                 return result.Success ? result.Data : 0;
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
                 AppLogger.Exception("Unhandled exception in Kairo/ViewModels/Windows/CreateProxyWindowViewModel.cs:338", ex);
                 return 0;

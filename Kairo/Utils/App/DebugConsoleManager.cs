@@ -27,7 +27,7 @@ internal static class DebugConsoleManager
         {
             _consoleAllocated = true;
             try { Console.Title = "Kairo Debug Console"; }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
                 AppLogger.Exception("Unhandled exception in Kairo/Utils/App/DebugConsoleManager.cs:29", ex);
             }

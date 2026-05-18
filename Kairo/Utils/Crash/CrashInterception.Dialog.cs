@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Input.Platform;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Threading;
@@ -31,7 +32,7 @@ namespace Kairo.Utils
                         else
                             window.Show();
                     }
-                    catch (System.Exception ex)
+                    catch (Exception ex)
                     {
                         AppLogger.Exception("Unhandled exception in Kairo/Utils/Crash/CrashInterception.Dialog.cs:34", ex);
                         window.Show();
@@ -104,7 +105,7 @@ namespace Kairo.Utils
             {
                 string json;
                 try { json = SerializeCrashReport(report, indented: true); }
-                catch (System.Exception ex)
+                catch (Exception ex)
                 {
                     AppLogger.Exception("Unhandled exception in Kairo/Utils/Crash/CrashInterception.Dialog.cs:102", ex);
                     json = "<json serialization failed>";
@@ -135,7 +136,7 @@ namespace Kairo.Utils
                 try
                 {
                     var txt = BuildHumanReadable(report);
-                    if (btnCopy.GetVisualRoot() is Window w)
+                    if (TopLevel.GetTopLevel(btnCopy) is Window w)
                         await (w.Clipboard?.SetTextAsync(txt) ?? Task.CompletedTask);
                 }
                 catch (Exception copyEx)
@@ -176,7 +177,7 @@ namespace Kairo.Utils
 
             btnClose.Click += (_, _) =>
             {
-                if (btnClose.GetVisualRoot() is Window w) w.Close();
+                if (TopLevel.GetTopLevel(btnClose) is Window w) w.Close();
             };
 
             var buttonPanel = new StackPanel

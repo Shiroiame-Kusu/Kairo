@@ -102,7 +102,7 @@ namespace Kairo.Utils.Configuration
         private static void TryDeleteTemp()
         {
             try { if (File.Exists(TempSettingsFilePath)) File.Delete(TempSettingsFilePath); }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
                 AppLogger.Exception("Unhandled exception in Kairo/Utils/Configuration/ConfigManager.Storage.cs:104", ex);
             }

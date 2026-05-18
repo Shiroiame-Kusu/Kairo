@@ -1,3 +1,4 @@
+using System;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Avalonia;
@@ -41,7 +42,7 @@ public partial class MainWindow : Window
     /// </summary>
     private void SetupPlatformWindowStyle()
     {
-        var windowBorder = this.FindControl<Avalonia.Controls.Border>("WindowBorder");
+        var windowBorder = this.FindControl<Border>("WindowBorder");
         if (windowBorder == null) return;
 
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -64,7 +65,7 @@ public partial class MainWindow : Window
     private void HookViewModel()
     {
         _viewModel.LoginSucceeded += OnLoginSucceeded;
-        _viewModel.LoginFailed += (_, msg) => _viewModel.ShowSnackbar("登录失败", msg, InfoBarSeverity.Error);
+        _viewModel.LoginFailed += (_, msg) => _viewModel.ShowSnackbar("登录失败", msg, FAInfoBarSeverity.Error);
         _viewModel.ProviderChanged += (_, _) => ApplyProviderIcon();
     }
 
@@ -76,7 +77,7 @@ public partial class MainWindow : Window
             if (_trayIcon != null)
                 _trayIcon.Icon = Icon;
         }
-        catch (System.Exception ex)
+        catch (Exception ex)
         {
             AppLogger.Exception("Unhandled exception in Kairo/MainWindow.axaml.cs:79", ex);
         }
@@ -92,12 +93,12 @@ public partial class MainWindow : Window
 
     private DashBoard EnsureDashboard()
     {
-        if (Utils.Access.DashBoard is DashBoard db)
+        if (Access.DashBoard is DashBoard db)
         {
             return db;
         }
         db = new DashBoard();
-        Utils.Access.DashBoard = db;
+        Access.DashBoard = db;
         return db;
     }
 
@@ -132,7 +133,7 @@ public partial class MainWindow : Window
             };
             _trayIcon.Clicked += (_, _) => ToggleWindowVisibility();
         }
-        catch (System.Exception ex)
+        catch (Exception ex)
         {
             AppLogger.Exception("Unhandled exception in Kairo/MainWindow.axaml.cs:134", ex);
         }
@@ -143,9 +144,9 @@ public partial class MainWindow : Window
         DisposeTrayIcon();
         try
         {
-            (Application.Current?.ApplicationLifetime as Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime)?.Shutdown();
+            (Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)?.Shutdown();
         }
-        catch (System.Exception ex)
+        catch (Exception ex)
         {
             AppLogger.Exception("Unhandled exception in Kairo/MainWindow.axaml.cs:146", ex);
             Close();
@@ -156,7 +157,7 @@ public partial class MainWindow : Window
     {
         if (SessionState.IsLoggedIn)
         {
-            if (Utils.Access.DashBoard is DashBoard db)
+            if (Access.DashBoard is DashBoard db)
             {
                 if (db.IsVisible)
                 {
@@ -172,7 +173,7 @@ public partial class MainWindow : Window
             else
             {
                 var dbNew = new DashBoard();
-                Utils.Access.DashBoard = dbNew;
+                Access.DashBoard = dbNew;
                 dbNew.Show();
                 if (_showHideMenuItem != null) _showHideMenuItem.Header = "隐藏窗口";
             }
@@ -223,12 +224,12 @@ public partial class MainWindow : Window
     public static void LogoutCleanup()
     {
         SessionState.Reset();
-        Components.DashBoard.DashBoard.Avatar = null;
+        DashBoard.Avatar = null;
 
         if (Access.DashBoard is Window db)
         {
             try { db.Close(); }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
                 AppLogger.Exception("Unhandled exception in Kairo/MainWindow.axaml.cs:227", ex);
             }

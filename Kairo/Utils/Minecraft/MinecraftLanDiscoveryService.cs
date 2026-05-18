@@ -34,7 +34,7 @@ internal sealed class MinecraftLanDiscoveryService : IDisposable
 
             IsRunning = true;
         }
-        catch (System.Exception ex)
+        catch (Exception ex)
         {
             AppLogger.Exception("Unhandled exception in Kairo/Utils/Minecraft/MinecraftLanDiscoveryService.cs:37", ex);
             Stop();

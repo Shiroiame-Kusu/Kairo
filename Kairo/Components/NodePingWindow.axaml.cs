@@ -30,7 +30,7 @@ public partial class NodePingWindow : Window
     private void CloseSafe()
     {
         try { Close(); }
-        catch (System.Exception ex)
+        catch (Exception ex)
         {
             AppLogger.Exception("Unhandled exception in Kairo/Components/NodePingWindow.axaml.cs:33", ex);
         }

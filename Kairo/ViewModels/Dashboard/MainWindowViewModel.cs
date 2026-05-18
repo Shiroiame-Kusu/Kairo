@@ -27,7 +27,7 @@ namespace Kairo.ViewModels
         private string _tipText = string.Empty;
         private string _snackbarTitle = string.Empty;
         private string _snackbarMessage = string.Empty;
-        private InfoBarSeverity _snackbarSeverity = InfoBarSeverity.Informational;
+        private FAInfoBarSeverity _snackbarSeverity = FAInfoBarSeverity.Informational;
         private bool _isSnackbarOpen;
         private string _pkceCodeVerifier = string.Empty;
         private UserInfo? _userInfo;
@@ -128,7 +128,7 @@ namespace Kairo.ViewModels
             private set => SetProperty(ref _snackbarMessage, value);
         }
 
-        public InfoBarSeverity SnackbarSeverity
+        public FAInfoBarSeverity SnackbarSeverity
         {
             get => _snackbarSeverity;
             private set => SetProperty(ref _snackbarSeverity, value);
@@ -172,7 +172,7 @@ namespace Kairo.ViewModels
             if (IsLoggingIn) return;
             if (!Global.CurrentProvider.SupportsOAuthLogin)
             {
-                ShowSnackbar("暂不支持登录", $"{Global.CurrentProvider.DisplayName} 未公开 OAuth 登录接口", InfoBarSeverity.Warning);
+                ShowSnackbar("暂不支持登录", $"{Global.CurrentProvider.DisplayName} 未公开 OAuth 登录接口", FAInfoBarSeverity.Warning);
                 return;
             }
             var codeChallenge = string.Empty;
@@ -193,7 +193,7 @@ namespace Kairo.ViewModels
                 CancelLoginTimeout();
                 _pkceCodeVerifier = string.Empty;
                 Logger.Output(LogType.Error, "[Login] 启动浏览器失败:", ex);
-                ShowSnackbar("启动浏览器失败", ex.Message, InfoBarSeverity.Error);
+                ShowSnackbar("启动浏览器失败", ex.Message, FAInfoBarSeverity.Error);
                 IsLoggingIn = false;
             }
         }
@@ -204,7 +204,7 @@ namespace Kairo.ViewModels
             if (string.IsNullOrWhiteSpace(refreshToken))
             {
                 Logger.Output(LogType.Warn, "[Login] OAuth 回调提供的刷新令牌为空");
-                ShowSnackbar("无效令牌", "提供的刷新令牌为空", InfoBarSeverity.Warning);
+                ShowSnackbar("无效令牌", "提供的刷新令牌为空", FAInfoBarSeverity.Warning);
                 IsLoggingIn = false;
                 return;
             }
@@ -217,7 +217,7 @@ namespace Kairo.ViewModels
             if (string.IsNullOrWhiteSpace(code))
             {
                 Logger.Output(LogType.Warn, "[Login] OAuth 回调提供的授权码为空");
-                ShowSnackbar("无效授权码", "提供的授权码为空", InfoBarSeverity.Warning);
+                ShowSnackbar("无效授权码", "提供的授权码为空", FAInfoBarSeverity.Warning);
                 IsLoggingIn = false;
                 return;
             }
@@ -234,7 +234,7 @@ namespace Kairo.ViewModels
                 if (!token.Success || string.IsNullOrWhiteSpace(token.Data))
                 {
                     Logger.Output(LogType.Error, $"[Login] 换取令牌失败: API状态={token.Code}, 消息={token.Message}");
-                    ShowSnackbar("登录失败", $"API状态: {token.Code} {token.Message}", InfoBarSeverity.Error);
+                    ShowSnackbar("登录失败", $"API状态: {token.Code} {token.Message}", FAInfoBarSeverity.Error);
                     IsLoggingIn = false;
                     return;
                 }
@@ -244,7 +244,7 @@ namespace Kairo.ViewModels
             catch (Exception ex)
             {
                 Logger.Output(LogType.Error, "[Login] 登录异常:", ex);
-                ShowSnackbar("异常", ex.Message, InfoBarSeverity.Error);
+                ShowSnackbar("异常", ex.Message, FAInfoBarSeverity.Error);
                 RunOnUi(() => LoginFailed?.Invoke(this, ex.Message));
             }
             finally
@@ -269,7 +269,7 @@ namespace Kairo.ViewModels
                 if (!login.Success || login.Data == null)
                 {
                     Logger.Output(LogType.Error, $"[Login] 登录失败: API状态={login.Code}, 消息={login.Message}");
-                    if (!auto) ShowSnackbar("登录失败", $"API状态: {login.Code} {login.Message}", InfoBarSeverity.Error);
+                    if (!auto) ShowSnackbar("登录失败", $"API状态: {login.Code} {login.Message}", FAInfoBarSeverity.Error);
                     ProviderAuth.ClearCurrent(save: false);
                     Global.Config.RefreshToken = string.Empty;
                     Global.Config.AccessToken = string.Empty;
@@ -286,13 +286,13 @@ namespace Kairo.ViewModels
                 SessionState.IsLoggedIn = true;
                 ProviderAuth.SaveCurrent(save: false);
                 ConfigManager.Save();
-                ShowSnackbar("登录成功", $"欢迎 {_userInfo.Username}", InfoBarSeverity.Success);
+                ShowSnackbar("登录成功", $"欢迎 {_userInfo.Username}", FAInfoBarSeverity.Success);
                 RunOnUi(() => LoginSucceeded?.Invoke(this, _userInfo));
             }
             catch (Exception ex)
             {
                 Logger.Output(LogType.Error, "[Login] 登录异常:", ex);
-                ShowSnackbar("异常", ex.Message, InfoBarSeverity.Error);
+                ShowSnackbar("异常", ex.Message, FAInfoBarSeverity.Error);
                 RunOnUi(() => LoginFailed?.Invoke(this, ex.Message));
             }
             finally
@@ -341,13 +341,13 @@ namespace Kairo.ViewModels
             .Replace('+', '-')
             .Replace('/', '_');
 
-        public void ShowSnackbar(string title, string? message, InfoBarSeverity severity)
+        public void ShowSnackbar(string title, string? message, FAInfoBarSeverity severity)
         {
             // 记录到日志
             var logType = severity switch
             {
-                InfoBarSeverity.Error => LogType.Error,
-                InfoBarSeverity.Warning => LogType.Warn,
+                FAInfoBarSeverity.Error => LogType.Error,
+                FAInfoBarSeverity.Warning => LogType.Warn,
                 _ => LogType.Info
             };
             var logMessage = string.IsNullOrEmpty(message) ? title : $"{title}: {message}";
@@ -373,7 +373,7 @@ namespace Kairo.ViewModels
                     await Task.Delay(LoginTimeout, _loginTimeoutCts.Token);
                     await Dispatcher.UIThread.InvokeAsync(() =>
                     {
-                        ShowSnackbar("登录超时", "OAuth 验证未完成，请重试", InfoBarSeverity.Warning);
+                        ShowSnackbar("登录超时", "OAuth 验证未完成，请重试", FAInfoBarSeverity.Warning);
                         IsLoggingIn = false;
                     });
                 }

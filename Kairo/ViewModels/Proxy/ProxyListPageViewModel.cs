@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using FluentAvalonia.UI.Controls;
 using Avalonia.Threading;
 using Avalonia.Controls;
+using Avalonia.Input.Platform;
 using Kairo.Components.DashBoard;
 using Kairo.Core.Models;
 using Kairo.Core.Providers;
@@ -89,7 +90,7 @@ namespace Kairo.ViewModels
                 var result = await _api.GetTunnelsAsync();
                 if (!result.Success)
                 {
-                    AccessSnackbar("获取隧道失败", result.Message, InfoBarSeverity.Error);
+                    AccessSnackbar("获取隧道失败", result.Message, FAInfoBarSeverity.Error);
                     return;
                 }
 
@@ -107,7 +108,7 @@ namespace Kairo.ViewModels
             catch (Exception ex)
             {
                 AppLogger.Exception("Unhandled exception in Kairo/ViewModels/Proxy/ProxyListPageViewModel.cs:107", ex);
-                AccessSnackbar("异常", ex.Message, InfoBarSeverity.Error);
+                AccessSnackbar("异常", ex.Message, FAInfoBarSeverity.Error);
             }
         }
 
@@ -119,18 +120,18 @@ namespace Kairo.ViewModels
                 var result = await _api.DeleteTunnelAsync(tunnel);
                 if (result.Success)
                 {
-                    AccessSnackbar("已删除", vm.Proxy.ProxyName, InfoBarSeverity.Success);
+                    AccessSnackbar("已删除", vm.Proxy.ProxyName, FAInfoBarSeverity.Success);
                     await RefreshAsync();
                 }
                 else
                 {
-                    AccessSnackbar("删除失败", result.Message, InfoBarSeverity.Error);
+                    AccessSnackbar("删除失败", result.Message, FAInfoBarSeverity.Error);
                 }
             }
             catch (Exception ex)
             {
                 AppLogger.Exception("Unhandled exception in Kairo/ViewModels/Proxy/ProxyListPageViewModel.cs:129", ex);
-                AccessSnackbar("异常", ex.Message, InfoBarSeverity.Error);
+                AccessSnackbar("异常", ex.Message, FAInfoBarSeverity.Error);
             }
         }
 
@@ -139,7 +140,7 @@ namespace Kairo.ViewModels
             var frpcPath = ProviderFrpcPath.Get(Global.CurrentProvider);
             if (string.IsNullOrWhiteSpace(frpcPath))
             {
-                AccessSnackbar("未配置frpc", $"请在设置中指定或下载 {Global.CurrentProvider.DisplayName} frpc", InfoBarSeverity.Warning);
+                AccessSnackbar("未配置frpc", $"请在设置中指定或下载 {Global.CurrentProvider.DisplayName} frpc", FAInfoBarSeverity.Warning);
                 return;
             }
             if (FrpcProcessManager.IsRunning(vm.Proxy.Id))
@@ -153,7 +154,7 @@ namespace Kairo.ViewModels
                 var config = await api.GetFrpcConfigAsync(new FrpTunnel { Id = vm.Proxy.Id, Name = vm.Proxy.ProxyName, Token = vm.Proxy.Token });
                 if (!config.Success || string.IsNullOrWhiteSpace(config.Data?.Token))
                 {
-                    AccessSnackbar("启动失败", config.Message, InfoBarSeverity.Error);
+                    AccessSnackbar("启动失败", config.Message, FAInfoBarSeverity.Error);
                     return;
                 }
                 frpToken = config.Data.Token;
@@ -169,14 +170,14 @@ namespace Kairo.ViewModels
                     if (!string.IsNullOrEmpty(connAddr))
                     {
                         CopyToClipboardAsync(connAddr);
-                        AccessSnackbar("启动成功", $"{vm.Proxy.ProxyName} - 已复制 {connAddr}", InfoBarSeverity.Success);
+                        AccessSnackbar("启动成功", $"{vm.Proxy.ProxyName} - 已复制 {connAddr}", FAInfoBarSeverity.Success);
                     }
                     else
                     {
-                        AccessSnackbar("启动成功", vm.Proxy.ProxyName, InfoBarSeverity.Success);
+                        AccessSnackbar("启动成功", vm.Proxy.ProxyName, FAInfoBarSeverity.Success);
                     }
                 },
-                err => { AccessSnackbar("启动失败", err, InfoBarSeverity.Error); });
+                err => { AccessSnackbar("启动失败", err, FAInfoBarSeverity.Error); });
         }
 
         private static string? GetConnectionAddress(Components.Proxy proxy)
@@ -215,7 +216,7 @@ namespace Kairo.ViewModels
                     }
                 });
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
                 AppLogger.Exception("Unhandled exception in Kairo/ViewModels/Proxy/ProxyListPageViewModel.cs:216", ex);
                 // Ignore clipboard errors
@@ -227,11 +228,11 @@ namespace Kairo.ViewModels
             if (FrpcProcessManager.StopProxy(vm.Proxy.Id))
             {
                 vm.IsRunning = false;
-                AccessSnackbar("已停止", vm.Proxy.ProxyName, InfoBarSeverity.Informational);
+                AccessSnackbar("已停止", vm.Proxy.ProxyName, FAInfoBarSeverity.Informational);
             }
             else
             {
-                AccessSnackbar("未在运行", vm.Proxy.ProxyName, InfoBarSeverity.Warning);
+                AccessSnackbar("未在运行", vm.Proxy.ProxyName, FAInfoBarSeverity.Warning);
             }
         }
 
@@ -274,7 +275,7 @@ namespace Kairo.ViewModels
             OpenNodePingWindowRequested?.Invoke();
         }
 
-        private static void AccessSnackbar(string title, string? message, InfoBarSeverity severity)
+        private static void AccessSnackbar(string title, string? message, FAInfoBarSeverity severity)
         {
             (Access.DashBoard as DashBoard)?.OpenSnackbar(title, message, severity);
         }

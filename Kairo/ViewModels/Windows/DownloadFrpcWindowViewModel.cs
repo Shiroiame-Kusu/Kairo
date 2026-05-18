@@ -8,6 +8,7 @@ using Kairo.Core.Models;
 using Kairo.Core.Services;
 using Kairo.Utils;
 using Kairo.Utils.Configuration;
+using Kairo.Components.DashBoard;
 
 namespace Kairo.ViewModels
 {
@@ -106,7 +107,7 @@ namespace Kairo.ViewModels
         public void Dispose()
         {
             try { _cts.Cancel(); }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
                 AppLogger.Exception("Unhandled exception in Kairo/ViewModels/Windows/DownloadFrpcWindowViewModel.cs:108", ex);
             }
@@ -154,10 +155,10 @@ namespace Kairo.ViewModels
                     SpeedText = string.Empty;
                     CanClose = true;
                     CanCancel = false;
-                    (Access.DashBoard as Components.DashBoard.DashBoard)?.OpenSnackbar(
+                    (Access.DashBoard as DashBoard)?.OpenSnackbar(
                         "下载完成",
                         result.FrpcPath,
-                        InfoBarSeverity.Success);
+                        FAInfoBarSeverity.Success);
                 });
             }
             catch (OperationCanceledException ex)

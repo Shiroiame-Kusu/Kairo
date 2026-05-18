@@ -50,7 +50,7 @@ public partial class CreateProxyWindow : Window
     private void CloseSafe()
     {
         try { Close(); }
-        catch (System.Exception ex)
+        catch (Exception ex)
         {
             AppLogger.Exception("Unhandled exception in Kairo/Components/CreateProxyWindow.axaml.cs:52", ex);
         }

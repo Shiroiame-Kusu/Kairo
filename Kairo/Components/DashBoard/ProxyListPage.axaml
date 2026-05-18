@@ -49,7 +49,7 @@
         <Border Grid.Row="0" CornerRadius="8" Padding="14,10" Background="{DynamicResource LayerFillColorDefaultBrush}">
             <StackPanel Spacing="4">
                 <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                    <fa:SymbolIcon Symbol="List" FontSize="22" />
+                    <fa:FASymbolIcon Symbol="List" FontSize="22" />
                     <TextBlock VerticalAlignment="Center" FontSize="24" Text="隧道列表" />
                 </StackPanel>
                 <TextBlock Text="管理并快速操作你的隧道" Opacity="0.8" />

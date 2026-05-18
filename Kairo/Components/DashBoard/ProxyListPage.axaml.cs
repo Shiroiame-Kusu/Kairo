@@ -47,7 +47,7 @@ public partial class ProxyListPage : UserControl
             var win = new CreateProxyWindow();
             win.Created += async (id, name) =>
             {
-                (Access.DashBoard as DashBoard)?.OpenSnackbar("创建成功", name, FluentAvalonia.UI.Controls.InfoBarSeverity.Success);
+                (Access.DashBoard as DashBoard)?.OpenSnackbar("创建成功", name, FAInfoBarSeverity.Success);
                 if (DataContext is ProxyListPageViewModel vm)
                     await vm.RefreshAsync();
             };
@@ -59,7 +59,7 @@ public partial class ProxyListPage : UserControl
         catch (Exception ex)
         {
             AppLogger.Exception("Unhandled exception in Kairo/Components/DashBoard/ProxyListPage.axaml.cs:59", ex);
-            (Access.DashBoard as DashBoard)?.OpenSnackbar("打开失败", ex.Message, FluentAvalonia.UI.Controls.InfoBarSeverity.Error);
+            (Access.DashBoard as DashBoard)?.OpenSnackbar("打开失败", ex.Message, FAInfoBarSeverity.Error);
         }
     }
 
@@ -76,7 +76,7 @@ public partial class ProxyListPage : UserControl
         catch (Exception ex)
         {
             AppLogger.Exception("Unhandled exception in Kairo/Components/DashBoard/ProxyListPage.axaml.cs:75", ex);
-            (Access.DashBoard as DashBoard)?.OpenSnackbar("打开失败", ex.Message, FluentAvalonia.UI.Controls.InfoBarSeverity.Error);
+            (Access.DashBoard as DashBoard)?.OpenSnackbar("打开失败", ex.Message, FAInfoBarSeverity.Error);
         }
     }
 }

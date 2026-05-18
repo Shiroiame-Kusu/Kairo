@@ -49,7 +49,7 @@ namespace Kairo.Components.OAuth
                     {
                         var refreshToken = ctx.Request.Query["refresh_token"].ToString();
                         var code = ctx.Request.Query["code"].ToString();
-                        if (Kairo.Utils.Access.MainWindow is Kairo.MainWindow mw)
+                        if (Access.MainWindow is MainWindow mw)
                         {
                             if (!string.IsNullOrWhiteSpace(refreshToken))
                                 await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(async () => await mw.AcceptOAuthRefreshToken(refreshToken));
@@ -82,7 +82,7 @@ namespace Kairo.Components.OAuth
                     await _application.DisposeAsync();
                 }
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
                 AppLogger.Exception("Unhandled exception in Kairo/Components/OAuth/OAuthCallbackHandler.cs:85", ex);
             }
@@ -91,7 +91,7 @@ namespace Kairo.Components.OAuth
         {
             // synchronous wrapper used if async not awaited
             try { StopAsync().GetAwaiter().GetResult(); }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
                 AppLogger.Exception("Unhandled exception in Kairo/Components/OAuth/OAuthCallbackHandler.cs:90", ex);
             }

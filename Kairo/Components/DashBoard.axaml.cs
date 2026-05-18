@@ -41,7 +41,7 @@ namespace Kairo.Components.DashBoard
             ApplyProviderIcon();
             SetupPlatformWindowStyle();
             NavView.SelectedItem = HomeNavItem;
-            if (Global.CurrentProvider.Type == FrpProviderType.Lolia && this.FindControl<NavigationViewItem>("LanPartyNavItem") is { } lanPartyItem)
+            if (Global.CurrentProvider.Type == FrpProviderType.Lolia && this.FindControl<FANavigationViewItem>("LanPartyNavItem") is { } lanPartyItem)
                 lanPartyItem.IsVisible = false;
             _titleBar = this.FindControl<CustomTitleBar>("TitleBar");
             this.Opened += OnDashBoardOpened;
@@ -66,7 +66,7 @@ namespace Kairo.Components.DashBoard
         private void ApplyProviderIcon()
         {
             try { Icon = ProviderBranding.LoadIcon(Global.CurrentProvider); }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
                 AppLogger.Exception("Unhandled exception in Kairo/Components/DashBoard.axaml.cs:68", ex);
             }
@@ -80,12 +80,12 @@ namespace Kairo.Components.DashBoard
                 {
                     var win = new DownloadFrpcWindow();
                     win.Show(this);
-                    OpenSnackbar("提示", "检测到未安装 frpc, 正在打开下载窗口", InfoBarSeverity.Informational);
+                    OpenSnackbar("提示", "检测到未安装 frpc, 正在打开下载窗口", FAInfoBarSeverity.Informational);
                 }
                 catch (Exception ex)
                 {
                     AppLogger.Exception("Unhandled exception in Kairo/Components/DashBoard.axaml.cs:81", ex);
-                    OpenSnackbar("检测异常", ex.Message, InfoBarSeverity.Warning);
+                    OpenSnackbar("检测异常", ex.Message, FAInfoBarSeverity.Warning);
                 }
             }
 
@@ -110,10 +110,10 @@ namespace Kairo.Components.DashBoard
                 {
                     var win = new DownloadFrpcWindow();
                     win.Show(this);
-                    OpenSnackbar("更新 FRPC", "已打开下载窗口", InfoBarSeverity.Informational);
+                    OpenSnackbar("更新 FRPC", "已打开下载窗口", FAInfoBarSeverity.Informational);
                 }
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
                 AppLogger.Exception("Unhandled exception in Kairo/Components/DashBoard.axaml.cs:111", ex);
                 // ignore background update failures
@@ -140,15 +140,15 @@ namespace Kairo.Components.DashBoard
                     AvatarChanged?.Invoke(Avatar);
                 });
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
                 AppLogger.Exception("Unhandled exception in Kairo/Components/DashBoard.axaml.cs:137", ex);
             }
         }
 
-        private void NavView_OnSelectionChanged(object? sender, NavigationViewSelectionChangedEventArgs e)
+        private void NavView_OnSelectionChanged(object? sender, FANavigationViewSelectionChangedEventArgs e)
         {
-            if (e.SelectedItem is NavigationViewItem nvi && nvi.Tag is string tag)
+            if (e.SelectedItem is FANavigationViewItem nvi && nvi.Tag is string tag)
             {
                 _viewModel.SelectedTag = tag;
                 OpenPage(tag);
@@ -182,7 +182,7 @@ namespace Kairo.Components.DashBoard
             }
         }
 
-        public void OpenSnackbar(string title, string? message, InfoBarSeverity severity = InfoBarSeverity.Informational)
+        public void OpenSnackbar(string title, string? message, FAInfoBarSeverity severity = FAInfoBarSeverity.Informational)
         {
             _viewModel.ShowSnackbar(title, message, severity);
 

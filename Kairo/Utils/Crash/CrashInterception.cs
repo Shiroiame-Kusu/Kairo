@@ -49,7 +49,7 @@ namespace Kairo.Utils
                     HandleException(e.Exception, "TaskScheduler", parentWindow);
                     e.SetObserved();
                 }
-                catch (System.Exception ex)
+                catch (Exception ex)
                 {
                     AppLogger.Exception("Unhandled exception in Kairo/Utils/Crash/CrashInterception.cs:52", ex);
                 }
@@ -85,13 +85,13 @@ namespace Kairo.Utils
                         if (info.LastWriteTime < cutoff)
                             info.Delete();
                     }
-                    catch (System.Exception ex)
+                    catch (Exception ex)
                     {
                         AppLogger.Exception("Unhandled exception in Kairo/Utils/Crash/CrashInterception.cs:85", ex);
                     }
                 }
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
                 AppLogger.Exception("Unhandled exception in Kairo/Utils/Crash/CrashInterception.cs:88", ex);
             }
@@ -123,7 +123,7 @@ namespace Kairo.Utils
         private static void CrashLoggedSafe(Exception ex, string id)
         {
             try { CrashLogged?.Invoke(ex, id); }
-            catch (System.Exception callbackEx)
+            catch (Exception callbackEx)
             {
                 AppLogger.Exception("Unhandled exception in Kairo/Utils/Crash/CrashInterception.cs:115", callbackEx);
             }

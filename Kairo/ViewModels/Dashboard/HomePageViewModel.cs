@@ -4,6 +4,7 @@ using Avalonia.Media;
 using FluentAvalonia.UI.Controls;
 using Kairo.Utils;
 using Kairo.Utils.Logger;
+using Kairo.Components.DashBoard;
 
 namespace Kairo.ViewModels
 {
@@ -130,7 +131,7 @@ namespace Kairo.ViewModels
                     SignedBorderVisible = true;
                 }
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
                 AppLogger.Exception("Unhandled exception in Kairo/ViewModels/Dashboard/HomePageViewModel.cs:132", ex);
             }
@@ -149,23 +150,23 @@ namespace Kairo.ViewModels
                     TrafficText = $"剩余流量: {(SessionState.Traffic / 1024):0.00}GB";
                     SignButtonVisible = false;
                     SignedBorderVisible = true;
-                    (Access.DashBoard as Components.DashBoard.DashBoard)?.OpenSnackbar("签到成功", $"获得 {gained:0.00}GB 流量", InfoBarSeverity.Success);
+                    (Access.DashBoard as DashBoard)?.OpenSnackbar("签到成功", $"获得 {gained:0.00}GB 流量", FAInfoBarSeverity.Success);
                 }
                 else if (result.Code == 403 && result.Message == "你今天已经签到过了")
                 {
                     SignButtonVisible = false;
                     SignedBorderVisible = true;
-                    (Access.DashBoard as Components.DashBoard.DashBoard)?.OpenSnackbar("提示", "你今天已经签到过了", InfoBarSeverity.Informational);
+                    (Access.DashBoard as DashBoard)?.OpenSnackbar("提示", "你今天已经签到过了", FAInfoBarSeverity.Informational);
                 }
                 else
                 {
-                    (Access.DashBoard as Components.DashBoard.DashBoard)?.OpenSnackbar("签到失败", result.Message, InfoBarSeverity.Error);
+                    (Access.DashBoard as DashBoard)?.OpenSnackbar("签到失败", result.Message, FAInfoBarSeverity.Error);
                 }
             }
             catch (Exception ex)
             {
                 AppLogger.Exception("Unhandled exception in Kairo/ViewModels/Dashboard/HomePageViewModel.cs:163", ex);
-                (Access.DashBoard as Components.DashBoard.DashBoard)?.OpenSnackbar("签到异常", ex.Message, InfoBarSeverity.Error);
+                (Access.DashBoard as DashBoard)?.OpenSnackbar("签到异常", ex.Message, FAInfoBarSeverity.Error);
             }
             finally
             {

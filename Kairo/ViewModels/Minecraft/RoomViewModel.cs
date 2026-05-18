@@ -2,6 +2,7 @@ using System;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using Avalonia.Controls;
+using Avalonia.Input.Platform;
 using Kairo.Utils;
 
 namespace Kairo.ViewModels;
@@ -49,7 +50,7 @@ public class RoomViewModel : ViewModelBase
             if (clipboard != null)
                 await clipboard.SetTextAsync(text);
         }
-        catch (System.Exception ex)
+        catch (Exception ex)
         {
             AppLogger.Exception("Unhandled exception in Kairo/ViewModels/Minecraft/RoomViewModel.cs:52", ex);
         }
