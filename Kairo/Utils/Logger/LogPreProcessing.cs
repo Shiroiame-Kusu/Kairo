@@ -5,6 +5,7 @@ using System.Text.RegularExpressions;
 using Avalonia.Controls; // for TextBlock
 using Avalonia.Controls.Documents; // for Run, LineBreak
 using Avalonia.Media;    // for Brushes
+using Kairo.Core.Providers;
 
 namespace Kairo.Utils.Logger
 {
@@ -15,49 +16,92 @@ namespace Kairo.Utils.Logger
             public static List<(LogType, string)> Cache = new();
         }
 
-        // ANSI removal (unchanged)
         private static readonly Regex AnsiRegex = new(@"\x1b\[[0-9;]*m", RegexOptions.Compiled);
 
-        // Highlight regex rules (ordered by priority to avoid overlaps). More specific first.
+        private static readonly Regex AngleGoLocationRegex = new(@"<[^<>\s]+\.go:\d+>", RegexOptions.Compiled);
+        private static readonly Regex BracketGoLocationRegex = new(@"\[[^\[\]\s]+\.go:\d+\]", RegexOptions.Compiled);
+        private static readonly Regex BracketHexIdRegex = new(@"\[[0-9a-f]{8,}\]", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex LocyanRunIdRegex = new(@"\[\d+\.[0-9a-f]{8,}\]", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex LocyanBracketTokenRegex = new(@"\[(?:lcf-cache/[^\[\]\s]+|[0-9a-f]{8,}[^\[\]\s]*)\]", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex PlainHexIdRegex = new(@"\b[0-9a-f]{12,}\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex HostPortRegex = new(@"\b(?:[a-zA-Z0-9-]+\.)+[a-zA-Z0-9-]+:\d{1,5}\b", RegexOptions.Compiled);
         private static readonly Regex IpPortRegex = new(@"\b(?:(?:\d{1,3}\.){3}\d{1,3})(?::\d{1,5})\b", RegexOptions.Compiled);
-        private static readonly Regex TimestampRegex = new(@"\b\d{4}[-/]\d{2}[-/]\d{2}[ T]\d{2}:\d{2}:\d{2}(?:\.\d{3,6})?\b", RegexOptions.Compiled);
-        private static readonly Regex FileLineRegex = new(@"\b[a-zA-Z0-9_.-]+\.go:\d+\b", RegexOptions.Compiled);
+        private static readonly Regex FullTimestampRegex = new(@"\b\d{4}[-/]\d{2}[-/]\d{2}[ T]\d{2}:\d{2}:\d{2}(?:\.\d{3,6})?\b", RegexOptions.Compiled);
+        private static readonly Regex ShortTimestampRegex = new(@"\b\d{1,2}:\d{2}(?::\d{2})?(?:AM|PM)\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex BracketLevelRegex = new(@"\[(?:I|W|E|D|T|INFO|WARN|ERROR|DEBUG|TRACE)\]", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex PlainLevelRegex = new(@"(?<![\w\[])(?:I|W|E|D|T|INFO|WARN|ERROR|DEBUG|TRACE)(?![\w\]])", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex VersionRegex = new(@"\bv?\d+\.\d+(?:\.\d+)*(?:[-+][a-zA-Z0-9.-]+)?\b", RegexOptions.Compiled);
+        private static readonly Regex KeyValueRegex = new(@"\b[a-zA-Z_][a-zA-Z0-9_-]*(?==)", RegexOptions.Compiled);
         private static readonly Regex DurationRegex = new(@"\b\d+(?:ms|s|m)\b", RegexOptions.Compiled);
         private static readonly Regex BooleanRegex = new(@"\b(true|false)\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
-        private static readonly Regex LevelBracketRegex = new(@"\[(?:I|W|E|D|T|INFO|WARN|ERROR|DEBUG|TRACE)\]", RegexOptions.IgnoreCase | RegexOptions.Compiled);
-        private static readonly Regex SuccessWordRegex = new(@"\b(success|connected|login ok|started)\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex SuccessWordRegex = new(@"(?<!\w)(login to server success|proxy added|start proxy|login ok|success|connected|started)(?!\w)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
         private static readonly Regex ErrorWordRegex = new(@"\b(error|fail|failed|timeout|refused)\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
-        private static readonly Regex NumberRegex = new(@"\b\d+\b", RegexOptions.Compiled); // fallback numeric (placed last)
 
         private record TokenRule(Regex Regex, Func<Match, IBrush> BrushPicker, int Priority);
         private record Span(int Start, int Length, IBrush Brush);
 
-        // Pre-created brushes (light & dark aware where needed)
-        private static IBrush BrushTimestamp => Global.isDarkThemeEnabled ? new SolidColorBrush(Color.FromRgb(140, 140, 148)) : new SolidColorBrush(Color.FromRgb(96, 96, 96));
-        private static IBrush BrushIp => new SolidColorBrush(Color.FromRgb(79, 193, 255));        // light blue
-        private static IBrush BrushFile => new SolidColorBrush(Color.FromRgb(116, 198, 157));     // green
-        private static IBrush BrushDuration => new SolidColorBrush(Color.FromRgb(156, 204, 101)); // lime-ish
+        private static IBrush BrushTimestamp => Global.isDarkThemeEnabled ? new SolidColorBrush(Color.FromRgb(150, 156, 170)) : new SolidColorBrush(Color.FromRgb(86, 92, 104));
+        private static IBrush BrushEndpoint => new SolidColorBrush(Color.FromRgb(79, 193, 255));
+        private static IBrush BrushLocation => new SolidColorBrush(Color.FromRgb(116, 198, 157));
+        private static IBrush BrushId => new SolidColorBrush(Color.FromRgb(255, 202, 112));
+        private static IBrush BrushVersion => new SolidColorBrush(Color.FromRgb(186, 140, 255));
+        private static IBrush BrushKey => new SolidColorBrush(Color.FromRgb(86, 182, 194));
+        private static IBrush BrushDuration => new SolidColorBrush(Color.FromRgb(156, 204, 101));
         private static IBrush BrushTrue => new SolidColorBrush(Color.FromRgb(139, 195, 74));
         private static IBrush BrushFalse => new SolidColorBrush(Color.FromRgb(239, 83, 80));
         private static IBrush BrushWarn => new SolidColorBrush(Color.FromRgb(255, 193, 7));
         private static IBrush BrushError => new SolidColorBrush(Color.FromRgb(244, 67, 54));
-        private static IBrush BrushInfo => new SolidColorBrush(Color.FromRgb(3, 169, 244));
-        private static IBrush BrushDebug => new SolidColorBrush(Color.FromRgb(171, 71, 188));
+        private static IBrush BrushInfo => new SolidColorBrush(Color.FromRgb(105, 180, 255));
+        private static IBrush BrushDebug => new SolidColorBrush(Color.FromRgb(171, 121, 255));
         private static IBrush BrushSuccess => new SolidColorBrush(Color.FromRgb(102, 187, 106));
-        private static IBrush BrushNumber => new SolidColorBrush(Color.FromRgb(176, 190, 197));
-        private static IBrush BrushDefault => Global.isDarkThemeEnabled ? Brushes.White : Brushes.Black;
+        private static IBrush BrushDefault => Global.isDarkThemeEnabled ? new SolidColorBrush(Color.FromRgb(232, 232, 232)) : Brushes.Black;
 
-        private static readonly List<TokenRule> Rules = new()
+        private static readonly List<TokenRule> LoliaRules = new()
         {
-            new TokenRule(IpPortRegex, _ => BrushIp, 10),
-            new TokenRule(TimestampRegex, _ => BrushTimestamp, 9),
-            new TokenRule(FileLineRegex, _ => BrushFile, 8),
-            new TokenRule(LevelBracketRegex, m => LevelBrush(m.Value), 7),
-            new TokenRule(DurationRegex, _ => BrushDuration, 6),
-            new TokenRule(BooleanRegex, m => m.Value.Equals("true", StringComparison.OrdinalIgnoreCase) ? BrushTrue : BrushFalse, 5),
-            new TokenRule(ErrorWordRegex, _ => BrushError, 4),
-            new TokenRule(SuccessWordRegex, _ => BrushSuccess, 3),
-            new TokenRule(NumberRegex, _ => BrushNumber, 1) // low priority
+            new TokenRule(AngleGoLocationRegex, _ => BrushLocation, 12),
+            new TokenRule(BracketHexIdRegex, _ => BrushId, 11),
+            new TokenRule(HostPortRegex, _ => BrushEndpoint, 10),
+            new TokenRule(IpPortRegex, _ => BrushEndpoint, 10),
+            new TokenRule(ShortTimestampRegex, _ => BrushTimestamp, 9),
+            new TokenRule(PlainLevelRegex, m => LevelBrush(m.Value), 8),
+            new TokenRule(VersionRegex, _ => BrushVersion, 7),
+            new TokenRule(KeyValueRegex, _ => BrushKey, 6),
+            new TokenRule(DurationRegex, _ => BrushDuration, 5),
+            new TokenRule(BooleanRegex, m => m.Value.Equals("true", StringComparison.OrdinalIgnoreCase) ? BrushTrue : BrushFalse, 4),
+            new TokenRule(ErrorWordRegex, _ => BrushError, 3),
+            new TokenRule(SuccessWordRegex, _ => BrushSuccess, 2)
+        };
+
+        private static readonly List<TokenRule> LocyanRules = new()
+        {
+            new TokenRule(FullTimestampRegex, _ => BrushTimestamp, 12),
+            new TokenRule(BracketLevelRegex, m => LevelBrush(m.Value), 11),
+            new TokenRule(BracketGoLocationRegex, _ => BrushLocation, 10),
+            new TokenRule(LocyanRunIdRegex, _ => BrushId, 9),
+            new TokenRule(LocyanBracketTokenRegex, _ => BrushVersion, 8),
+            new TokenRule(BracketHexIdRegex, _ => BrushId, 8),
+            new TokenRule(PlainHexIdRegex, _ => BrushId, 7),
+            new TokenRule(HostPortRegex, _ => BrushEndpoint, 7),
+            new TokenRule(IpPortRegex, _ => BrushEndpoint, 7),
+            new TokenRule(KeyValueRegex, _ => BrushKey, 6),
+            new TokenRule(DurationRegex, _ => BrushDuration, 5),
+            new TokenRule(BooleanRegex, m => m.Value.Equals("true", StringComparison.OrdinalIgnoreCase) ? BrushTrue : BrushFalse, 4),
+            new TokenRule(ErrorWordRegex, _ => BrushError, 3),
+            new TokenRule(SuccessWordRegex, _ => BrushSuccess, 2)
+        };
+
+        private static readonly List<TokenRule> DefaultRules = new()
+        {
+            new TokenRule(FullTimestampRegex, _ => BrushTimestamp, 12),
+            new TokenRule(ShortTimestampRegex, _ => BrushTimestamp, 11),
+            new TokenRule(BracketLevelRegex, m => LevelBrush(m.Value), 10),
+            new TokenRule(PlainLevelRegex, m => LevelBrush(m.Value), 9),
+            new TokenRule(AngleGoLocationRegex, _ => BrushLocation, 8),
+            new TokenRule(BracketGoLocationRegex, _ => BrushLocation, 8),
+            new TokenRule(HostPortRegex, _ => BrushEndpoint, 7),
+            new TokenRule(IpPortRegex, _ => BrushEndpoint, 7),
+            new TokenRule(ErrorWordRegex, _ => BrushError, 3),
+            new TokenRule(SuccessWordRegex, _ => BrushSuccess, 2)
         };
 
         private static IBrush LevelBrush(string token)
@@ -92,7 +136,7 @@ namespace Kairo.Utils.Logger
         // New highlighting engine
         public static TextBlock ToColoredTextBlock(LogType type, string line)
         {
-            var tb = new TextBlock
+            var tb = new SelectableTextBlock
             {
                 FontFamily = new FontFamily("Consolas,JetBrains Mono,monospace"),
                 FontSize = 12,
@@ -129,7 +173,7 @@ namespace Kairo.Utils.Logger
                 return;
             }
 
-            var spans = CollectSpans(logical);
+            var spans = CollectSpans(logical, GetRules());
             // Sort by start
             spans.Sort((a, b) => a.Start.CompareTo(b.Start));
             int pos = 0;
@@ -148,10 +192,17 @@ namespace Kairo.Utils.Logger
             }
         }
 
-        private static List<Span> CollectSpans(string text)
+        private static List<TokenRule> GetRules() => Global.CurrentProvider.Type switch
+        {
+            FrpProviderType.Lolia => LoliaRules,
+            FrpProviderType.Locyan => LocyanRules,
+            _ => DefaultRules
+        };
+
+        private static List<Span> CollectSpans(string text, List<TokenRule> rules)
         {
             var list = new List<Span>();
-            foreach (var rule in Rules)
+            foreach (var rule in rules)
             {
                 foreach (Match m in rule.Regex.Matches(text))
                 {
@@ -174,11 +225,13 @@ namespace Kairo.Utils.Logger
             return false;
         }
 
-        private static IBrush BaseBrush(LogType type)
+        private static IBrush BaseBrush(LogType type) => type switch
         {
-            // Always use plain default (white/black) for non-token text per request
-            return BrushDefault;
-        }
+            LogType.Warn => Global.isDarkThemeEnabled ? new SolidColorBrush(Color.FromRgb(245, 222, 179)) : new SolidColorBrush(Color.FromRgb(120, 76, 0)),
+            LogType.Error => Global.isDarkThemeEnabled ? new SolidColorBrush(Color.FromRgb(255, 205, 210)) : new SolidColorBrush(Color.FromRgb(150, 32, 32)),
+            LogType.Debug or LogType.DetailDebug => Global.isDarkThemeEnabled ? new SolidColorBrush(Color.FromRgb(190, 190, 200)) : new SolidColorBrush(Color.FromRgb(80, 80, 88)),
+            _ => BrushDefault
+        };
     }
 
     public enum LogType

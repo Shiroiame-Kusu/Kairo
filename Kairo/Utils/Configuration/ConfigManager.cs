@@ -1,17 +1,14 @@
 using System;
-using System.Buffers;
 using System.IO;
-using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Kairo.Utils.Logger;
 using Kairo.Utils.Serialization;
-using AppLogger = Kairo.Utils.Logger.Logger; // alias added
 
 namespace Kairo.Utils.Configuration
 {
-    internal class ConfigManager : IDisposable
+    internal partial class ConfigManager : IDisposable
     {
         private static string _oldSettings = string.Empty;
         private static readonly object _syncRoot = new();
@@ -38,8 +35,9 @@ namespace Kairo.Utils.Configuration
                 {
                     envDir = Path.GetFullPath(envDir);
                 }
-                catch
+                catch (Exception ex)
                 {
+                    AppLogger.Exception("Unhandled exception in Kairo/Utils/Configuration/ConfigManager.cs:39", ex);
                     envDir = null; // fallback
                 }
             }
@@ -231,130 +229,6 @@ namespace Kairo.Utils.Configuration
             return new Unsubscriber(() => ConfigChanged -= handler);
         }
 
-        // INTERNAL CORE ------------------------------------------------------
-        private static void LoadInternal()
-        {
-            EnsureDirectory();
-            try
-            {
-                if (File.Exists(SettingsFilePath))
-                {
-                    string json = File.ReadAllText(SettingsFilePath, Encoding.UTF8);
-                    try
-                    {
-                        var cfg = JsonSerializer.Deserialize(json, AppJsonContext.Default.Config) ?? new();
-                        if (!Validate(cfg, out var _))
-                        {
-                            BackupCorruptFile();
-                            Global.Config = new();
-                            SaveInternal(force: true);
-                        }
-                        else
-                        {
-                            Global.Config = cfg;
-                            Global.RefreshRuntimeFlags();
-                            _oldSettings = SerializeConfig();
-                        }
-                    }
-                    catch (JsonException jex)
-                    {
-                        BackupCorruptFile();
-                        AppLogger.Output(LogType.Warn, "Config file corrupt. Replacing with defaults:", jex);
-                        Global.Config = new();
-                        Global.RefreshRuntimeFlags();
-                        SaveInternal(force: true);
-                    }
-                }
-                else
-                {
-                    Global.Config ??= new();
-                    Global.RefreshRuntimeFlags();
-                    SaveInternal(force: true);
-                }
-            }
-            catch (Exception ex)
-            {
-                AppLogger.Output(LogType.Error, "Failed to read config:", ex);
-                Global.Config ??= new();
-                SaveInternal(force: true);
-            }
-        }
-
-        private static void SaveInternal(bool force = false)
-        {
-            try
-            {
-                string newSettings = SerializeConfig();
-                if (!force && newSettings == _oldSettings)
-                {
-                    return; // no changes
-                }
-
-                // Atomic write: write to temp then move
-                File.WriteAllText(TempSettingsFilePath, SerializeConfig(indented: true), Encoding.UTF8);
-#if NET6_0_OR_GREATER
-                try
-                {
-                    File.Move(TempSettingsFilePath, SettingsFilePath, true);
-                }
-                catch (IOException)
-                {
-                    // Some FS (e.g. network) might not support overwrite flag reliably
-                    if (File.Exists(SettingsFilePath)) File.Delete(SettingsFilePath);
-                    File.Move(TempSettingsFilePath, SettingsFilePath);
-                }
-#else
-                if (File.Exists(SettingsFilePath)) File.Delete(SettingsFilePath);
-                File.Move(TempSettingsFilePath, SettingsFilePath);
-#endif
-                _oldSettings = newSettings;
-                ConfigChanged?.Invoke(Global.Config);
-            }
-            catch (Exception ex)
-            {
-                AppLogger.Output(LogType.Error, "Failed to write config:", ex);
-                TryDeleteTemp();
-            }
-        }
-
-        private static void TryDeleteTemp()
-        {
-            try { if (File.Exists(TempSettingsFilePath)) File.Delete(TempSettingsFilePath); } catch { /* ignore */ }
-        }
-
-        private static void BackupCorruptFile()
-        {
-            try
-            {
-                if (File.Exists(SettingsFilePath))
-                {
-                    string backup = SettingsFilePath + ".corrupt_" + DateTime.UtcNow.ToString("yyyyMMddHHmmssfff") + ".bak";
-                    File.Move(SettingsFilePath, backup);
-                }
-            }
-            catch (Exception ex)
-            {
-                AppLogger.Output(LogType.Warn, "Failed to backup corrupt config:", ex);
-            }
-        }
-
-        private static void EnsureDirectory()
-        {
-            try
-            {
-                if (File.Exists(ConfigDirectory) && !Directory.Exists(ConfigDirectory))
-                {
-                    string backupPath = ConfigDirectory + ".bak_" + DateTime.UtcNow.Ticks;
-                    File.Move(ConfigDirectory, backupPath);
-                }
-                Directory.CreateDirectory(ConfigDirectory);
-            }
-            catch (Exception ex)
-            {
-                AppLogger.Output(LogType.Error, "Failed to ensure config directory:", ex);
-                throw;
-            }
-        }
 
         private static bool Validate(Config cfg, out string? error)
         {
@@ -377,19 +251,5 @@ namespace Kairo.Utils.Configuration
             }
         }
 
-        private static string SerializeConfig(bool indented = false)
-        {
-            if (!indented)
-            {
-                return JsonSerializer.Serialize(Global.Config, AppJsonContext.Default.Config);
-            }
-
-            var buffer = new ArrayBufferWriter<byte>();
-            using (var writer = new Utf8JsonWriter(buffer, new JsonWriterOptions { Indented = true }))
-            {
-                JsonSerializer.Serialize(writer, Global.Config, AppJsonContext.Default.Config);
-            }
-            return Encoding.UTF8.GetString(buffer.WrittenSpan);
-        }
     }
 }

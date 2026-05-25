@@ -13,7 +13,7 @@
         MinWidth="800" MinHeight="450"
         WindowStartupLocation="CenterScreen"
         Icon="avares://Kairo/Assets/kairo.ico"
-        SystemDecorations="None"
+        WindowDecorations="None"
         ExtendClientAreaToDecorationsHint="True"
         TransparencyLevelHint="Transparent"
         Background="Transparent">
@@ -37,14 +37,14 @@
                 ClipToBounds="True">
             <Grid RowDefinitions="Auto,*">
                 <!-- Custom Title Bar -->
-                <controls:CustomTitleBar Title="Kairo - Another LocyanFrp Client" />
+                <controls:CustomTitleBar Title="Kairo - Another LocyanFrp Client" IconSource="{Binding IconSource}" />
                 <Grid Grid.Row="1" ColumnDefinitions="*,300,*">
                     <Grid Grid.Column="1" Margin="0">
                         <Grid VerticalAlignment="Center" RowDefinitions="0,120,20,*">
                             <!-- Banner region -->
                             <Grid Grid.Row="1">
                                 <Border CornerRadius="8" Background="Transparent">
-                                    <Image x:Name="Banner" Source="avares://Kairo/Assets/banner.png" Stretch="Uniform" />
+                                    <Image x:Name="Banner" Source="{Binding BannerSource}" Stretch="Uniform" />
                                 </Border>
                             </Grid>
                             <!-- Login Status -->
@@ -54,7 +54,7 @@
                                             VerticalAlignment="Center" Classes="fade"
                                             Opacity="{Binding LoginStatusOpacity}"
                                             IsVisible="{Binding IsLoginStatusVisible}">
-                                    <fa:ProgressRing Width="28" Height="28" IsActive="True" />
+                                    <fa:FAProgressRing Width="28" Height="28" IsActive="True" />
                                     <TextBlock Margin="15,0" FontSize="16" VerticalAlignment="Center" Text="正在登录" />
                                 </StackPanel>
                             </Grid>
@@ -65,10 +65,14 @@
                                     IsVisible="{Binding IsLoginFormVisible}">
                                 <Grid RowDefinitions="220,*">
                                     <Grid>
-                                        <Grid RowDefinitions="*,*">
-                                            <TextBlock Margin="0,10" HorizontalAlignment="Center"
-                                                       VerticalAlignment="Bottom" Text="使用OAuth进行登录" FontSize="16" />
-                                            <Button x:Name="LoginButton" Grid.Row="1" Margin="50,16,50,0" Content="登录"
+                                        <Grid RowDefinitions="Auto,Auto,Auto" VerticalAlignment="Center">
+                                            <ComboBox Margin="50,0,50,12"
+                                                      HorizontalAlignment="Stretch"
+                                                      ItemsSource="{Binding Providers}"
+                                                      SelectedItem="{Binding SelectedProvider, Mode=TwoWay}" />
+                                            <TextBlock Grid.Row="1" Margin="0,0,0,0" HorizontalAlignment="Center"
+                                                       Text="使用OAuth进行登录" FontSize="16" />
+                                            <Button x:Name="LoginButton" Grid.Row="2" Margin="50,16,50,0" Content="登录"
                                                     Height="36" HorizontalAlignment="Stretch"
                                                     Command="{Binding StartOAuthCommand}"
                                                     IsEnabled="{Binding IsLoginEnabled}" />
@@ -84,7 +88,7 @@
                         <TextBlock x:Name="Tips" Text="{Binding TipText}" HorizontalAlignment="Center"
                                    VerticalAlignment="Bottom"
                                    Foreground="Gray" FontSize="11" Margin="0,4" />
-                        <fa:InfoBar x:Name="Snackbar" IsOpen="{Binding IsSnackbarOpen}" Title="{Binding SnackbarTitle}"
+                        <fa:FAInfoBar x:Name="Snackbar" IsOpen="{Binding IsSnackbarOpen}" Title="{Binding SnackbarTitle}"
                                     Message="{Binding SnackbarMessage}" Severity="{Binding SnackbarSeverity}"
                                     Margin="0,8,0,0" HorizontalAlignment="Stretch" VerticalAlignment="Top" />
                     </Grid>

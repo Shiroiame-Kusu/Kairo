@@ -374,3 +374,7 @@ publish/
 
 attached/
 temp/
+
+llms.txt
+.codex
+.claude

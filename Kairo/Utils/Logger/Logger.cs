@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using Avalonia.Controls;
@@ -7,8 +8,10 @@ using Avalonia.Threading;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.VisualTree;
-using FluentAvalonia.UI.Controls; // for InfoBarSeverity
+using FluentAvalonia.UI.Controls; // for FAInfoBarSeverity
 using Kairo.Components.DashBoard; // for DashBoard cast
+using Avalonia.Layout;
+using Avalonia.Media;
 
 namespace Kairo.Utils.Logger
 {
@@ -31,6 +34,7 @@ namespace Kairo.Utils.Logger
         private static int _totalLines; // monotonically increasing count of all lines ever logged (since process start)
 
         public static event Action<LogType, string>? LineWritten; // UI or other subscribers can hook
+        public static event Action? Cleared;
 
         public static bool EnableFileLogging { get; set; } = true;
         public static string LogDirectory { get; set; } = Path.Combine("logs", "app");
@@ -42,29 +46,43 @@ namespace Kairo.Utils.Logger
         private static bool ShouldEmitToConsole(LogType type) => true; // always mirror logs to console regardless of build/debug flags
 
         // New: expose a snapshot of cached lines for late subscribers / page reloads
-        public static System.Collections.Generic.List<(LogType, string)> GetCacheSnapshot()
+        public static List<(LogType, string)> GetCacheSnapshot()
         {
             lock (_cacheLock)
             {
-                return new System.Collections.Generic.List<(LogType, string)>(LogPreProcess.Process.Cache);
+                return new List<(LogType, string)>(LogPreProcess.Process.Cache);
             }
         }
 
         // Newer: snapshot returning base global index so UI can recover after trimming
-        public static (System.Collections.Generic.List<(LogType, string)> snapshot, int baseIndex) GetCacheSnapshotWithBase()
+        public static (List<(LogType, string)> snapshot, int baseIndex) GetCacheSnapshotWithBase()
         {
             lock (_cacheLock)
             {
                 int baseIndex = _totalLines - LogPreProcess.Process.Cache.Count; // global index of first cached item
-                return (new System.Collections.Generic.List<(LogType, string)>(LogPreProcess.Process.Cache), baseIndex);
+                return (new List<(LogType, string)>(LogPreProcess.Process.Cache), baseIndex);
             }
         }
 
         public static void Output(LogType type, params object?[] objects) => OutputInternal(type, DefaultDestinations, objects);
 
+        public static void Exception(string context, Exception ex) => OutputInternal(LogType.Error, DefaultDestinations, new object?[] { context, ex });
+
         public static void Output(LogType type, LogDestination destinations, params object?[] objects) => OutputInternal(type, destinations, objects);
 
         public static void OutputNetwork(LogType type, params object?[] objects) => OutputInternal(type, GetNetworkDestinations(type), objects);
+
+        public static void ClearCache()
+        {
+            lock (_cacheLock)
+            {
+                LogPreProcess.Process.Cache.Clear();
+                _totalLines = 0;
+            }
+
+            try { Cleared?.Invoke(); }
+            catch (Exception ex) { Console.Error.WriteLine("[LOGGER CLEAR EVENT ERROR] " + ex); }
+        }
 
         private static void OutputInternal(LogType type, LogDestination destinations, object?[] objects)
         {
@@ -91,7 +109,8 @@ namespace Kairo.Utils.Logger
                 TryWriteFile(type, line);
             if (destinations.HasFlag(LogDestination.Event))
             {
-                try { LineWritten?.Invoke(type, line); } catch { }
+                try { LineWritten?.Invoke(type, line); }
+                catch (Exception ex) { Console.Error.WriteLine("[LOGGER EVENT ERROR] " + ex); }
             }
         }
 
@@ -152,7 +171,7 @@ namespace Kairo.Utils.Logger
             }
             catch (Exception ex)
             {
-                Console.WriteLine("[LOGGER ERROR] " + ex.Message);
+                Console.Error.WriteLine("[LOGGER ERROR] " + ex);
             }
         }
 
@@ -182,12 +201,12 @@ namespace Kairo.Utils.Logger
                         title = "执行失败";
                         body = text;
                     }
-                    var severity = icon == 48 ? InfoBarSeverity.Warning : InfoBarSeverity.Error;
+                    var severity = icon == 48 ? FAInfoBarSeverity.Warning : FAInfoBarSeverity.Error;
                     (Access.DashBoard as DashBoard)?.OpenSnackbar(title, body, severity);
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine("[MSGBOX SNACKBAR ERROR] " + ex.Message);
+                    Console.Error.WriteLine("[MSGBOX SNACKBAR ERROR] " + ex);
                 }
                 return true;
             }
@@ -216,7 +235,7 @@ namespace Kairo.Utils.Logger
             }
             catch (Exception ex)
             {
-                Console.WriteLine("[LOGGER MSGBOX ERROR] " + ex);
+                Console.Error.WriteLine("[LOGGER MSGBOX ERROR] " + ex);
                 return false;
             }
         }
@@ -233,13 +252,13 @@ namespace Kairo.Utils.Logger
                 Content = new TextBlock
                 {
                     Text = text,
-                    TextWrapping = Avalonia.Media.TextWrapping.Wrap
+                    TextWrapping = TextWrapping.Wrap
                 }
             });
             var panel = new StackPanel
             {
-                Orientation = Avalonia.Layout.Orientation.Horizontal,
-                HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Right,
+                Orientation = Orientation.Horizontal,
+                HorizontalAlignment = HorizontalAlignment.Right,
                 Spacing = 8
             };
             var okContent = buttons <= 1 ? "确定" : "是";
@@ -261,7 +280,7 @@ namespace Kairo.Utils.Logger
 
         private static void CloseOwner(Control control)
         {
-            if (control.GetVisualRoot() is Window w)
+            if (TopLevel.GetTopLevel(control) is Window w)
                 w.Close();
         }
 

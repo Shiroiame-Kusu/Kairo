@@ -61,7 +61,7 @@ public static class Logger
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[警告] 无法创建日志文件: {ex.Message}");
+                Console.WriteLine($"[警告] 无法创建日志文件: {ex}");
                 _writeToFile = false;
             }
         }
@@ -133,13 +133,7 @@ public static class Logger
             ? $"{context}: {ex.GetType().Name}: {ex.Message}"
             : $"{ex.GetType().Name}: {ex.Message}";
         
-        Log(LogLevel.Error, message, memberName, sourceFilePath, sourceLineNumber);
-        
-        // 调试模式下输出堆栈
-        if (_minLevel <= LogLevel.Debug && ex.StackTrace != null)
-        {
-            Log(LogLevel.Debug, $"堆栈跟踪:\n{ex.StackTrace}", memberName, sourceFilePath, sourceLineNumber);
-        }
+        Log(LogLevel.Error, $"{message}\n{ex}", memberName, sourceFilePath, sourceLineNumber);
     }
 
     /// <summary>
@@ -271,7 +265,7 @@ public static class Logger
                     var fileMessage = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] [{levelStr}] [{fileName}.{memberName}:{sourceLineNumber}] {message}";
                     File.AppendAllText(_logFilePath, fileMessage + Environment.NewLine);
                 }
-                catch { /* 忽略文件写入错误 */ }
+                catch (Exception ex) { Console.Error.WriteLine($"[日志文件写入失败] {ex}"); }
             }
         }
     }

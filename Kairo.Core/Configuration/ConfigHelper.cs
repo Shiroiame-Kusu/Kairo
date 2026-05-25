@@ -7,6 +7,15 @@ namespace Kairo.Core.Configuration;
 /// <summary>
 /// 共享配置基类
 /// </summary>
+public class ProviderAuthState
+{
+    public string AccessToken { get; set; } = "";
+    public string RefreshToken { get; set; } = "";
+    public string Username { get; set; } = "";
+    public int ID { get; set; }
+    public string FrpToken { get; set; } = "";
+}
+
 public class BaseConfig
 {
     public string AccessToken { get; set; } = "";
@@ -14,7 +23,11 @@ public class BaseConfig
     public string Username { get; set; } = "";
     public int ID { get; set; } = 0;
     public string FrpToken { get; set; } = "";
+    public Dictionary<string, ProviderAuthState> ProviderAuth { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+    public int OAuthPort { get; set; } = 10000;
     public string FrpcPath { get; set; } = "";
+    public Dictionary<string, string> FrpcPaths { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+    public string ProviderId { get; set; } = "locyan";
     public bool UsingDownloadMirror { get; set; } = true;
 }
 
@@ -36,7 +49,11 @@ public static class ConfigHelper
         if (!string.IsNullOrWhiteSpace(envDir))
         {
             try { envDir = Path.GetFullPath(envDir); }
-            catch { envDir = null; }
+            catch (System.Exception ex)
+            {
+                Kairo.Core.Logging.CoreLogger.Output(Kairo.Core.Logging.CoreLogLevel.Error, "Unhandled exception in Kairo.Core/Configuration/ConfigHelper.cs:52", ex);
+                envDir = null;
+            }
         }
         _configDirectory = envDir ?? Path.Combine(
             EnvironmentDetector.GetApplicationDataPath(), "Kairo");
@@ -69,7 +86,10 @@ public static class ConfigHelper
                 return JsonSerializer.Deserialize(json, typeInfo) ?? new T();
             }
         }
-        catch { }
+        catch (System.Exception ex)
+        {
+            Kairo.Core.Logging.CoreLogger.Output(Kairo.Core.Logging.CoreLogLevel.Error, "Unhandled exception in Kairo.Core/Configuration/ConfigHelper.cs:85", ex);
+        }
         return new T();
     }
 
@@ -84,6 +104,9 @@ public static class ConfigHelper
             var json = JsonSerializer.Serialize(config, typeInfo);
             File.WriteAllText(GetSettingsFilePath(), json);
         }
-        catch { }
+        catch (System.Exception ex)
+        {
+            Kairo.Core.Logging.CoreLogger.Output(Kairo.Core.Logging.CoreLogLevel.Error, "Unhandled exception in Kairo.Core/Configuration/ConfigHelper.cs:100", ex);
+        }
     }
 }

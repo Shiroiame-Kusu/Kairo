@@ -10,6 +10,9 @@ namespace Kairo.Components
         [JsonPropertyName("name")]
         public string ProxyName { get; set; } = string.Empty;
 
+        [JsonPropertyName("tunnel_token")]
+        public string Token { get; set; } = string.Empty;
+
         [JsonPropertyName("type")]
         public string ProxyType { get; set; } = string.Empty;
 

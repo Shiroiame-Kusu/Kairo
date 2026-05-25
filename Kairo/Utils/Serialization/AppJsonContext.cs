@@ -2,8 +2,8 @@ using System.Collections.Generic;
 using System.Text.Json.Serialization;
 using Kairo.Models;
 using Kairo.Components;
+using Kairo.Core.Configuration;
 using Kairo.Utils.Configuration;
-using static Kairo.Utils.CrashInterception;
 
 namespace Kairo.Utils.Serialization;
 
@@ -16,12 +16,21 @@ namespace Kairo.Utils.Serialization;
     Converters = new[] { typeof(BigDecimalJsonConverter) })]
 [JsonSerializable(typeof(Config))]
 [JsonSerializable(typeof(List<Proxy>))]
+[JsonSerializable(typeof(Dictionary<string, string>))]
+[JsonSerializable(typeof(Dictionary<string, ProviderAuthState>))]
+[JsonSerializable(typeof(ProviderAuthState))]
 [JsonSerializable(typeof(Proxy))]
 [JsonSerializable(typeof(ProxyNode))]
 [JsonSerializable(typeof(UserInfo))]
 [JsonSerializable(typeof(UserInfo.LimitInfo))]
 [JsonSerializable(typeof(CrashReport))]
 [JsonSerializable(typeof(CrashReport.LogLine))]
+[JsonSerializable(typeof(MinecraftApiResponse<MinecraftRoomListData>))]
+[JsonSerializable(typeof(MinecraftApiResponse<MinecraftRoomData>))]
+[JsonSerializable(typeof(MinecraftApiResponse<MinecraftCreateRoomData>))]
+[JsonSerializable(typeof(MinecraftApiResponse<MinecraftEmptyData>))]
+[JsonSerializable(typeof(List<GitHubReleaseSummary>))]
+[JsonSerializable(typeof(GitHubReleaseSummary))]
 internal partial class AppJsonContext : JsonSerializerContext
 {
 }
