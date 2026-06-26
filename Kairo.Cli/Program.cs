@@ -1,4 +1,6 @@
+using Kairo.Core.Logging;
 using Kairo.Cli.Configuration;
+using Kairo.Cli.Services;
 using Kairo.Cli.Utils;
 
 namespace Kairo.Cli;
@@ -9,7 +11,7 @@ class Program
     {
         // 解析日志相关参数（在正式解析前）
         var logLevel = LogLevel.Info;
-        var logToFile = false;
+        var logToFile = true;
         
         foreach (var arg in args)
         {
@@ -29,7 +31,8 @@ class Program
         
         // 初始化配置
         CliConfigManager.Init();
-        
+        ProviderAuth.ApplyCurrent();
+
         // 如果配置中启用了调试模式，覆盖日志级别
         if (CliConfigManager.Config.DebugMode && logLevel > LogLevel.Debug)
             logLevel = LogLevel.Debug;
@@ -38,7 +41,16 @@ class Program
         
         // 初始化日志系统
         Logger.Initialize(logLevel, logToFile);
-        
+        CoreLogger.Sink = (level, message) =>
+        {
+            if (level == CoreLogLevel.Error)
+                Logger.Error(message);
+            else if (level == CoreLogLevel.Warn)
+                Logger.Warning(message);
+            else
+                Logger.Debug(message);
+        };
+
         Logger.Debug($"命令行参数: {string.Join(" ", args)}");
         Logger.Debug($"配置目录: {Kairo.Core.Configuration.ConfigHelper.GetConfigDirectory()}");
         Logger.Debug($"运行时: {System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription}");

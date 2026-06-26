@@ -15,7 +15,7 @@
     <Border Grid.Row="0" CornerRadius="8" Padding="14,10" Background="{DynamicResource LayerFillColorDefaultBrush}">
       <StackPanel Spacing="4">
         <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-          <fa:SymbolIcon Symbol="Code" FontSize="22" />
+          <fa:FASymbolIcon Symbol="Code" FontSize="22" />
           <TextBlock Text="运行状态" FontSize="24" VerticalAlignment="Center" />
         </StackPanel>
         <TextBlock Text="查看日志与进程状态" Opacity="0.8" />

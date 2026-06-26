@@ -1,8 +1,7 @@
 using System.Diagnostics;
-using System.Text.Json;
-using System.Text.Json.Nodes;
 using Kairo.Core;
 using Kairo.Core.Models;
+using Kairo.Core.Providers;
 using Kairo.Cli.Configuration;
 using Kairo.Cli.Utils;
 
@@ -14,6 +13,7 @@ namespace Kairo.Cli.Services;
 public class ApiClient : IDisposable
 {
     private readonly HttpClient _http = new();
+    private readonly IFrpProvider _provider;
     private bool _isLoggedIn;
 
     public class LoginResult
@@ -27,6 +27,8 @@ public class ApiClient : IDisposable
     public ApiClient()
     {
         Logger.Debug($"创建 ApiClient 实例");
+        _provider = FrpProviderRegistry.Get(CliConfigManager.Config.ProviderId);
+        ProviderAuth.Apply(_provider);
         _http.DefaultRequestHeaders.UserAgent.ParseAdd($"Kairo-{AppConstants.Version}");
         Logger.Debug($"设置 User-Agent: Kairo-{AppConstants.Version}");
     }
@@ -40,51 +42,21 @@ public class ApiClient : IDisposable
     /// <summary>
     /// 使用 OAuth Code 获取 Refresh Token
     /// </summary>
-    public async Task<LoginResult> ExchangeCodeForRefreshTokenAsync(string code)
+    public async Task<LoginResult> ExchangeCodeForRefreshTokenAsync(string code, string codeVerifier = "")
     {
         Logger.MethodEntry($"code长度={code.Length}");
-        var sw = Stopwatch.StartNew();
-        
         try
         {
-            using var formContent = new FormUrlEncodedContent(new[]
+            var redirectUri = _provider.Type == FrpProviderType.Lolia ? BuildLoopbackCallbackUri() : string.Empty;
+            var tokenResult = await _provider.ExchangeCodeForRefreshTokenAsync(_http, code, redirectUri, codeVerifier);
+            if (!tokenResult.Success || string.IsNullOrWhiteSpace(tokenResult.Data))
             {
-                new KeyValuePair<string, string>("code", code)
-            });
-
-            Logger.HttpRequest("POST", ApiEndpoints.GetRefreshToken);
-            var response = await _http.PostAsync(ApiEndpoints.GetRefreshToken, formContent);
-            sw.Stop();
-            Logger.HttpResponse("POST", ApiEndpoints.GetRefreshToken, (int)response.StatusCode, sw.ElapsedMilliseconds);
-            
-            var body = await response.Content.ReadAsStringAsync();
-            Logger.Debug($"响应内容长度: {body.Length} 字节");
-            
-            var json = JsonNode.Parse(body);
-            var status = json?["status"]?.GetValue<int>() ?? 0;
-            Logger.Debug($"API 状态码: {status}");
-            
-            if (status != 200)
-            {
-                var message = json?["message"]?.GetValue<string>() ?? "未知错误";
-                Logger.Error($"获取 Refresh Token 失败: status={status}, message={message}");
+                Logger.Error($"获取 Refresh Token 失败: code={tokenResult.Code}, message={tokenResult.Message}");
                 Logger.MethodExit("失败");
-                return new LoginResult { Success = false, Message = $"获取 Refresh Token 失败: {message}" };
+                return new LoginResult { Success = false, Message = tokenResult.Message };
             }
 
-            var refreshToken = json?["data"]?["refresh_token"]?.GetValue<string>();
-            if (string.IsNullOrEmpty(refreshToken))
-            {
-                Logger.Error("API 返回的 Refresh Token 为空");
-                Logger.MethodExit("失败 (空token)");
-                return new LoginResult { Success = false, Message = "API 返回的 Refresh Token 为空" };
-            }
-
-            Logger.Info($"成功获取 Refresh Token (长度: {refreshToken.Length})");
-            Logger.Debug("继续使用 Refresh Token 登录");
-            
-            // 使用获取到的 refresh token 继续登录
-            var result = await LoginWithRefreshTokenAsync(refreshToken);
+            var result = await LoginWithRefreshTokenAsync(tokenResult.Data);
             Logger.MethodExit(result.Success ? "成功" : "失败");
             return result;
         }
@@ -96,96 +68,40 @@ public class ApiClient : IDisposable
         }
     }
 
+    private static string BuildLoopbackCallbackUri()
+    {
+        var port = CliConfigManager.Config.OAuthPort > 0 ? CliConfigManager.Config.OAuthPort : 10000;
+        return $"http://127.0.0.1:{port}/oauth/callback";
+    }
+
     /// <summary>
     /// 使用 Refresh Token 登录
     /// </summary>
     public async Task<LoginResult> LoginWithRefreshTokenAsync(string refreshToken)
     {
         Logger.MethodEntry($"refreshToken长度={refreshToken.Length}");
-        var sw = Stopwatch.StartNew();
-        
         try
         {
-            using var formContent = new FormUrlEncodedContent(new[]
+            var result = await _provider.LoginWithRefreshTokenAsync(_http, refreshToken);
+            if (!result.Success || result.Data == null)
             {
-                new KeyValuePair<string, string>("app_id", AppConstants.APPID.ToString()),
-                new KeyValuePair<string, string>("refresh_token", refreshToken)
-            });
-
-            Logger.HttpRequest("POST", ApiEndpoints.GetAccessToken);
-            var response = await _http.PostAsync(ApiEndpoints.GetAccessToken, formContent);
-            sw.Stop();
-            Logger.HttpResponse("POST", ApiEndpoints.GetAccessToken, (int)response.StatusCode, sw.ElapsedMilliseconds);
-            
-            var accessBody = await response.Content.ReadAsStringAsync();
-            Logger.Debug($"响应内容长度: {accessBody.Length} 字节");
-            
-            var json = JsonNode.Parse(accessBody);
-            var accessStatus = json?["status"]?.GetValue<int>() ?? 0;
-            Logger.Debug($"API 状态码: {accessStatus}");
-            
-            if (accessStatus != 200)
-            {
-                var message = json?["message"]?.GetValue<string>() ?? "未知错误";
-                Logger.Error($"获取 Access Token 失败: status={accessStatus}, message={message}");
+                Logger.Error($"登录失败: code={result.Code}, message={result.Message}");
                 Logger.MethodExit("失败");
-                return new LoginResult { Success = false, Message = $"API状态: {accessStatus} {message}" };
+                return new LoginResult { Success = false, Message = $"API状态: {result.Code} {result.Message}" };
             }
 
-            var dataNode = json?["data"];
-            CliConfigManager.Config.ID = dataNode?["user_id"]?.GetValue<int>() ?? 0;
-            CliConfigManager.Config.AccessToken = dataNode?["access_token"]?.GetValue<string>() ?? "";
-            CliConfigManager.Config.RefreshToken = refreshToken;
-            
-            Logger.Info($"成功获取 Access Token, 用户ID: {CliConfigManager.Config.ID}");
-            Logger.Config("更新", $"ID={CliConfigManager.Config.ID}, AccessToken长度={CliConfigManager.Config.AccessToken.Length}");
-
-            // 获取用户信息
-            _http.DefaultRequestHeaders.Remove("Authorization");
-            _http.DefaultRequestHeaders.Add("Authorization", $"Bearer {CliConfigManager.Config.AccessToken}");
-            Logger.Debug("设置 Authorization 头");
-
-            var userUrl = $"{ApiEndpoints.GetUserInfo}?user_id={CliConfigManager.Config.ID}";
-            sw.Restart();
-            Logger.HttpRequest("GET", userUrl);
-            var userResp = await _http.GetAsync(userUrl);
-            sw.Stop();
-            Logger.HttpResponse("GET", userUrl, (int)userResp.StatusCode, sw.ElapsedMilliseconds);
-            
-            var userBody = await userResp.Content.ReadAsStringAsync();
-            Logger.Debug($"用户信息响应长度: {userBody.Length} 字节");
-            
-            var userJson = JsonNode.Parse(userBody);
-            var userNode = userJson?["data"];
-
-            var username = userNode?["username"]?.GetValue<string>() ?? "未知用户";
-            CliConfigManager.Config.Username = username;
-            Logger.Info($"获取用户名: {username}");
-
-            // 获取 FRP Token
-            var frpUrl = $"{ApiEndpoints.GetFrpToken}?user_id={CliConfigManager.Config.ID}";
-            sw.Restart();
-            Logger.HttpRequest("GET", frpUrl);
-            var frpResp = await _http.GetAsync(frpUrl);
-            sw.Stop();
-            Logger.HttpResponse("GET", frpUrl, (int)frpResp.StatusCode, sw.ElapsedMilliseconds);
-            
-            var frpBody = await frpResp.Content.ReadAsStringAsync();
-            Logger.Debug($"FRP Token 响应长度: {frpBody.Length} 字节");
-            
-            var frpJson = JsonNode.Parse(frpBody);
-            var frpToken = frpJson?["data"]?["token"]?.GetValue<string>() ?? "";
-
-            CliConfigManager.Config.FrpToken = frpToken;
-            Logger.Info($"获取 FRP Token (长度: {frpToken.Length})");
-            
-            Logger.Config("保存", "写入配置文件");
+            CliConfigManager.Config.ID = result.Data.UserId;
+            CliConfigManager.Config.AccessToken = result.Data.AccessToken;
+            CliConfigManager.Config.RefreshToken = result.Data.RefreshToken;
+            CliConfigManager.Config.Username = result.Data.User.Username;
+            CliConfigManager.Config.FrpToken = result.Data.FrpToken;
+            ProviderAuth.Save(_provider, save: false);
             CliConfigManager.Save();
 
             _isLoggedIn = true;
-            Logger.Info($"登录成功: 用户={username}");
+            Logger.Info($"登录成功: 用户={result.Data.User.Username}");
             Logger.MethodExit("成功");
-            return new LoginResult { Success = true, Username = username, FrpToken = frpToken };
+            return new LoginResult { Success = true, Username = result.Data.User.Username, FrpToken = result.Data.FrpToken };
         }
         catch (Exception ex)
         {
@@ -238,8 +154,6 @@ public class ApiClient : IDisposable
     public async Task<List<Tunnel>?> GetTunnelsAsync()
     {
         Logger.MethodEntry();
-        var sw = Stopwatch.StartNew();
-        
         try
         {
             if (!await EnsureLoggedInAsync())
@@ -250,66 +164,16 @@ public class ApiClient : IDisposable
                 return null;
             }
 
-            var url = $"{ApiEndpoints.GetAllProxy}{CliConfigManager.Config.ID}";
-            Logger.HttpRequest("GET", url);
-            var response = await _http.GetAsync(url);
-            sw.Stop();
-            Logger.HttpResponse("GET", url, (int)response.StatusCode, sw.ElapsedMilliseconds);
-            
-            var body = await response.Content.ReadAsStringAsync();
-            Logger.Debug($"响应内容长度: {body.Length} 字节");
-            
-            var json = JsonNode.Parse(body);
-
-            var status = json?["status"]?.GetValue<int>() ?? 0;
-            Logger.Debug($"API 状态码: {status}");
-            
-            if (status != 200)
+            var result = await _provider.GetTunnelsAsync(_http, CliConfigManager.Config.ID);
+            if (!result.Success)
             {
-                var message = json?["message"]?.GetValue<string>() ?? "未知错误";
-                Logger.Error($"获取隧道列表失败: status={status}, message={message}");
-                Console.WriteLine($"[错误] 获取隧道列表失败: {message}");
+                Logger.Error($"获取隧道列表失败: code={result.Code}, message={result.Message}");
+                Console.WriteLine($"[错误] 获取隧道列表失败: {result.Message}");
                 Logger.MethodExit("null (API错误)");
                 return null;
             }
 
-            // API 返回格式: { "data": { "list": [...] } }
-            var dataArray = json?["data"]?["list"] as JsonArray;
-            if (dataArray == null)
-            {
-                Logger.Debug("API 返回的隧道列表为空");
-                Logger.MethodExit("空列表");
-                return new List<Tunnel>();
-            }
-
-            Logger.Debug($"API 返回 {dataArray.Count} 个隧道");
-            
-            var tunnels = new List<Tunnel>();
-            var parseErrors = 0;
-            foreach (var item in dataArray)
-            {
-                if (item == null) continue;
-                try
-                {
-                    var tunnel = JsonSerializer.Deserialize(item.ToJsonString(), TunnelJsonContext.Default.Tunnel);
-                    if (tunnel != null)
-                    {
-                        tunnels.Add(tunnel);
-                        Logger.Debug($"  解析隧道: id={tunnel.Id}, name={tunnel.ProxyName}, type={tunnel.ProxyType}");
-                    }
-                }
-                catch (Exception ex)
-                {
-                    parseErrors++;
-                    Logger.Warning($"解析隧道失败: {ex.Message}");
-                }
-            }
-
-            if (parseErrors > 0)
-            {
-                Logger.Warning($"有 {parseErrors} 个隧道解析失败");
-            }
-
+            var tunnels = (result.Data ?? Array.Empty<FrpTunnel>()).Select(ToTunnel).ToList();
             Logger.Info($"成功获取 {tunnels.Count} 个隧道");
             Logger.MethodExit($"{tunnels.Count} 个隧道");
             return tunnels;
@@ -322,4 +186,47 @@ public class ApiClient : IDisposable
             return null;
         }
     }
+
+    public async Task<FrpApiResult<FrpcConfigResult>> GetFrpcConfigAsync(Tunnel tunnel)
+    {
+        if (!await EnsureLoggedInAsync())
+            return FrpApiResult<FrpcConfigResult>.Fail(0, "未登录");
+
+        return await _provider.GetFrpcConfigAsync(_http, new FrpTunnel
+        {
+            Id = tunnel.Id,
+            Name = tunnel.ProxyName,
+            Token = tunnel.Token,
+            Type = tunnel.ProxyType,
+            LocalIp = tunnel.LocalIp,
+            LocalPort = tunnel.LocalPort,
+            RemotePort = tunnel.RemotePort,
+            UseCompression = tunnel.UseCompression,
+            UseEncryption = tunnel.UseEncryption,
+            Domain = tunnel.Domain,
+            SecretKey = tunnel.SecretKey
+        });
+    }
+
+    private static Tunnel ToTunnel(FrpTunnel tunnel) => new()
+    {
+        Id = tunnel.Id,
+        ProxyName = tunnel.Name,
+        Token = tunnel.Token,
+        ProxyType = tunnel.Type,
+        LocalIp = tunnel.LocalIp,
+        LocalPort = tunnel.LocalPort,
+        RemotePort = tunnel.RemotePort,
+        UseCompression = tunnel.UseCompression,
+        UseEncryption = tunnel.UseEncryption,
+        Domain = tunnel.Domain,
+        SecretKey = tunnel.SecretKey,
+        NodeInfo = tunnel.Node == null ? null : new TunnelNode
+        {
+            Id = tunnel.Node.Id,
+            Name = tunnel.Node.Name,
+            Host = tunnel.Node.Host,
+            Ip = tunnel.Node.Ip
+        }
+    };
 }

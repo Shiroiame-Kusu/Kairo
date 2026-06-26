@@ -28,7 +28,7 @@
   <Border Background="{DynamicResource LayerFillColorDefaultBrush}" Padding="12,0,8,0">
     <Grid ColumnDefinitions="Auto,8,*,Auto,Auto,Auto,Auto" Height="36">
       <!-- App Icon -->
-      <Image Source="avares://Kairo/Assets/kairo.ico" Width="20" Height="20" VerticalAlignment="Center"/> 
+      <Image Source="{Binding IconSource, ElementName=Root}" Width="20" Height="20" VerticalAlignment="Center"/>
       <!-- Title -->
       <TextBlock Grid.Column="2" Text="{Binding Title, ElementName=Root}" VerticalAlignment="Center" FontSize="14" FontWeight="SemiBold" />
       <!-- User Avatar and Name (optional, controlled by ShowUserInfo) -->
@@ -40,7 +40,7 @@
       </StackPanel>
       <StackPanel Grid.Column="4" Orientation="Horizontal" VerticalAlignment="Center" Spacing="4">
         <!-- Minimize Button -->
-        <Button Classes="TitleBarButton" Click="Minimize_Click" Width="36" Height="28" Content="_"/>
+        <Button Classes="TitleBarButton" Click="Minimize_Click" Width="36" Height="28" Content="―"/>
       </StackPanel>
       <Button Grid.Column="5" Classes="TitleBarButton" Click="MaxRestore_Click" Width="36" Height="28">
         <ContentControl x:Name="MaxIcon" Content="▢" HorizontalAlignment="Center" VerticalAlignment="Center"/>

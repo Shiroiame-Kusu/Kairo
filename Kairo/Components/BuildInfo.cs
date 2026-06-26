@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Kairo.Core;
 
@@ -12,7 +13,7 @@ namespace Kairo.Components
     {
         public BuildInfo()
         {
-            string[] arg = System.Text.RegularExpressions.Regex.Replace(
+            string[] arg = Regex.Replace(
                 (Resources.BuildInfo ?? string.Empty).Trim(' ', '\n', '\r').Replace("\r", string.Empty),
                 @"[^\u0000-\u007f]+", string.Empty).Split(new[] { '\n' }, 3, StringSplitOptions.RemoveEmptyEntries);
             foreach (string arg0 in arg)

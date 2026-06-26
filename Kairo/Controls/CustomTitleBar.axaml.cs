@@ -3,8 +3,11 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
+using Avalonia.Media;
 using Avalonia.VisualTree;
 using Kairo.Components.DashBoard;
+using Kairo.Utils;
+using System;
 
 namespace Kairo.Controls;
 
@@ -12,6 +15,7 @@ public partial class CustomTitleBar : UserControl
 {
     public static readonly StyledProperty<string?> TitleProperty = AvaloniaProperty.Register<CustomTitleBar, string?>(nameof(Title));
     public static readonly StyledProperty<bool> ShowUserInfoProperty = AvaloniaProperty.Register<CustomTitleBar, bool>(nameof(ShowUserInfo), false);
+    public static readonly StyledProperty<IImage?> IconSourceProperty = AvaloniaProperty.Register<CustomTitleBar, IImage?>(nameof(IconSource), ProviderBranding.GetIconImage(Global.CurrentProvider));
 
     public string? Title
     {
@@ -25,6 +29,12 @@ public partial class CustomTitleBar : UserControl
         set => SetValue(ShowUserInfoProperty, value);
     }
 
+    public IImage? IconSource
+    {
+        get => GetValue(IconSourceProperty);
+        set => SetValue(IconSourceProperty, value);
+    }
+
     private Window? _window;
     private ContentControl? _maxIcon;
     private StackPanel? _userInfoPanel;
@@ -34,7 +44,7 @@ public partial class CustomTitleBar : UserControl
     public CustomTitleBar()
     {
         InitializeComponent();
-        AddHandler(PointerPressedEvent, TitleBarPointerPressed, RoutingStrategies.Tunnel);
+        AddHandler(PointerPressedEvent, TitleBarPointerPressed, RoutingStrategies.Bubble);
     }
 
     private void InitializeComponent()
@@ -49,15 +59,15 @@ public partial class CustomTitleBar : UserControl
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnAttachedToVisualTree(e);
-        _window = this.GetVisualRoot() as Window;
+        _window = TopLevel.GetTopLevel(this) as Window;
         if (_window != null)
         {
             _window.PropertyChanged += WindowOnPropertyChanged;
-            UpdateMaxIcon();
-            if (ShowUserInfo)
-            {
-                UpdateUserInfo();
-            }
+        }
+        UpdateMaxIcon();
+        if (ShowUserInfo)
+        {
+            UpdateUserInfo();
         }
     }
 
@@ -131,31 +141,29 @@ public partial class CustomTitleBar : UserControl
 
     private void TitleBarPointerPressed(object? sender, PointerPressedEventArgs e)
     {
-        if (_window == null)
-            return;
-
-        // Ignore presses that originate on interactive buttons to avoid hijacking their clicks
-        if (IsFromButton(e))
-            return;
+        var window = GetWindow();
+        if (window == null || IsFromButton(e)) return;
 
         var point = e.GetCurrentPoint(this);
-        if (point.Properties.IsLeftButtonPressed)
+        if (!point.Properties.IsLeftButtonPressed) return;
+
+        if (e.ClickCount == 2)
         {
-            if (e.ClickCount == 2)
-            {
-                ToggleMaximize();
-            }
-            else
-            {
-                try { _window.BeginMoveDrag(e); } catch { /* ignore */ }
-            }
+            ToggleMaximize();
+            return;
+        }
+
+        try { window.BeginMoveDrag(e); }
+        catch (Exception ex)
+        {
+            AppLogger.Exception("Unhandled exception in Kairo/Controls/CustomTitleBar.axaml.cs:159", ex);
         }
     }
 
     private void Minimize_Click(object? sender, RoutedEventArgs e)
     {
-        if (_window != null)
-            _window.WindowState = WindowState.Minimized;
+        if (GetWindow() is { } window)
+            window.WindowState = WindowState.Minimized;
     }
 
     private void MaxRestore_Click(object? sender, RoutedEventArgs e)
@@ -165,19 +173,23 @@ public partial class CustomTitleBar : UserControl
 
     private void ToggleMaximize()
     {
-        if (_window == null) return;
-        _window.WindowState = _window.WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
+        var window = GetWindow();
+        if (window == null) return;
+        window.WindowState = window.WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
         UpdateMaxIcon();
     }
 
     private void UpdateMaxIcon()
     {
-        if (_window == null || _maxIcon == null) return;
-        _maxIcon.Content = _window.WindowState == WindowState.Maximized ? "❐" : "▢"; // simple glyphs
+        if (_maxIcon == null) return;
+        var window = GetWindow();
+        _maxIcon.Content = window?.WindowState == WindowState.Maximized ? "❐" : "▢";
     }
 
     private void Close_Click(object? sender, RoutedEventArgs e)
     {
-        _window?.Close();
+        GetWindow()?.Close();
     }
+
+    private Window? GetWindow() => _window ??= TopLevel.GetTopLevel(this) as Window;
 }

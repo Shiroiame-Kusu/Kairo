@@ -12,8 +12,8 @@ public partial class LanPartyLobbyPage : UserControl
     private HostRoomPage? _hostRoomPage;
     private JoinRoomPage? _joinRoomPage;
     
-    private NavigationView? _lobbyNavView;
-    private NavigationViewItem? _hostNavItem;
+    private FANavigationView? _lobbyNavView;
+    private FANavigationViewItem? _hostNavItem;
     private ContentControl? _lobbyContentHost;
 
     public LanPartyLobbyPage()
@@ -24,8 +24,8 @@ public partial class LanPartyLobbyPage : UserControl
         
         Loaded += (_, _) =>
         {
-            _lobbyNavView = this.FindControl<NavigationView>("LobbyNavView");
-            _hostNavItem = this.FindControl<NavigationViewItem>("HostNavItem");
+            _lobbyNavView = this.FindControl<FANavigationView>("LobbyNavView");
+            _hostNavItem = this.FindControl<FANavigationViewItem>("HostNavItem");
             _lobbyContentHost = this.FindControl<ContentControl>("LobbyContentHost");
             
             if (_lobbyNavView != null && _hostNavItem != null)
@@ -35,9 +35,9 @@ public partial class LanPartyLobbyPage : UserControl
         };
     }
 
-    private void LobbyNavView_OnSelectionChanged(object? sender, NavigationViewSelectionChangedEventArgs e)
+    private void LobbyNavView_OnSelectionChanged(object? sender, FANavigationViewSelectionChangedEventArgs e)
     {
-        if (e.SelectedItem is NavigationViewItem nvi && nvi.Tag is string tag)
+        if (e.SelectedItem is FANavigationViewItem nvi && nvi.Tag is string tag)
         {
             OpenPage(tag);
         }

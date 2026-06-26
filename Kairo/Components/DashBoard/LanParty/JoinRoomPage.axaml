@@ -29,7 +29,7 @@
         <!-- Join room input -->
         <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8" Margin="0,0,0,12">
             <TextBox Text="{Binding JoinRoomCode}" 
-                     Watermark="输入房间代码" 
+                     PlaceholderText="输入房间代码"
                      MinWidth="200" />
             <Button Content="加入房间" Command="{Binding JoinRoomCommand}" />
             <Button Content="刷新我的房间" Command="{Binding RefreshMyRoomsCommand}" />

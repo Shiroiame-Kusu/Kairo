@@ -1,8 +1,11 @@
 using System;
 using System.Text.Json;
+using Kairo.Models;
+using Kairo.Utils.Serialization;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Input.Platform;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
 using Avalonia.Platform.Storage;
@@ -234,9 +237,14 @@ namespace Kairo.Components.DashBoard
 
         private void SignOutBtn_OnClick(object? sender, RoutedEventArgs e)
         {
+            ProviderAuth.ClearCurrent(save: false);
             Global.Config.AccessToken = string.Empty;
             Global.Config.RefreshToken = string.Empty;
+            Global.Config.Username = string.Empty;
+            Global.Config.ID = 0;
+            Global.Config.FrpToken = string.Empty;
             ConfigManager.Save();
+            AppLogger.ClearCache();
             (Access.DashBoard as DashBoard)?.OpenSnackbar("已退出", "请重新登录");
 
             if (Access.MainWindow is MainWindow mw)
@@ -256,7 +264,7 @@ namespace Kairo.Components.DashBoard
             else
                 win.Show();
 
-            vm.FrpcPath = Global.Config.FrpcPath;
+            vm.FrpcPath = ProviderFrpcPath.Get(Global.CurrentProvider);
         }
 
         private void EasterEggBtn_OnClick(object? sender, RoutedEventArgs e)
@@ -284,14 +292,13 @@ namespace Kairo.Components.DashBoard
                 var resp = await api.GetWithoutAuthAsync(releasesUrl);
                 resp.EnsureSuccessStatusCode();
                 await using var stream = await resp.Content.ReadAsStreamAsync();
-                using var doc = await JsonDocument.ParseAsync(stream);
-                
+                var releases = await JsonSerializer.DeserializeAsync(stream, AppJsonContext.Default.ListGitHubReleaseSummary);
+
                 // Find the latest release matching current channel only
                 AppVersion? remoteVersion = null;
-                foreach (var rel in doc.RootElement.EnumerateArray())
+                foreach (var rel in releases ?? new())
                 {
-                    var tag = rel.GetProperty("tag_name").GetString() ?? string.Empty;
-                    if (!AppVersion.TryParse(tag, out var parsed)) continue;
+                    if (!AppVersion.TryParse(rel.TagName, out var parsed)) continue;
                     if (parsed.Channel == currentVersion.Channel)
                     {
                         remoteVersion = parsed;
@@ -337,11 +344,13 @@ namespace Kairo.Components.DashBoard
                 }
                 catch (Exception exLaunch)
                 {
+                    AppLogger.Exception("Unhandled exception in Kairo/Components/DashBoard/SettingsPage.axaml.cs:343", exLaunch);
                     (Access.DashBoard as DashBoard)?.OpenSnackbar("启动更新失败", exLaunch.Message);
                 }
             }
             catch (Exception ex)
             {
+                AppLogger.Exception("Unhandled exception in Kairo/Components/DashBoard/SettingsPage.axaml.cs:348", ex);
                 (Access.DashBoard as DashBoard)?.OpenSnackbar("检查失败", ex.Message);
             }
             finally

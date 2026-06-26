@@ -1,0 +1,1 @@
+global using AppLogger = Kairo.Utils.Logger.Logger;

@@ -35,7 +35,7 @@
               </DataTemplate>
             </ComboBox.ItemTemplate>
           </ComboBox>
-          <Button Content="测试延迟" Command="{Binding PingCommand}" IsEnabled="{Binding CanPing}"/>
+          <Button Content="测试延迟" Command="{Binding PingCommand}" IsEnabled="{Binding CanPing}" IsVisible="{Binding CanPing}"/>
         </StackPanel>
 
         <StackPanel Spacing="4" DataContext="{Binding SelectedNode}">

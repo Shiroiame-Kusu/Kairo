@@ -72,7 +72,10 @@ public partial class StatusPage : UserControl
                 var current = _scroll.Offset;
                 _scroll.Offset = new Avalonia.Vector(current.X, double.MaxValue);
             }
-            catch { }
+            catch (Exception ex)
+            {
+                AppLogger.Exception("Unhandled exception in Kairo/Components/DashBoard/StatusPage.axaml.cs:75", ex);
+            }
         });
     }
 }

@@ -10,6 +10,7 @@ using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using FluentAvalonia.UI.Controls;
 using Kairo.Controls;
+using Kairo.Core.Providers;
 using Kairo.Utils;
 using Avalonia.Threading; // added for DispatcherTimer
 using Kairo.ViewModels;
@@ -37,8 +38,11 @@ namespace Kairo.Components.DashBoard
             _viewModel = new DashBoardViewModel();
             DataContext = _viewModel;
             Access.DashBoard = this;
+            ApplyProviderIcon();
             SetupPlatformWindowStyle();
             NavView.SelectedItem = HomeNavItem;
+            if (Global.CurrentProvider.Type == FrpProviderType.Lolia && this.FindControl<FANavigationViewItem>("LanPartyNavItem") is { } lanPartyItem)
+                lanPartyItem.IsVisible = false;
             _titleBar = this.FindControl<CustomTitleBar>("TitleBar");
             this.Opened += OnDashBoardOpened;
             this.Deactivated += OnDashBoardDeactivated;
@@ -59,6 +63,15 @@ namespace Kairo.Components.DashBoard
             
         }
 
+        private void ApplyProviderIcon()
+        {
+            try { Icon = ProviderBranding.LoadIcon(Global.CurrentProvider); }
+            catch (Exception ex)
+            {
+                AppLogger.Exception("Unhandled exception in Kairo/Components/DashBoard.axaml.cs:68", ex);
+            }
+        }
+
         private void OnDashBoardOpened(object? sender, EventArgs e)
         {
             if (_viewModel.ShouldPromptFrpcDownload())
@@ -67,11 +80,12 @@ namespace Kairo.Components.DashBoard
                 {
                     var win = new DownloadFrpcWindow();
                     win.Show(this);
-                    OpenSnackbar("提示", "检测到未安装 frpc, 正在打开下载窗口", InfoBarSeverity.Informational);
+                    OpenSnackbar("提示", "检测到未安装 frpc, 正在打开下载窗口", FAInfoBarSeverity.Informational);
                 }
                 catch (Exception ex)
                 {
-                    OpenSnackbar("检测异常", ex.Message, InfoBarSeverity.Warning);
+                    AppLogger.Exception("Unhandled exception in Kairo/Components/DashBoard.axaml.cs:81", ex);
+                    OpenSnackbar("检测异常", ex.Message, FAInfoBarSeverity.Warning);
                 }
             }
 
@@ -92,15 +106,16 @@ namespace Kairo.Components.DashBoard
                 string remote = result.RemoteVersion ?? "unknown";
                 OpenSnackbar("发现 FRPC 更新", $"当前 {local}, 最新 {remote}");
 
-                if (FrpcUpdateChecker.IsManagedFrpcPath(Global.Config.FrpcPath))
+                if (FrpcUpdateChecker.IsManagedFrpcPath(ProviderFrpcPath.Get(Global.CurrentProvider)))
                 {
                     var win = new DownloadFrpcWindow();
                     win.Show(this);
-                    OpenSnackbar("更新 FRPC", "已打开下载窗口", InfoBarSeverity.Informational);
+                    OpenSnackbar("更新 FRPC", "已打开下载窗口", FAInfoBarSeverity.Informational);
                 }
             }
-            catch
+            catch (Exception ex)
             {
+                AppLogger.Exception("Unhandled exception in Kairo/Components/DashBoard.axaml.cs:111", ex);
                 // ignore background update failures
             }
         }
@@ -125,12 +140,15 @@ namespace Kairo.Components.DashBoard
                     AvatarChanged?.Invoke(Avatar);
                 });
             }
-            catch { }
+            catch (Exception ex)
+            {
+                AppLogger.Exception("Unhandled exception in Kairo/Components/DashBoard.axaml.cs:137", ex);
+            }
         }
 
-        private void NavView_OnSelectionChanged(object? sender, NavigationViewSelectionChangedEventArgs e)
+        private void NavView_OnSelectionChanged(object? sender, FANavigationViewSelectionChangedEventArgs e)
         {
-            if (e.SelectedItem is NavigationViewItem nvi && nvi.Tag is string tag)
+            if (e.SelectedItem is FANavigationViewItem nvi && nvi.Tag is string tag)
             {
                 _viewModel.SelectedTag = tag;
                 OpenPage(tag);
@@ -164,7 +182,7 @@ namespace Kairo.Components.DashBoard
             }
         }
 
-        public void OpenSnackbar(string title, string? message, InfoBarSeverity severity = InfoBarSeverity.Informational)
+        public void OpenSnackbar(string title, string? message, FAInfoBarSeverity severity = FAInfoBarSeverity.Informational)
         {
             _viewModel.ShowSnackbar(title, message, severity);
 

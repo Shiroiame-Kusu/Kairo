@@ -2,13 +2,17 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:sty="using:FluentAvalonia.Styling"
              xmlns:fa="using:FluentAvalonia.UI.Controls"
+             xmlns:local="using:Kairo"
              x:Class="Kairo.App"
              RequestedThemeVariant="Default">
   <!-- Theme variant specific color adjustment will be applied in code (App.axaml.cs) -->
   <Application.Styles>
     <sty:FluentAvaloniaTheme />
+    <Style Selector="Window">
+      <Setter Property="local:App.UseGrayscaleTextRendering" Value="True" />
+    </Style>
     <!-- Improve InfoBar (Snackbar) readability: add solid background, subtle border & rounding -->
-    <Style Selector="fa|InfoBar">
+    <Style Selector="fa|FAInfoBar">
       <!-- LayerFillColorDefaultBrush is a neutral surface brush provided by FluentAvalonia -->
       <Setter Property="Background" Value="{DynamicResource LayerFillColorDefaultBrush}" />
       <Setter Property="BorderBrush" Value="{DynamicResource ControlStrokeColorDefaultBrush}" />
