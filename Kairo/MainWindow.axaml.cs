@@ -87,7 +87,7 @@ public partial class MainWindow : Window
     {
         EnsureDashboard().Show();
         Hide();
-        if (_showHideMenuItem != null) _showHideMenuItem.Header = "隐藏窗口";
+        if (_showHideMenuItem != null) _showHideMenuItem.Header = "隐藏面板";
         await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
     }
 
@@ -175,7 +175,7 @@ public partial class MainWindow : Window
                 var dbNew = new DashBoard();
                 Access.DashBoard = dbNew;
                 dbNew.Show();
-                if (_showHideMenuItem != null) _showHideMenuItem.Header = "隐藏窗口";
+                if (_showHideMenuItem != null) _showHideMenuItem.Header = "隐藏面板";
             }
         }
         else
