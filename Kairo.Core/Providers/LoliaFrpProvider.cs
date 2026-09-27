@@ -124,12 +124,32 @@ public sealed class LoliaFrpProvider : IFrpProvider
 
     public async Task<FrpApiResult<IReadOnlyList<FrpTunnel>>> GetTunnelsAsync(HttpClient http, int userId, CancellationToken ct = default)
     {
-        var url = FrpProviderHelpers.AppendQuery($"{ApiBaseUrl}/user/tunnel", ("page", "1"), ("limit", "1000"));
-        using var response = await http.GetAsyncLogged(url, ct);
-        var apiResponse = await FrpProviderHelpers.ReadJsonAsync(response, FrpModelsJsonContext.Default.LoliaApiResponseLoliaTunnelListData, ct);
-        var parsed = FrpProviderHelpers.ParseLoliaResponse(apiResponse);
-        if (!parsed.Success) return FrpApiResult<IReadOnlyList<FrpTunnel>>.Fail(parsed.Code, parsed.Message);
-        return FrpApiResult<IReadOnlyList<FrpTunnel>>.Ok((parsed.Data?.List ?? new()).Select(ParseTunnel).ToList(), parsed.Code, parsed.Message);
+        // 接口分页返回，limit 取值 1-100，超出范围会按默认的 10 条处理，因此逐页获取全部隧道
+        const int pageSize = 100;
+        const int maxPages = 50;
+        var tunnels = new List<FrpTunnel>();
+        var seenIds = new HashSet<int>();
+        FrpApiResult<LoliaTunnelListData> parsed;
+        var page = 1;
+        while (true)
+        {
+            var url = FrpProviderHelpers.AppendQuery($"{ApiBaseUrl}/user/tunnel", ("page", page.ToString()), ("limit", pageSize.ToString()));
+            using var response = await http.GetAsyncLogged(url, ct);
+            var apiResponse = await FrpProviderHelpers.ReadJsonAsync(response, FrpModelsJsonContext.Default.LoliaApiResponseLoliaTunnelListData, ct);
+            parsed = FrpProviderHelpers.ParseLoliaResponse(apiResponse);
+            if (!parsed.Success) return FrpApiResult<IReadOnlyList<FrpTunnel>>.Fail(parsed.Code, parsed.Message);
+
+            var list = parsed.Data?.List ?? new();
+            // 翻页期间有隧道增删时，同一隧道可能出现在相邻两页
+            tunnels.AddRange(list.Where(t => seenIds.Add(t.Id)).Select(ParseTunnel));
+
+            var totalPages = parsed.Data?.TotalPage ?? 0;
+            var hasMore = totalPages > 0 ? page < totalPages : list.Count >= pageSize;
+            if (list.Count == 0 || !hasMore || page >= maxPages) break;
+            page++;
+        }
+
+        return FrpApiResult<IReadOnlyList<FrpTunnel>>.Ok(tunnels, parsed.Code, parsed.Message);
     }
 
     public async Task<FrpApiResult<IReadOnlyList<FrpNode>>> GetNodesAsync(HttpClient http, int userId, CancellationToken ct = default)
