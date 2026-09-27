@@ -71,9 +71,11 @@ public static class Logger
 
     private static string GetDefaultLogPath()
     {
-        var logDir = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "Kairo", "logs", "cli");
+        // 目录不存在时 GetFolderPath 会返回空字符串，日志会被写到当前工作目录，因此要求自动创建
+        var dataDir = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData, Environment.SpecialFolderOption.Create);
+        var logDir = string.IsNullOrWhiteSpace(dataDir)
+            ? Path.Combine(Kairo.Core.Configuration.ConfigHelper.GetConfigDirectory(), "logs", "cli")
+            : Path.Combine(dataDir, "Kairo", "logs", "cli");
         return Path.Combine(logDir, $"cli-{DateTime.Now:yyyyMMdd-HHmmss}.log");
     }
 

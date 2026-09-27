@@ -53,8 +53,9 @@ class Program
             return appData;
         }
 
-        // 对于其他平台，使用标准的 ApplicationData
-        return Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+        // 对于其他平台，使用标准的 ApplicationData。
+        // 目录不存在时 GetFolderPath 默认返回空字符串，路径会变成相对当前工作目录，因此要求自动创建
+        return Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData, Environment.SpecialFolderOption.Create);
     }
 
     static int Main(string[] args)
