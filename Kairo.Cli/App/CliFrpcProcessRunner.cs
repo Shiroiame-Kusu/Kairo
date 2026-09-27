@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Kairo.Core.Logging;
 using Kairo.Core.Models;
 using Kairo.Core.Providers;
 using Kairo.Cli.Services;
@@ -141,8 +142,9 @@ internal sealed class CliFrpcProcessRunner : IDisposable
                 FrpToken = frpToken,
                 ApiBaseUrl = provider.ApiBaseUrl
             });
-            Logger.Info($"[FRPC] 启动参数: provider={provider.Id}, path=\"{frpcPath}\", args={arguments}");
-            Logger.ProcessStart(frpcPath, arguments);
+            var maskedArguments = SecretMasker.Redact(arguments, frpToken);
+            Logger.Info($"[FRPC] 启动参数: provider={provider.Id}, path=\"{frpcPath}\", args={maskedArguments}");
+            Logger.ProcessStart(frpcPath, maskedArguments);
 
             var process = new Process
             {

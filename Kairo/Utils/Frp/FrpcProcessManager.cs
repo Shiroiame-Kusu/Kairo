@@ -5,6 +5,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
+using Kairo.Core.Logging;
 using Kairo.Core.Models;
 using Kairo.Core.Providers;
 using Kairo.Utils.Logger;
@@ -97,7 +98,7 @@ internal static class FrpcProcessManager
                 FrpToken = frpToken,
                 ApiBaseUrl = provider.ApiBaseUrl
             });
-            AppLogger.Output(LogType.Info, FrpcStartArgumentLogDestinations, $"[FRPC] 启动参数: provider={provider.Id}, path=\"{frpcPath}\", args={arguments}");
+            AppLogger.Output(LogType.Info, FrpcStartArgumentLogDestinations, $"[FRPC] 启动参数: provider={provider.Id}, path=\"{frpcPath}\", args={SecretMasker.Redact(arguments, frpToken)}");
             var psi = new ProcessStartInfo
             {
                 FileName = frpcPath,
