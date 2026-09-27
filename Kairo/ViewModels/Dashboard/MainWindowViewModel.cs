@@ -215,6 +215,15 @@ namespace Kairo.ViewModels
             ShowSnackbar("已取消", "可以重新点击登录", FAInfoBarSeverity.Informational);
         }
 
+        public async Task SwitchProviderAsync(string providerId)
+        {
+            var option = Providers.FirstOrDefault(p => p.Id.Equals(providerId, StringComparison.OrdinalIgnoreCase));
+            if (option == null) return;
+            SelectedProvider = option;
+            if (HasSavedSession)
+                await LoginWithRefreshTokenAsync(Global.Config.RefreshToken, auto: true);
+        }
+
         private void NotifySavedSessionChanged()
         {
             OnPropertyChanged(nameof(HasSavedSession));

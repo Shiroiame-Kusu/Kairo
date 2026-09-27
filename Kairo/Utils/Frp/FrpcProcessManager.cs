@@ -28,7 +28,15 @@ internal static class FrpcProcessManager
 
     public static event Action<int>? ProxyExited; // new event
 
-    public static bool IsRunning(int proxyId) => _processes.ContainsKey(proxyId);
+    public static bool IsRunning(int proxyId)
+    {
+        lock (_processes) return _processes.ContainsKey(proxyId);
+    }
+
+    public static int RunningCount
+    {
+        get { lock (_processes) return _processes.Count; }
+    }
 
     public static bool StartProxy(int proxyId, string proxyName, string frpcPath, string frpToken, IFrpProvider provider, Action<string>? onStarted = null, Action<string>? onFailed = null)
     {

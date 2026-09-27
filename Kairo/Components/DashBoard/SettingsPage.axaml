@@ -10,6 +10,10 @@
       <Setter Property="CornerRadius" Value="6" />
       <Setter Property="Padding" Value="10,8" />
       <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Cursor" Value="Hand" />
+    </Style>
+    <Style Selector="Border.settings-nav-item:pointerover">
+      <Setter Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
     </Style>
     <Style Selector="Border.settings-nav-item.active">
       <Setter Property="Background" Value="{DynamicResource LayerFillColorAltBrush}" />
@@ -24,9 +28,17 @@
       <Setter Property="Padding" Value="10" />
       <Setter Property="Background" Value="{DynamicResource LayerFillColorAltBrush}" />
     </Style>
+    <Style Selector="TextBlock.section-title">
+      <Setter Property="FontSize" Value="18" />
+    </Style>
+    <Style Selector="TextBlock.item-description">
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="TextWrapping" Value="Wrap" />
+      <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
+    </Style>
   </UserControl.Styles>
 
-  <Grid Margin="12" RowDefinitions="Auto,*,Auto" RowSpacing="12">
+  <Grid Margin="12" RowDefinitions="Auto,*" RowSpacing="12">
     <Border Grid.Row="0" CornerRadius="8" Padding="14,10" Background="{DynamicResource LayerFillColorDefaultBrush}">
       <StackPanel Spacing="4">
         <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
@@ -48,25 +60,25 @@
           </Border>
           <Border x:Name="NavAppearance" Tag="appearance" Classes="settings-nav-item" PointerPressed="NavItem_OnPointerPressed">
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
-              <fa:FASymbolIcon Symbol="Settings" FontSize="14" />
+              <fa:FASymbolIcon Symbol="DarkTheme" FontSize="14" />
               <TextBlock Grid.Column="1" Text="外观" VerticalAlignment="Center" />
             </Grid>
           </Border>
           <Border x:Name="NavUpdate" Tag="update" Classes="settings-nav-item" PointerPressed="NavItem_OnPointerPressed">
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
-              <fa:FASymbolIcon Symbol="Add" FontSize="14" />
+              <fa:FASymbolIcon Symbol="CloudDownload" FontSize="14" />
               <TextBlock Grid.Column="1" Text="下载与更新" VerticalAlignment="Center" />
             </Grid>
           </Border>
           <Border x:Name="NavAccount" Tag="account" Classes="settings-nav-item" PointerPressed="NavItem_OnPointerPressed">
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
-              <fa:FASymbolIcon Symbol="People" FontSize="14" />
+              <fa:FASymbolIcon Symbol="Contact" FontSize="14" />
               <TextBlock Grid.Column="1" Text="账号" VerticalAlignment="Center" />
             </Grid>
           </Border>
           <Border x:Name="NavAbout" Tag="about" Classes="settings-nav-item" PointerPressed="NavItem_OnPointerPressed">
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
-              <fa:FASymbolIcon Symbol="Code" FontSize="14" />
+              <fa:FASymbolIcon Symbol="Help" FontSize="14" />
               <TextBlock Grid.Column="1" Text="关于" VerticalAlignment="Center" />
             </Grid>
           </Border>
@@ -77,15 +89,15 @@
         <StackPanel Spacing="12">
           <Border x:Name="SectionGeneral" Classes="settings-card">
             <StackPanel Spacing="10">
-              <TextBlock Text="常规" FontSize="18" />
+              <TextBlock Classes="section-title" Text="常规" />
               <Border Classes="settings-item">
                 <Grid RowDefinitions="Auto,Auto" RowSpacing="8">
                   <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8" VerticalAlignment="Center">
                     <StackPanel Spacing="2">
                       <TextBlock Text="Frpc 路径" />
-                      <TextBlock Text="选择本地 frpc 可执行文件" FontSize="12" Opacity="0.75" />
+                      <TextBlock Classes="item-description" Text="{Binding FrpcStatusText}" />
                     </StackPanel>
-                    <Button Grid.Column="1" Click="SelectFile_OnClick">
+                    <Button Grid.Column="1" Click="SelectFile_OnClick" ToolTip.Tip="选择本地已有的 frpc 可执行文件">
                       <StackPanel Orientation="Horizontal" Spacing="6">
                         <fa:FASymbolIcon Symbol="OpenFile" FontSize="14" />
                         <TextBlock Text="选择文件" />
@@ -98,16 +110,30 @@
                       </StackPanel>
                     </Button>
                   </Grid>
-                  <TextBox Grid.Row="1" IsReadOnly="True" Text="{Binding FrpcPath}" HorizontalAlignment="Stretch" />
+                  <TextBox Grid.Row="1" IsReadOnly="True" Text="{Binding FrpcPath}" PlaceholderText="未设置" HorizontalAlignment="Stretch" />
                 </Grid>
               </Border>
               <Border Classes="settings-item">
                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12" VerticalAlignment="Center">
                   <StackPanel Spacing="2">
                     <TextBlock Text="国内镜像" />
-                    <TextBlock Text="下载 frpc 时优先使用国内镜像" FontSize="12" Opacity="0.75" />
+                    <TextBlock Classes="item-description" Text="下载 frpc 时优先使用国内镜像" />
                   </StackPanel>
                   <ToggleSwitch Grid.Column="1" IsChecked="{Binding UseMirror, Mode=TwoWay}" />
+                </Grid>
+              </Border>
+              <Border Classes="settings-item">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12" VerticalAlignment="Center">
+                  <StackPanel Spacing="2">
+                    <TextBlock Text="数据目录" />
+                    <TextBlock Classes="item-description" Text="{Binding ConfigDirectory}" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" />
+                  </StackPanel>
+                  <Button Grid.Column="1" Click="OpenConfigDir_OnClick" ToolTip.Tip="配置文件、下载的 frpc 都保存在这里">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                      <fa:FASymbolIcon Symbol="OpenFolder" FontSize="14" />
+                      <TextBlock Text="打开目录" />
+                    </StackPanel>
+                  </Button>
                 </Grid>
               </Border>
             </StackPanel>
@@ -115,23 +141,15 @@
 
           <Border x:Name="SectionAppearance" Classes="settings-card">
             <StackPanel Spacing="10">
-              <TextBlock Text="外观" FontSize="18" />
+              <TextBlock Classes="section-title" Text="外观" />
               <Border Classes="settings-item">
                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12" VerticalAlignment="Center">
                   <StackPanel Spacing="2">
-                    <TextBlock Text="跟随系统主题" />
-                    <TextBlock Text="自动匹配系统浅色/深色" FontSize="12" Opacity="0.75" />
+                    <TextBlock Text="主题" />
+                    <TextBlock Classes="item-description" Text="选择浅色、深色，或自动匹配系统设置" />
                   </StackPanel>
-                  <ToggleSwitch Grid.Column="1" IsChecked="{Binding FollowSystem, Mode=TwoWay}" />
-                </Grid>
-              </Border>
-              <Border Classes="settings-item">
-                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12" VerticalAlignment="Center">
-                  <StackPanel Spacing="2">
-                    <TextBlock Text="使用深色主题" />
-                    <TextBlock Text="仅在关闭“跟随系统”后可手动设置" FontSize="12" Opacity="0.75" />
-                  </StackPanel>
-                  <ToggleSwitch Grid.Column="1" IsEnabled="{Binding CanToggleDarkTheme}" IsChecked="{Binding DarkTheme, Mode=TwoWay}" />
+                  <ComboBox Grid.Column="1" MinWidth="140" ItemsSource="{Binding ThemeOptions}"
+                            SelectedIndex="{Binding ThemeIndex, Mode=TwoWay}" />
                 </Grid>
               </Border>
             </StackPanel>
@@ -139,21 +157,26 @@
 
           <Border x:Name="SectionUpdate" Classes="settings-card">
             <StackPanel Spacing="10">
-              <TextBlock Text="下载与更新" FontSize="18" />
+              <TextBlock Classes="section-title" Text="下载与更新" />
               <Border Classes="settings-item">
                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12" VerticalAlignment="Center">
                   <StackPanel Spacing="2">
                     <TextBlock Text="应用更新" />
-                    <TextBlock Text="检查当前分支是否有新版本" FontSize="12" Opacity="0.75" />
+                    <TextBlock Classes="item-description" Text="检查当前分支是否有新版本" />
                   </StackPanel>
-                  <Button Grid.Column="1" x:Name="CheckUpdateBtn" Content="检查更新" Click="CheckUpdateBtn_OnClick" />
+                  <Button Grid.Column="1" x:Name="CheckUpdateBtn" Click="CheckUpdateBtn_OnClick">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                      <fa:FASymbolIcon Symbol="Sync" FontSize="14" />
+                      <TextBlock Text="检查更新" />
+                    </StackPanel>
+                  </Button>
                 </Grid>
               </Border>
               <Border Classes="settings-item" IsVisible="False">
                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12" VerticalAlignment="Center">
                   <StackPanel Spacing="2">
                     <TextBlock Text="更新分支" />
-                    <TextBlock Text="Alpha 可切换到任意分支" FontSize="12" Opacity="0.75" />
+                    <TextBlock Classes="item-description" Text="Alpha 可切换到任意分支" />
                   </StackPanel>
                   <ComboBox Grid.Column="1" Width="200" SelectedIndex="{Binding UpdateBranchIndex, Mode=TwoWay}">
                     <ComboBoxItem Content="Release"/>
@@ -168,22 +191,47 @@
 
           <Border x:Name="SectionAccount" Classes="settings-card">
             <StackPanel Spacing="10">
-              <TextBlock Text="账号" FontSize="18" />
+              <TextBlock Classes="section-title" Text="账号" />
+              <Border Classes="settings-item">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12" VerticalAlignment="Center">
+                  <StackPanel Spacing="2">
+                    <TextBlock Text="服务商" />
+                    <TextBlock Classes="item-description" Text="{Binding AccountText}" />
+                  </StackPanel>
+                  <Button Grid.Column="1" x:Name="SwitchProviderBtn" IsVisible="{Binding CanSwitchProvider}"
+                          Click="SwitchProviderBtn_OnClick" ToolTip.Tip="当前账号的登录状态会被保留，可随时切换回来">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                      <fa:FASymbolIcon Symbol="Switch" FontSize="14" />
+                      <TextBlock Text="切换服务商" />
+                    </StackPanel>
+                  </Button>
+                </Grid>
+              </Border>
               <Border Classes="settings-item">
                 <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8" VerticalAlignment="Center">
                   <StackPanel Spacing="2">
                     <TextBlock Text="安全" />
-                    <TextBlock Text="复制 Token 或退出登录" FontSize="12" Opacity="0.75" />
+                    <TextBlock Classes="item-description" Text="复制 FRP Token 或退出当前账号" />
                   </StackPanel>
-                  <Button Grid.Column="1" x:Name="CopyTokenBtn" Content="复制 Token" Click="CopyTokenBtn_OnClick" />
-                  <Button Grid.Column="2" x:Name="SignOutBtn" Content="退出登录" Click="SignOutBtn_OnClick" />
+                  <Button Grid.Column="1" x:Name="CopyTokenBtn" Click="CopyTokenBtn_OnClick" IsVisible="{Binding CanCopyToken}">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                      <fa:FASymbolIcon Symbol="Copy" FontSize="14" />
+                      <TextBlock Text="复制 Token" />
+                    </StackPanel>
+                  </Button>
+                  <Button Grid.Column="2" x:Name="SignOutBtn" Click="SignOutBtn_OnClick">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                      <fa:FASymbolIcon Symbol="LeaveChat" FontSize="14" />
+                      <TextBlock Text="退出登录" />
+                    </StackPanel>
+                  </Button>
                 </Grid>
               </Border>
               <Border Classes="settings-item" IsVisible="False">
                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12" VerticalAlignment="Center">
                   <StackPanel Spacing="2">
                     <TextBlock Text="调试模式" />
-                    <TextBlock Text="启用更多日志与调试能力" FontSize="12" Opacity="0.75" />
+                    <TextBlock Classes="item-description" Text="启用更多日志与调试能力" />
                   </StackPanel>
                   <ToggleSwitch Grid.Column="1" IsChecked="{Binding DebugMode, Mode=TwoWay}" />
                 </Grid>
@@ -194,19 +242,30 @@
               </StackPanel>
             </StackPanel>
           </Border>
+
+          <Border x:Name="SectionAbout" Classes="settings-card">
+            <StackPanel Spacing="10">
+              <TextBlock Classes="section-title" Text="关于" />
+              <Border Classes="settings-item">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                  <StackPanel Spacing="4">
+                    <TextBlock Text="{Binding VersionText}" FontWeight="SemiBold" />
+                    <TextBlock Text="{Binding DeveloperText}" FontSize="12" />
+                    <TextBlock Text="{Binding CopyrightText}" FontSize="12" />
+                  </StackPanel>
+                  <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center">
+                    <HyperlinkButton Content="GitHub 仓库" Padding="4,2" HorizontalAlignment="Right" NavigateUri="https://github.com/Shiroiame-Kusu/Kairo" />
+                    <HyperlinkButton Content="问题反馈" Padding="4,2" HorizontalAlignment="Right" NavigateUri="https://github.com/Shiroiame-Kusu/Kairo/issues" />
+                  </StackPanel>
+                </Grid>
+              </Border>
+              <Border Classes="settings-item">
+                <TextBlock Classes="item-description" Text="{Binding BuildInfoText}" />
+              </Border>
+            </StackPanel>
+          </Border>
         </StackPanel>
       </ScrollViewer>
     </Grid>
-
-    <Border x:Name="SectionAbout" Grid.Row="2" Classes="settings-card" Padding="12" Margin="0,0,0,0">
-      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-        <TextBlock Text="{Binding BuildInfoText}" FontSize="12" TextWrapping="Wrap"/>
-        <StackPanel Grid.Column="1" Spacing="4">
-          <TextBlock Text="{Binding VersionText}" FontSize="12"/>
-          <TextBlock Text="{Binding DeveloperText}" FontSize="12"/>
-          <TextBlock Text="{Binding CopyrightText}" FontSize="12"/>
-        </StackPanel>
-      </Grid>
-    </Border>
   </Grid>
 </UserControl>

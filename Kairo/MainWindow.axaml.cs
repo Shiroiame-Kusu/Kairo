@@ -214,6 +214,16 @@ public partial class MainWindow : Window
             _showHideMenuItem.Header = IsVisible ? "隐藏窗口" : "显示窗口";
     }
 
+    /// <summary>
+    /// 从面板切换服务商：关闭面板回到登录页，目标服务商已保存登录状态时自动登录
+    /// </summary>
+    public async Task SwitchProviderAsync(string providerId)
+    {
+        LogoutCleanup();
+        PrepareForLogin();
+        await _viewModel.SwitchProviderAsync(providerId);
+    }
+
     public void OnLoggedOut()
     {
         SessionState.IsLoggedIn = false;
