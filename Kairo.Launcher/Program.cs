@@ -325,8 +325,61 @@ class Program
             throw new InvalidOperationException("无法启动目标程序");
         }
 
-        process.WaitForExit();
+        var signalRegistrations = ForwardTerminationSignals(process);
+        try
+        {
+            process.WaitForExit();
+        }
+        finally
+        {
+            foreach (var registration in signalRegistrations)
+                registration.Dispose();
+        }
         return process.ExitCode;
+    }
+
+    /// <summary>
+    /// 收到 SIGTERM / SIGINT 时转发给 GUI/CLI 并继续等待，让子进程自己完成清理（例如结束 frpc），
+    /// 避免启动器先退出而子进程继续运行
+    /// </summary>
+    private static List<PosixSignalRegistration> ForwardTerminationSignals(Process child)
+    {
+        var registrations = new List<PosixSignalRegistration>();
+        if (OperatingSystem.IsWindows()) return registrations;
+
+        foreach (var (signal, name) in new[] { (PosixSignal.SIGTERM, "TERM"), (PosixSignal.SIGINT, "INT") })
+        {
+            try
+            {
+                registrations.Add(PosixSignalRegistration.Create(signal, context =>
+                {
+                    context.Cancel = true;
+                    SendSignal(child, name);
+                }));
+            }
+            catch (Exception)
+            {
+                // 平台不支持时保持默认行为
+            }
+        }
+        return registrations;
+    }
+
+    private static void SendSignal(Process child, string signalName)
+    {
+        try
+        {
+            if (child.HasExited) return;
+            var psi = new ProcessStartInfo("kill") { UseShellExecute = false };
+            psi.ArgumentList.Add("-" + signalName);
+            psi.ArgumentList.Add(child.Id.ToString());
+            using var kill = Process.Start(psi);
+            kill?.WaitForExit(2000);
+        }
+        catch (Exception)
+        {
+            // 转发失败不影响继续等待子进程
+        }
     }
 
     private static void LogInfo(string message)

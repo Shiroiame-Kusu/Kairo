@@ -3,10 +3,13 @@ using Microsoft.AspNetCore.Builder;
 using System;
 using System.Net;
 using System.Net.NetworkInformation;
+using System.Threading;
 using System.Threading.Tasks;
 using Kairo.Utils.Configuration;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 namespace Kairo.Components.OAuth
 {
@@ -40,6 +43,9 @@ namespace Kairo.Components.OAuth
 
                     var builder = WebApplication.CreateBuilder();
                     builder.WebHost.UseUrls($"http://127.0.0.1:{Global.OAuthPort}");
+                    // 默认的 ConsoleLifetime 会拦截 SIGTERM / Ctrl+C 并只停止这个 Web 服务，
+                    // 导致 kill 无法关闭 Kairo；进程信号统一交给 App 处理
+                    builder.Services.AddSingleton<IHostLifetime>(new EmbeddedHostLifetime());
                     // Minimal APIs only; avoid MVC which isn't trim/AOT friendly
                     //builder.Services.AddControllers();
                     _application = builder.Build();
@@ -96,6 +102,15 @@ namespace Kairo.Components.OAuth
                 AppLogger.Exception("Unhandled exception in Kairo/Components/OAuth/OAuthCallbackHandler.cs:90", ex);
             }
         }
+        /// <summary>
+        /// 内嵌回调服务使用的空生命周期：不注册任何进程信号处理
+        /// </summary>
+        private sealed class EmbeddedHostLifetime : IHostLifetime
+        {
+            public Task WaitForStartAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+            public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+        }
+
         private static bool IsPortInUse(int port)
         {
             IPGlobalProperties ipProperties = IPGlobalProperties.GetIPGlobalProperties();

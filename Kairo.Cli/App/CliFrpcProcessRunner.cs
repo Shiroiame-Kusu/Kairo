@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using Kairo.Core.Logging;
 using Kairo.Core.Models;
 using Kairo.Core.Providers;
@@ -19,6 +20,8 @@ internal sealed class CliFrpcProcessRunner : IDisposable
     private readonly List<Process> _processes = new();
     private readonly object _outputLock = new();
     private bool _cancelKeyRegistered;
+    private PosixSignalRegistration? _sigTermRegistration;
+    private int _stopRequested;
     private volatile bool _stopping;
 
     public CliFrpcProcessRunner(Func<IFrpProvider> providerFactory, CancellationTokenSource cts)
@@ -28,7 +31,12 @@ internal sealed class CliFrpcProcessRunner : IDisposable
         AppDomain.CurrentDomain.ProcessExit += (_, _) => KillAll();
     }
 
-    public void Dispose() => KillAll();
+    public void Dispose()
+    {
+        _sigTermRegistration?.Dispose();
+        _sigTermRegistration = null;
+        KillAll();
+    }
 
     public async Task<int> StartAsync(string frpcPath, string frpToken, List<int> proxyIds, List<Tunnel>? tunnels, ApiClient apiClient)
     {
@@ -258,11 +266,35 @@ internal sealed class CliFrpcProcessRunner : IDisposable
         Console.CancelKeyPress += (_, e) =>
         {
             e.Cancel = true;
-            if (_cts.IsCancellationRequested) return;
-            _stopping = true;
-            Console.WriteLine();
-            ConsoleUi.Info("正在停止所有隧道...");
-            _cts.Cancel();
+            RequestStop();
         };
+
+        // SIGTERM（kill、systemd、docker stop、启动器转发）默认会直接结束进程且不触发 ProcessExit，
+        // frpc 会变成孤儿进程继续运行，因此与 Ctrl+C 走同样的停止流程
+        try
+        {
+            _sigTermRegistration = PosixSignalRegistration.Create(PosixSignal.SIGTERM, context =>
+            {
+                context.Cancel = true;
+                RequestStop();
+            });
+        }
+        catch (Exception ex)
+        {
+            Logger.Debug($"无法注册 SIGTERM 处理: {ex.Message}");
+        }
+    }
+
+    private void RequestStop()
+    {
+        if (Interlocked.Exchange(ref _stopRequested, 1) == 1) return;
+        _stopping = true;
+        Console.WriteLine();
+        ConsoleUi.Info("正在停止所有隧道...");
+        try { _cts.Cancel(); }
+        catch (ObjectDisposedException)
+        {
+            // 已在退出流程中
+        }
     }
 }
