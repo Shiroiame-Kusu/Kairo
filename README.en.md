@@ -6,6 +6,7 @@
 _[中文 README](README.md)_
 
 ## Highlights
+- **Multiple providers** – LoCyanFrp and LoliaFRP are supported, each with its own saved session; switch at any time.
 - **Unified LoCyanFrp workspace** – sign in, refresh tokens, perform daily check-ins, and inspect account stats in one place.
 - **Tunnel lifecycle management** – create, edit, start/stop, delete, and batch-update tunnels with live status indicators.
 - **Integrated frpc distribution** – automatically download and verify the correct frpc build per tunnel profile.
@@ -37,7 +38,7 @@ Produce a self-contained bundle:
 dotnet publish Kairo/Kairo.csproj -c Release -r win-x64 --self-contained true
 ```
 
-> The build uses Avalonia 11, FluentAvaloniaUI, and a pre-build script (`Components/BuildInfo.sh`). Ensure the script is executable on your platform (`chmod +x`).
+> The build uses Avalonia 12, FluentAvaloniaUI, and a pre-build script (`Components/BuildInfo.sh`). Ensure the script is executable on your platform (`chmod +x`).
 
 ## Usage Overview
 - **Authentication** – password login, token refresh, access-key retrieval.
@@ -45,6 +46,23 @@ dotnet publish Kairo/Kairo.csproj -c Release -r win-x64 --self-contained true
 - **Tunnel operations** – create, duplicate, update, delete, start, stop, and batch-update tunnels using built-in templates.
 - **Node tools** – ping nodes, list domains, request random ports, and fetch node statistics.
 - **Frpc lifecycle** – download the required release, verify checksum.
+
+## CLI (headless mode)
+
+`kairo-cli` runs Kairo on machines without a desktop (Linux servers, containers, SSH sessions). It shares its configuration with the GUI.
+
+```bash
+kairo-cli                          # interactive wizard: pick a provider, sign in, choose tunnels
+kairo-cli status                   # provider, account and frpc overview
+kairo-cli provider lolia           # switch provider (remembered; each provider keeps its own session)
+kairo-cli login | logout           # sign in / out of the current provider
+kairo-cli list                     # list tunnels
+kairo-cli start 123,456            # start tunnels (omit IDs to pick interactively)
+kairo-cli --provider locyan list   # switch provider, then run a command
+```
+
+The original flags (`--list`, `--proxy`, `--oauth`, `--code`, `--refresh-token`, …) still work; see `kairo-cli --help`.
+Set `KAIRO_CONFIG_DIR` to use a custom config directory and `NO_COLOR` (or `--no-color`) to disable colors.
 
 ## Documentation
 - All API/workflow docs are in `docs/` (Chinese). Examples:
