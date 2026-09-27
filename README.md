@@ -12,6 +12,7 @@
 - **frpc 集成管理**：自动识别平台并下载匹配的 frpc 版本，校验后即可使用。
 - **可视化面板**：内置流量监控、节点状态、Minecraft 服务状态等仪表板。
 - **Fluent UI 体验**：明暗主题切换、自定义标题栏，兼顾键鼠与触控。
+- **多语言**：简体中文与 English 界面，可随时切换，GUI 与 CLI 共用语言设置。
 - **崩溃防护**：异常拦截、日志与调试工具，快速定位问题。
 
 ## 快速上手
@@ -80,6 +81,9 @@ kairo-cli --provider locyan list
 
 # 指定 frpc 路径和 FRP Token
 kairo-cli start 123 --frpc-path /path/to/frpc --frp-token <token>
+
+# 使用英文输出（也可设置 KAIRO_LANG 环境变量）
+kairo-cli --lang en-US status
 ```
 
 原有的参数写法（`--list`、`--proxy`、`--oauth`、`--code`、`--refresh-token` 等）仍然可用，完整说明见 `kairo-cli --help`。
@@ -95,6 +99,7 @@ kairo-cli start 123 --frpc-path /path/to/frpc --frp-token <token>
 
 ### 环境变量
 - `KAIRO_CONFIG_DIR`：自定义配置文件目录路径（CLI 与 GUI 共用同一份配置）
+- `KAIRO_LANG`：界面语言（`zh-CN`、`en-US` 或 `system`），优先级低于 `--lang`
 - `NO_COLOR`：禁用彩色输出（也可使用 `--no-color`）
 
 ## 文档
@@ -103,6 +108,7 @@ kairo-cli start 123 --frpc-path /path/to/frpc --frp-token <token>
 	- `docs/创建隧道.md`：新建并配置隧道流程。
 	- `docs/创建 Minecraft 联机房间.md`：通过 LoCyanFrp 搭建 Minecraft 房间。
 	- `docs/鉴权说明.md` / `docs/鉴权验证流程.md`：鉴权模式与流程。
+- 多语言与翻译（切换语言、添加翻译、检查脚本）见 `Kairo.Core/Localization/README.md`。
 - 欢迎 PR 协助翻译或补充文档。
 
 ## 项目结构
@@ -110,6 +116,7 @@ kairo-cli start 123 --frpc-path /path/to/frpc --frp-token <token>
 - `Legacy/`：历史 WPF 客户端，保留参考。
 - `Updater/`：独立更新器项目。
 - `docs/`：用户及 API 文档（中文）。
+- `scripts/`：开发辅助脚本（如 `check-i18n.py` 检查翻译是否完整）。
 - `logs/`：运行/崩溃日志（不纳入版本控制）。
 
 ## 参与贡献
@@ -117,6 +124,8 @@ kairo-cli start 123 --frpc-path /path/to/frpc --frp-token <token>
 2. UI 变更需兼容明暗主题，并更新相关文档/截图。
 3. 提交前执行 `dotnet format`（或等效分析器）。
 4. 提交 PR 时请描述动机、影响范围及截图（如涉及界面）。
+
+翻译或修改界面文本时，请参考 `Kairo.Core/Localization/README.md`，并在提交前运行 `python3 scripts/check-i18n.py`。
 
 Bug 反馈、功能需求、翻译协助均可通过 GitHub Issues 提交。
 
