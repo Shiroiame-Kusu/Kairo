@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Net;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
@@ -30,8 +31,13 @@ namespace Kairo.ViewModels
         private bool _isStatusError;
         private bool _isLoadingNodes;
 
-        public IReadOnlyList<string> Types { get; } = new[] { "tcp", "udp", "xtcp", "stcp", "http", "https" };
+        public IReadOnlyList<string> Types { get; }
         public ObservableCollection<NodeItem> Nodes => _nodes;
+
+        /// <summary>LoliaFRP 创建隧道时不接受加密、压缩等高级配置</summary>
+        public bool ShowAdvancedOptions => !IsLolia;
+
+        private static bool IsLolia => Global.CurrentProvider.Type == FrpProviderType.Lolia;
 
         public string Name
         {
@@ -132,10 +138,6 @@ namespace Kairo.ViewModels
 
         public string NodePlaceholder => IsLoadingNodes ? "正在加载节点…" : _nodes.Count == 0 ? "没有可用的节点" : "选择节点";
 
-        public string RemotePortPlaceholder => Global.CurrentProvider.Type == FrpProviderType.Lolia
-            ? "请输入远端端口"
-            : "留空则随机分配";
-
         public void SetError(string message)
         {
             IsStatusError = true;
@@ -174,7 +176,10 @@ namespace Kairo.ViewModels
 
         public CreateProxyWindowViewModel()
         {
-            _useEncryption = Global.CurrentProvider.Type == FrpProviderType.Lolia;
+            // LoliaFRP 只支持 tcp/udp/http/https
+            Types = IsLolia
+                ? new[] { "tcp", "udp", "http", "https" }
+                : new[] { "tcp", "udp", "xtcp", "stcp", "http", "https" };
             CreateCommand = new AsyncRelayCommand(CreateAsync);
             CancelCommand = new RelayCommand(() => RequestClose?.Invoke());
             _pingCommand = new RelayCommand(() => RequestPingWindow?.Invoke(), () => CanPing);
@@ -281,6 +286,7 @@ namespace Kairo.ViewModels
                 if (string.IsNullOrWhiteSpace(name)) { SetError("请输入隧道名称"); return; }
                 if (string.IsNullOrWhiteSpace(type)) { SetError("请选择协议类型"); return; }
                 if (string.IsNullOrWhiteSpace(localIp)) { SetError("请输入本地 IP"); return; }
+                if (IsLolia && !IPAddress.TryParse(localIp, out _)) { SetError("LoliaFRP 的本地 IP 需要填写 IP 地址，例如 127.0.0.1"); return; }
                 if (!int.TryParse(localPortStr, out var localPort) || localPort <= 0 || localPort > 65535)
                 { SetError("本地端口应为 1-65535 之间的数字"); return; }
                 if (nodeItem == null) { SetError("请选择节点"); return; }
@@ -288,16 +294,18 @@ namespace Kairo.ViewModels
                 bool needRemote = NeedRemotePort;
                 bool needSecret = NeedSecretKey;
                 bool needDomain = NeedDomain;
-                int remotePort = 0;
+                int? remotePort = null;
                 if (needRemote)
                 {
-                    if (string.IsNullOrWhiteSpace(remotePortStr))
+                    if (!string.IsNullOrWhiteSpace(remotePortStr))
                     {
-                        if (Global.CurrentProvider.Type == FrpProviderType.Lolia)
-                        {
-                            SetError("LoliaFRP 暂不支持随机端口，请手动输入远端端口");
-                            return;
-                        }
+                        if (!int.TryParse(remotePortStr, out var port) || port <= 0 || port > 65535)
+                        { SetError("远端端口应为 1-65535 之间的数字"); return; }
+                        remotePort = port;
+                    }
+                    else if (!IsLolia)
+                    {
+                        // LoliaFRP 不传远端端口时由服务端自动分配，LocyanFRP 需要先申请随机端口
                         SetProgress("正在请求随机远端端口…");
                         var port = await TryGetRandomPortAsync(nodeItem.Id);
                         if (port <= 0)
@@ -308,8 +316,6 @@ namespace Kairo.ViewModels
                         remotePort = port;
                         RemotePort = port.ToString();
                     }
-                    else if (!int.TryParse(remotePortStr, out remotePort) || remotePort <= 0 || remotePort > 65535)
-                    { SetError("远端端口应为 1-65535 之间的数字"); return; }
                 }
                 if (needSecret && string.IsNullOrWhiteSpace(secret)) { SetError("请输入访问密钥"); return; }
                 if (needDomain && string.IsNullOrWhiteSpace(domain)) { SetError("请输入域名"); return; }
@@ -337,7 +343,8 @@ namespace Kairo.ViewModels
                 });
                 if (result.Success && result.Data != null)
                 {
-                    ProxyCreated?.Invoke(result.Data.TunnelId, string.IsNullOrWhiteSpace(result.Data.TunnelName) ? name! : result.Data.TunnelName);
+                    // 提示使用用户填写的名称（LoliaFRP 的隧道名称是服务端生成的随机字符串）
+                    ProxyCreated?.Invoke(result.Data.TunnelId, name!);
                 }
                 else
                 {

@@ -97,7 +97,7 @@
 
         <StackPanel IsVisible="{Binding NeedRemotePort}">
           <TextBlock Classes="field-label" Text="远端端口" />
-          <TextBox Text="{Binding RemotePort, Mode=TwoWay}" PlaceholderText="{Binding RemotePortPlaceholder}" />
+          <TextBox Text="{Binding RemotePort, Mode=TwoWay}" PlaceholderText="留空则随机分配" />
         </StackPanel>
 
         <StackPanel IsVisible="{Binding NeedDomain}">
@@ -110,8 +110,8 @@
           <TextBox Text="{Binding SecretKey, Mode=TwoWay}" PlaceholderText="访问端需要填写相同的密钥" />
         </StackPanel>
 
-        <TextBlock Classes="group-title" Text="高级选项" />
-        <StackPanel Orientation="Horizontal" Spacing="20">
+        <TextBlock Classes="group-title" Text="高级选项" IsVisible="{Binding ShowAdvancedOptions}" />
+        <StackPanel Orientation="Horizontal" Spacing="20" IsVisible="{Binding ShowAdvancedOptions}">
           <CheckBox Content="启用加密" IsChecked="{Binding UseEncryption}" ToolTip.Tip="加密客户端与节点之间的数据" />
           <CheckBox Content="启用压缩" IsChecked="{Binding UseCompression}" ToolTip.Tip="压缩传输数据，节省流量但会增加 CPU 占用" />
         </StackPanel>
