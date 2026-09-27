@@ -5,9 +5,9 @@ namespace Kairo.Core;
 /// </summary>
 public static class AppConstants
 {
-    public const string Version = "3.4.0";
-    public const string VersionName = "Lycoris Radiata";
-    public const ReleaseChannel Branch = ReleaseChannel.Release;
+    public const string Version = "3.5.0";
+    public const string VersionName = "Asteria";
+    public const ReleaseChannel Branch = ReleaseChannel.Alpha;
     public const int Revision = 1;
     public const string Developer = "Shiroiame-Kusu & Daiyangcheng";
     public const string Copyright = "Copyright © Shiroiame-Kusu All Rights Reserved";
