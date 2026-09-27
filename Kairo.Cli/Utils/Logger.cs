@@ -67,6 +67,29 @@ public static class Logger
         }
         
         Debug($"日志系统已初始化 - 级别: {minLevel}, 文件记录: {logToFile}");
+        if (_writeToFile && logFilePath == null)
+            CleanupOldLogs();
+    }
+
+    /// <summary>
+    /// 每次运行都会生成新的日志文件，只保留最近的若干个，避免长期运行的服务堆积日志
+    /// </summary>
+    private static void CleanupOldLogs(int keep = 30)
+    {
+        try
+        {
+            var dir = Path.GetDirectoryName(_logFilePath);
+            if (string.IsNullOrEmpty(dir) || !Directory.Exists(dir)) return;
+            var stale = new DirectoryInfo(dir).GetFiles("cli-*.log")
+                .OrderByDescending(f => f.LastWriteTimeUtc)
+                .Skip(keep);
+            foreach (var file in stale)
+                file.Delete();
+        }
+        catch (Exception ex)
+        {
+            Debug($"清理旧日志失败: {ex.Message}");
+        }
     }
 
     private static string GetDefaultLogPath()
@@ -78,6 +101,9 @@ public static class Logger
             : Path.Combine(dataDir, "Kairo", "logs", "cli");
         return Path.Combine(logDir, $"cli-{DateTime.Now:yyyyMMdd-HHmmss}.log");
     }
+
+    /// <summary>当前日志文件路径（未启用文件日志时为 null）</summary>
+    public static string? LogFilePath => _writeToFile ? _logFilePath : null;
 
     /// <summary>
     /// 记录调试信息
@@ -253,11 +279,14 @@ public static class Logger
 
         lock (_lock)
         {
-            // 控制台输出
-            var prevColor = Console.ForegroundColor;
-            Console.ForegroundColor = color;
-            Console.WriteLine(formattedMessage);
-            Console.ForegroundColor = prevColor;
+            // 控制台仅在调试模式下输出日志，面向用户的提示由 ConsoleUi 负责
+            if (_minLevel <= LogLevel.Debug)
+            {
+                var prevColor = Console.ForegroundColor;
+                Console.ForegroundColor = color;
+                Console.WriteLine(formattedMessage);
+                Console.ForegroundColor = prevColor;
+            }
 
             // 文件输出
             if (_writeToFile && _logFilePath != null)

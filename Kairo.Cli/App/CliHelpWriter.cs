@@ -1,65 +1,88 @@
 using Kairo.Core;
+using Kairo.Core.Providers;
+using Kairo.Cli.Utils;
 
 namespace Kairo.Cli;
 
 internal static class CliHelpWriter
 {
+    private static string ProviderIds => string.Join(" / ", FrpProviderRegistry.All.Select(p => p.Id));
+
     public static void ShowBanner()
     {
-        var versionLine = $"Ver {AppConstants.Version} \"{AppConstants.VersionName}\" {AppConstants.Branch.ToDisplayName()} {AppConstants.Revision}";
-        var padding = (61 - versionLine.Length) / 2;
-        var centeredVersion = versionLine.PadLeft(padding + versionLine.Length).PadRight(61);
         Console.WriteLine();
-        Console.WriteLine("╔═══════════════════════════════════════════════════════════════╗");
-        Console.WriteLine("║                       Kairo CLI Mode                          ║");
-        Console.WriteLine($"║ {centeredVersion} ║");
-        Console.WriteLine("╚═══════════════════════════════════════════════════════════════╝");
-        Console.WriteLine();
+        ConsoleUi.Write("  Kairo CLI ", ConsoleColor.Cyan);
+        ConsoleUi.Write($"{AppConstants.Version} \"{AppConstants.VersionName}\"", ConsoleColor.White);
+        ConsoleUi.WriteLine($"  {AppConstants.Branch.ToDisplayName()} {AppConstants.Revision}", ConsoleColor.DarkGray);
     }
 
     public static void ShowHelp()
     {
-        Console.WriteLine("用法: kairo-cli [选项]");
+        Section("用法");
+        Console.WriteLine("  kairo-cli [命令] [选项]");
+
+        Section("命令");
+        Item("(无)", "交互式向导：登录并选择要启动的隧道");
+        Item("start [ID...]", "启动隧道，例如 start 1,2,3；未指定 ID 时交互选择");
+        Item("list, ls", "列出当前账号的所有隧道");
+        Item("login", "登录（或重新登录）当前服务商");
+        Item("logout", "退出当前服务商的登录");
+        Item("status, whoami", "查看服务商、登录状态与 frpc 信息");
+        Item("provider [名称]", $"查看或切换服务商 ({ProviderIds})");
+        Item("help, version", "显示帮助 / 版本信息");
+
+        Section("选项");
+        Item("--provider [名称]", "切换服务商并记住选择；省略名称时交互选择");
+        Item("-p, --proxy <ID,...>", "指定要启动的隧道 ID");
+        Item("-l, --list", "列出隧道（同 list）");
+        Item("--oauth", "仅显示 OAuth 授权链接");
+        Item("--code <授权码>", "使用 OAuth 授权码登录");
+        Item("-r, --refresh-token <令牌>", "使用 Refresh Token 登录（高级）");
+        Item("-t, --frp-token <令牌>", "指定 FRP Token");
+        Item("-f, --frpc-path <路径>", "指定 frpc 可执行文件路径");
+        Item("--github, --no-mirror", "下载 frpc 时强制使用 GitHub 源");
+        Item("--no-interactive", "禁用所有交互提示（适合脚本与服务）");
+        Item("--no-color", "禁用彩色输出（也可设置 NO_COLOR 环境变量）");
+        Item("-d, --debug", "输出调试日志");
+        Item("--log-file", "将日志写入文件");
+        Item("-q, --quiet", "安静模式（只显示警告和错误）");
+        Item("-v, --version", "显示版本信息");
+        Item("-h, --help", "显示此帮助信息");
+
+        Section("示例");
+        ConsoleUi.Command("kairo-cli", "# 首次使用：选择服务商并登录");
+        ConsoleUi.Command("kairo-cli provider lolia", "# 切换到 LoliaFRP");
+        ConsoleUi.Command("kairo-cli --provider locyan list", "# 切换到 LoCyanFrp 并列出隧道");
+        ConsoleUi.Command("kairo-cli start 1,2", "# 启动 ID 为 1 和 2 的隧道");
+        ConsoleUi.Command("kairo-cli start --no-interactive", "# 不询问，直接启动全部隧道");
+
+        Section("环境变量");
+        Item("KAIRO_CONFIG_DIR", "自定义配置目录");
+        Item("NO_COLOR", "禁用彩色输出");
         Console.WriteLine();
-        Console.WriteLine("选项:");
-        Console.WriteLine("  --oauth, --get-oauth-url  显示 OAuth 授权 URL");
-        Console.WriteLine("  --code <code>             使用 OAuth 授权码登录");
-        Console.WriteLine("  --refresh-token, -r <token>");
-        Console.WriteLine("                            使用 Refresh Token 登录（高级）");
-        Console.WriteLine("  --frp-token, -t <token>   指定 FRP Token");
-        Console.WriteLine("  --frpc-path, -f <path>    指定 frpc 可执行文件路径");
-        Console.WriteLine("  --proxy, -p <id1,id2,...> 指定要启动的隧道 ID");
-        Console.WriteLine("  --list, -l                列出所有可用隧道");
-        Console.WriteLine("  --no-interactive          禁用交互模式");
-        Console.WriteLine("  --debug, -d               启用调试日志模式");
-        Console.WriteLine("  --log-file                将日志写入文件");
-        Console.WriteLine("  --quiet, -q               安静模式（只显示警告和错误）");
-        Console.WriteLine("  --github, --no-mirror     强制使用 GitHub 下载源");
-        Console.WriteLine("  --version, -v             显示版本信息");
-        Console.WriteLine("  --help, -h                显示此帮助信息");
-        Console.WriteLine();
-        Console.WriteLine("使用说明:");
-        Console.WriteLine("  直接运行 'kairo-cli' 将进入交互式向导模式:");
-        Console.WriteLine("    - 未登录时会自动引导完成 OAuth 授权");
-        Console.WriteLine("    - 登录后会显示隧道列表并让您选择要启动的隧道");
-        Console.WriteLine();
-        Console.WriteLine("  也可以使用命令行参数完成各步骤:");
-        Console.WriteLine("    kairo-cli --oauth          # 仅显示授权 URL");
-        Console.WriteLine("    kairo-cli --code <code>    # 使用授权码登录");
-        Console.WriteLine("    kairo-cli --list           # 列出所有隧道");
-        Console.WriteLine("    kairo-cli --proxy 1,2,3    # 启动指定隧道");
-        Console.WriteLine();
-        Console.WriteLine("  调试模式:");
-        Console.WriteLine("    kairo-cli --debug          # 显示详细日志");
-        Console.WriteLine("    kairo-cli --debug --log-file  # 详细日志并写入文件");
     }
 
     public static void ShowVersion()
     {
+        var version = AppVersion.FromComponents(AppConstants.Version, AppConstants.Branch, AppConstants.Revision);
         Console.WriteLine($"Kairo CLI {AppConstants.Version} ({AppConstants.Branch.ToDisplayName()})");
         Console.WriteLine($"Version Name: {AppConstants.VersionName}");
         Console.WriteLine($"Revision: {AppConstants.Revision}");
+        Console.WriteLine($"Tag: {version.ToTagString()}");
         Console.WriteLine($"Developer: {AppConstants.Developer}");
         Console.WriteLine(AppConstants.Copyright);
+    }
+
+    private static void Section(string title)
+    {
+        Console.WriteLine();
+        ConsoleUi.WriteLine(title + ":", ConsoleColor.Yellow);
+    }
+
+    private static void Item(string name, string description)
+    {
+        Console.Write("  ");
+        ConsoleUi.Write(ConsoleUi.PadRight(name, 28), ConsoleColor.Green);
+        Console.WriteLine(" " + description);
     }
 }
