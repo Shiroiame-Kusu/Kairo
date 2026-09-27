@@ -1,3 +1,5 @@
+using Kairo.Core.Localization;
+
 namespace Kairo.Core.Models;
 
 /// <summary>
@@ -30,7 +32,7 @@ public static class TunnelAddress
 
     public static string GetPublicAddress(Tunnel tunnel) =>
         GetPublicAddress(tunnel.ProxyType, tunnel.NodeInfo?.Host, tunnel.NodeInfo?.Ip, tunnel.RemotePort, tunnel.Domain)
-        ?? (IsPeerToPeer(tunnel.ProxyType) ? "点对点" : "-");
+        ?? (IsPeerToPeer(tunnel.ProxyType) ? L.T("core.tunnel.peerToPeer") : "-");
 
     private static string Normalize(string? type) => (type ?? string.Empty).Trim().ToLowerInvariant();
 }

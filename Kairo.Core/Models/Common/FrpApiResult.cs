@@ -1,3 +1,5 @@
+using Kairo.Core.Localization;
+
 namespace Kairo.Core.Models;
 
 public sealed class FrpApiResult<T>
@@ -19,6 +21,6 @@ public sealed class FrpApiResult<T>
     {
         Success = false,
         Code = code,
-        Message = string.IsNullOrWhiteSpace(message) ? "未知错误" : message
+        Message = string.IsNullOrWhiteSpace(message) ? L.T("core.api.unknownError") : message
     };
 }

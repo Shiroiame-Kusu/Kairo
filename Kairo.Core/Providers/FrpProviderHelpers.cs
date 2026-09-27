@@ -4,6 +4,7 @@ using System.Text.Json.Serialization.Metadata;
 using System.Text.RegularExpressions;
 using Kairo.Core.Logging;
 using Kairo.Core.Models;
+using Kairo.Core.Localization;
 
 namespace Kairo.Core.Providers;
 
@@ -43,7 +44,7 @@ internal static class FrpProviderHelpers
 
     public static FrpApiResult<T> ParseLoliaResponse<T>(LoliaApiResponse<T>? response)
     {
-        if (response == null) return FrpApiResult<T>.Fail(0, "响应格式错误");
+        if (response == null) return FrpApiResult<T>.Fail(0, L.T("core.api.badResponse"));
         return IsSuccessCode(response.Code)
             ? FrpApiResult<T>.Ok(response.Data, response.Code, response.Msg)
             : FrpApiResult<T>.Fail(response.Code, response.Msg);
@@ -51,7 +52,7 @@ internal static class FrpProviderHelpers
 
     public static FrpApiResult<T> ParseLocyanResponse<T>(LocyanApiResponse<T>? response)
     {
-        if (response == null) return FrpApiResult<T>.Fail(0, "响应格式错误");
+        if (response == null) return FrpApiResult<T>.Fail(0, L.T("core.api.badResponse"));
         return IsSuccessCode(response.Status)
             ? FrpApiResult<T>.Ok(response.Data, response.Status, response.Message)
             : FrpApiResult<T>.Fail(response.Status, response.Message);
@@ -112,7 +113,7 @@ internal static class FrpProviderHelpers
 
         if (candidates.Count == 0)
         {
-            var any = nonChecksum.FirstOrDefault() ?? throw new InvalidOperationException("未找到可用资产");
+            var any = nonChecksum.FirstOrDefault() ?? throw new InvalidOperationException(L.T("core.download.noAsset"));
             return any;
         }
 

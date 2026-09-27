@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Formats.Tar;
 using System.IO.Compression;
 using System.Runtime.InteropServices;
+using Kairo.Core.Localization;
 
 namespace Kairo.Core.Services;
 
@@ -23,12 +24,12 @@ internal static class FrpcArchiveExtractor
         }
         else
         {
-            throw new InvalidOperationException("不支持的压缩格式");
+            throw new InvalidOperationException(L.T("core.download.unsupportedArchive"));
         }
 
         var exeName = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "frpc.exe" : "frpc";
         var frpcPath = Directory.GetFiles(extractDir, exeName, SearchOption.AllDirectories).FirstOrDefault()
-            ?? throw new InvalidOperationException("未找到 frpc 可执行文件");
+            ?? throw new InvalidOperationException(L.T("core.download.frpcNotFound"));
 
         var finalPath = Path.Combine(workDir, exeName);
         File.Copy(frpcPath, finalPath, true);

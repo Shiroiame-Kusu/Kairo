@@ -2,6 +2,7 @@ using System.Diagnostics;
 using Kairo.Core.Logging;
 using Kairo.Core.Models;
 using Kairo.Core.Providers;
+using Kairo.Core.Localization;
 
 namespace Kairo.Core.Services;
 
@@ -23,11 +24,11 @@ public sealed class FrpcDownloadService
         IProgress<FrpcDownloadProgress>? progress = null,
         CancellationToken ct = default)
     {
-        progress?.Report(new FrpcDownloadProgress { Stage = FrpcDownloadStage.FetchingRelease, Message = "正在获取版本信息..." });
-        var release = await provider.GetLatestFrpcReleaseAsync(_http, ct) ?? throw new InvalidOperationException("无法获取版本信息");
+        progress?.Report(new FrpcDownloadProgress { Stage = FrpcDownloadStage.FetchingRelease, Message = L.T("core.download.fetchingRelease") });
+        var release = await provider.GetLatestFrpcReleaseAsync(_http, ct) ?? throw new InvalidOperationException(L.T("core.download.noRelease"));
         var selection = provider.SelectBestAsset(release);
         var asset = selection.Asset;
-        if (string.IsNullOrWhiteSpace(asset.DownloadUrl)) throw new InvalidOperationException("下载地址缺失");
+        if (string.IsNullOrWhiteSpace(asset.DownloadUrl)) throw new InvalidOperationException(L.T("core.download.noDownloadUrl"));
 
         var downloadUrl = provider.GetDownloadUrl(release, asset, options.UseMirror && !options.ForceOrigin);
         var workDir = string.IsNullOrWhiteSpace(options.WorkDirectory)
@@ -48,7 +49,7 @@ public sealed class FrpcDownloadService
             {
                 currentUrl = asset.DownloadUrl;
                 if (File.Exists(tempFile)) File.Delete(tempFile);
-                progress?.Report(new FrpcDownloadProgress { Stage = FrpcDownloadStage.Downloading, Message = "镜像失败，切换到 GitHub 源..." });
+                progress?.Report(new FrpcDownloadProgress { Stage = FrpcDownloadStage.Downloading, Message = L.T("core.download.mirrorFailed") });
             }
 
             for (var attempt = 1; attempt <= MaxAttempts; attempt++)
@@ -59,18 +60,18 @@ public sealed class FrpcDownloadService
                     progress?.Report(new FrpcDownloadProgress
                     {
                         Stage = FrpcDownloadStage.Downloading,
-                        Message = attempt == 1 ? "正在下载..." : $"正在下载...(重试 {attempt}/{MaxAttempts})",
+                        Message = attempt == 1 ? L.T("core.download.downloading") : L.T("core.download.downloadingRetry", attempt, MaxAttempts),
                         DownloadUrl = currentUrl
                     });
                     await DownloadFileAsync(currentUrl, tempFile, progress, ct);
 
-                    progress?.Report(new FrpcDownloadProgress { Stage = FrpcDownloadStage.Verifying, Message = "正在校验..." });
+                    progress?.Report(new FrpcDownloadProgress { Stage = FrpcDownloadStage.Verifying, Message = L.T("core.download.verifying") });
                     await _checksumVerifier.VerifyAsync(provider, release, asset, tempFile, options.UseMirror && !options.ForceOrigin && sourceRound == 0, ct);
 
-                    progress?.Report(new FrpcDownloadProgress { Stage = FrpcDownloadStage.Extracting, Message = "正在解压..." });
+                    progress?.Report(new FrpcDownloadProgress { Stage = FrpcDownloadStage.Extracting, Message = L.T("core.download.extracting") });
                     var finalPath = await FrpcArchiveExtractor.ExtractAsync(tempFile, workDir, ct);
 
-                    progress?.Report(new FrpcDownloadProgress { Stage = FrpcDownloadStage.Completed, Message = "完成", FrpcPath = finalPath });
+                    progress?.Report(new FrpcDownloadProgress { Stage = FrpcDownloadStage.Completed, Message = L.T("core.download.completed"), FrpcPath = finalPath });
                     return new FrpcInstallResult
                     {
                         Success = true,
@@ -100,7 +101,7 @@ public sealed class FrpcDownloadService
         return new FrpcInstallResult
         {
             Success = false,
-            Message = lastError?.Message ?? "下载失败"
+            Message = lastError?.Message ?? L.T("core.download.failed")
         };
     }
 

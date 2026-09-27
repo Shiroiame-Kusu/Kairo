@@ -33,7 +33,7 @@ namespace Kairo
                 ConfigManager.Save();
         }
 
-        public static readonly List<string> Tips = AppConstants.Tips;
+        public static IReadOnlyList<string> Tips => AppConstants.Tips;
 
         //public const string UpdateCheckerAPI = "http://localhost:5043/api";
         public const string UpdateCheckerAPI = AppConstants.UpdateCheckerAPI;

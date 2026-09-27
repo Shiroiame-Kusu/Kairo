@@ -3,6 +3,7 @@ using System.Text.RegularExpressions;
 using Kairo.Core.Logging;
 using Kairo.Core.Models;
 using Kairo.Core.Providers;
+using Kairo.Core.Localization;
 
 namespace Kairo.Core.Services;
 
@@ -83,6 +84,6 @@ internal sealed class FrpcChecksumVerifier
             ? Convert.ToHexString(await SHA256.HashDataAsync(fs, ct)).ToLowerInvariant()
             : Convert.ToHexString(await MD5.HashDataAsync(fs, ct)).ToLowerInvariant();
         if (!string.Equals(expectedHash, actual, StringComparison.OrdinalIgnoreCase))
-            throw new InvalidOperationException("文件哈希不匹配");
+            throw new InvalidOperationException(L.T("core.download.hashMismatch"));
     }
 }

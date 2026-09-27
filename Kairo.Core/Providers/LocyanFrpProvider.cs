@@ -1,5 +1,6 @@
 using Kairo.Core.Logging;
 using Kairo.Core.Models;
+using Kairo.Core.Localization;
 
 namespace Kairo.Core.Providers;
 
@@ -42,7 +43,7 @@ public sealed class LocyanFrpProvider : IFrpProvider
         if (!parsed.Success) return FrpApiResult<string>.Fail(parsed.Code, parsed.Message);
         var token = parsed.Data?.RefreshToken ?? string.Empty;
         return string.IsNullOrWhiteSpace(token)
-            ? FrpApiResult<string>.Fail(0, "API 返回的 Refresh Token 为空")
+            ? FrpApiResult<string>.Fail(0, L.T("core.api.emptyRefreshToken"))
             : FrpApiResult<string>.Ok(token, parsed.Code, parsed.Message);
     }
 
@@ -61,7 +62,7 @@ public sealed class LocyanFrpProvider : IFrpProvider
         var userId = parsed.Data?.UserId ?? 0;
         var accessToken = parsed.Data?.AccessToken ?? string.Empty;
         if (userId <= 0 || string.IsNullOrWhiteSpace(accessToken))
-            return FrpApiResult<FrpLoginResult>.Fail(0, "Access Token 响应缺失必要字段");
+            return FrpApiResult<FrpLoginResult>.Fail(0, L.T("core.api.accessTokenMissingFields"));
 
         http.DefaultRequestHeaders.Remove("Authorization");
         http.DefaultRequestHeaders.Add("Authorization", $"Bearer {accessToken}");
