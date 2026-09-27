@@ -46,6 +46,7 @@ namespace Kairo.Components.DashBoard
             _titleBar = this.FindControl<CustomTitleBar>("TitleBar");
             this.Opened += OnDashBoardOpened;
             this.Deactivated += OnDashBoardDeactivated;
+            this.KeyDown += OnDashBoardKeyDown;
             _ = LoadAvatar();
         }
 
@@ -118,6 +119,13 @@ namespace Kairo.Components.DashBoard
                 AppLogger.Exception("Unhandled exception in Kairo/Components/DashBoard.axaml.cs:111", ex);
                 // ignore background update failures
             }
+        }
+
+        private void OnDashBoardKeyDown(object? sender, Avalonia.Input.KeyEventArgs e)
+        {
+            if (e.Handled) return;
+            if (ContentHost.Content is ProxyListPage page && page.HandleShortcut(e))
+                e.Handled = true;
         }
 
         private void OnDashBoardDeactivated(object? sender, EventArgs e)
