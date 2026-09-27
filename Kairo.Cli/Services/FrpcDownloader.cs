@@ -5,6 +5,7 @@ using Kairo.Core.Providers;
 using Kairo.Core.Services;
 using Kairo.Cli.Configuration;
 using Kairo.Cli.Utils;
+using Kairo.Core.Localization;
 
 namespace Kairo.Cli.Services;
 
@@ -55,7 +56,7 @@ public class FrpcDownloader : IDisposable
             Logger.Debug($"开始下载 frpc: provider={_provider.Id}, forceGitHub={ForceGitHub}");
 
             if (ForceGitHub)
-                ConsoleUi.Step("下载", "使用 GitHub 源（用户指定）");
+                ConsoleUi.Step(L.T("cli.download.tag"), L.T("cli.download.githubForced"));
 
             var result = await _downloadService.InstallAsync(
                 _provider,
@@ -87,7 +88,7 @@ public class FrpcDownloader : IDisposable
             EndProgressLine();
             Logger.Warning("下载被取消");
             Logger.MethodExit("取消");
-            return new DownloadResult { Success = false, Message = "下载已取消" };
+            return new DownloadResult { Success = false, Message = L.T("cli.download.cancelled") };
         }
         catch (Exception ex)
         {
@@ -108,14 +109,14 @@ public class FrpcDownloader : IDisposable
                 if (!string.IsNullOrWhiteSpace(progress.Message))
                 {
                     EndProgressLine();
-                    ConsoleUi.Step("下载", progress.Message);
+                    ConsoleUi.Step(L.T("cli.download.tag"), progress.Message);
                 }
                 break;
             case FrpcDownloadStage.Downloading:
                 if (!string.IsNullOrWhiteSpace(progress.Message))
                 {
                     EndProgressLine();
-                    ConsoleUi.Step("下载", progress.Message);
+                    ConsoleUi.Step(L.T("cli.download.tag"), progress.Message);
                     if (!string.IsNullOrWhiteSpace(progress.DownloadUrl))
                         Logger.Debug($"下载地址: {progress.DownloadUrl}");
                 }
@@ -125,7 +126,7 @@ public class FrpcDownloader : IDisposable
                 break;
             case FrpcDownloadStage.Completed:
                 EndProgressLine();
-                ConsoleUi.Success("frpc 下载完成");
+                ConsoleUi.Success(L.T("cli.download.completed"));
                 break;
         }
     }
@@ -144,7 +145,7 @@ public class FrpcDownloader : IDisposable
             var decile = (int)(progress.Percent / 10);
             if (decile == _lastReportedDecile) return;
             _lastReportedDecile = decile;
-            Console.WriteLine($"[下载] {progress.Percent:F0}% {sizeText}");
+            Console.WriteLine($"[{L.T("cli.download.tag")}] {progress.Percent:F0}% {sizeText}");
             return;
         }
 

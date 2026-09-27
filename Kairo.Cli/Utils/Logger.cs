@@ -1,4 +1,5 @@
 using System.Runtime.CompilerServices;
+using Kairo.Core.Localization;
 
 namespace Kairo.Cli.Utils;
 
@@ -61,7 +62,7 @@ public static class Logger
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[警告] 无法创建日志文件: {ex}");
+                ConsoleUi.Warn(L.T("cli.log.createFailed", ex.Message));
                 _writeToFile = false;
             }
         }

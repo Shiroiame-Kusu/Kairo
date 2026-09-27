@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text;
+using Kairo.Core.Localization;
 
 namespace Kairo.Cli.Utils;
 
@@ -29,11 +30,11 @@ internal static class ConsoleUi
 
     // ── 状态行 ───────────────────────────────────────────────
 
-    public static void Success(string message) => Tagged("成功", ConsoleColor.Green, message);
-    public static void Info(string message) => Tagged("信息", ConsoleColor.Cyan, message);
-    public static void Warn(string message) => Tagged("警告", ConsoleColor.Yellow, message);
-    public static void Error(string message) => Tagged("错误", ConsoleColor.Red, message);
-    public static void Hint(string message) => Tagged("提示", ConsoleColor.Magenta, message);
+    public static void Success(string message) => Tagged(L.T("cli.tag.success"), ConsoleColor.Green, message);
+    public static void Info(string message) => Tagged(L.T("cli.tag.info"), ConsoleColor.Cyan, message);
+    public static void Warn(string message) => Tagged(L.T("cli.tag.warn"), ConsoleColor.Yellow, message);
+    public static void Error(string message) => Tagged(L.T("cli.tag.error"), ConsoleColor.Red, message);
+    public static void Hint(string message) => Tagged(L.T("cli.tag.hint"), ConsoleColor.Magenta, message);
     public static void Step(string tag, string message) => Tagged(tag, ConsoleColor.Blue, message);
 
     private static void Tagged(string tag, ConsoleColor color, string message)
@@ -212,12 +213,12 @@ internal static class ConsoleUi
 
         while (true)
         {
-            var input = Prompt("请输入序号", (defaultIndex + 1).ToString(CultureInfo.InvariantCulture));
+            var input = Prompt(L.T("cli.prompt.chooseNumber"), (defaultIndex + 1).ToString(CultureInfo.InvariantCulture));
             if (input == null || input.Equals("q", StringComparison.OrdinalIgnoreCase))
                 return null;
             if (int.TryParse(input, out var number) && number >= 1 && number <= options.Count)
                 return number - 1;
-            Warn($"请输入 1-{options.Count} 之间的数字，或输入 q 取消");
+            Warn(L.T("cli.prompt.invalidNumber", options.Count));
         }
     }
 

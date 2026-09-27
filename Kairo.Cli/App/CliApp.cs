@@ -1,4 +1,5 @@
 using Kairo.Core.Configuration;
+using Kairo.Core.Localization;
 using Kairo.Core.Logging;
 using Kairo.Core.Models;
 using Kairo.Core.Providers;
@@ -44,7 +45,7 @@ public class CliApp : IDisposable
         {
             foreach (var error in options.Errors)
                 ConsoleUi.Error(error);
-            ConsoleUi.Hint("运行 kairo-cli --help 查看所有命令与参数");
+            ConsoleUi.Hint(L.T("cli.app.seeHelp"));
             return 2;
         }
 
@@ -86,14 +87,14 @@ public class CliApp : IDisposable
 
         if (ShouldAskForProvider(options))
         {
-            var picked = CliProviderSwitcher.Pick("请选择要使用的服务商:");
+            var picked = CliProviderSwitcher.Pick(L.T("cli.app.chooseProvider"));
             if (picked == null)
             {
-                ConsoleUi.Info("已取消");
+                ConsoleUi.Info(L.T("cli.cancelled"));
                 return 1;
             }
             if (picked.Id == CurrentProvider.Id)
-                ConsoleUi.Info($"将使用 {picked.DisplayName}");
+                ConsoleUi.Info(L.T("cli.app.usingProvider", picked.DisplayName));
             else
                 CliProviderSwitcher.SwitchTo(picked);
         }
@@ -123,8 +124,8 @@ public class CliApp : IDisposable
         var frpToken = ResolveFrpToken(options);
         if (string.IsNullOrWhiteSpace(frpToken) && CurrentProvider.Type != FrpProviderType.Lolia)
         {
-            ConsoleUi.Error("未获取到 FRP Token");
-            ConsoleUi.Hint("运行 kairo-cli login 重新登录，或使用 --frp-token 指定");
+            ConsoleUi.Error(L.T("cli.app.noFrpToken"));
+            ConsoleUi.Hint(L.T("cli.app.noFrpTokenHint"));
             return 1;
         }
 
@@ -162,10 +163,10 @@ public class CliApp : IDisposable
         CliProviderSwitcher.PrintProviders();
         if (options.InteractiveMode)
         {
-            var picked = CliProviderSwitcher.Pick("切换到:");
+            var picked = CliProviderSwitcher.Pick(L.T("cli.app.switchTo"));
             if (picked == null)
             {
-                ConsoleUi.Info("已取消");
+                ConsoleUi.Info(L.T("cli.cancelled"));
                 return providerOnly ? 0 : 1;
             }
             CliProviderSwitcher.SwitchTo(picked);
@@ -173,7 +174,7 @@ public class CliApp : IDisposable
         }
         else if (providerOnly)
         {
-            ConsoleUi.Command("kairo-cli provider <名称>", "# 切换服务商");
+            ConsoleUi.Command(L.T("cli.app.providerCommand"), L.T("cli.app.comment.switchProvider"));
         }
 
         return providerOnly ? 0 : null;
@@ -195,12 +196,12 @@ public class CliApp : IDisposable
         Console.WriteLine();
         if (CliProviderSwitcher.IsLoggedIn(provider))
         {
-            ConsoleUi.Command("kairo-cli list", "# 查看隧道");
-            ConsoleUi.Command("kairo-cli start", "# 选择并启动隧道");
+            ConsoleUi.Command("kairo-cli list", L.T("cli.app.comment.list"));
+            ConsoleUi.Command("kairo-cli start", L.T("cli.app.comment.start"));
         }
         else
         {
-            ConsoleUi.Command("kairo-cli login", $"# 登录 {provider.DisplayName}");
+            ConsoleUi.Command("kairo-cli login", L.T("cli.app.comment.login", provider.DisplayName));
         }
     }
 
@@ -223,14 +224,14 @@ public class CliApp : IDisposable
     private void ShowNotLoggedInGuidance()
     {
         var provider = CurrentProvider;
-        ConsoleUi.Error($"尚未登录 {provider.DisplayName}");
-        ConsoleUi.Hint("在交互式终端中运行以下命令完成登录:");
+        ConsoleUi.Error(L.T("cli.app.notSignedIn", provider.DisplayName));
+        ConsoleUi.Hint(L.T("cli.app.signInHint"));
         ConsoleUi.Command("kairo-cli login");
         if (provider.Type != FrpProviderType.Lolia)
         {
-            ConsoleUi.Dim("       或者先获取授权链接，再使用授权码登录:");
+            ConsoleUi.Dim(L.T("cli.app.orUseCode"));
             ConsoleUi.Command("kairo-cli --oauth");
-            ConsoleUi.Command("kairo-cli login --code <授权码>");
+            ConsoleUi.Command(L.T("cli.app.loginWithCodeCommand"));
         }
     }
 
@@ -244,14 +245,14 @@ public class CliApp : IDisposable
         else if (options.InteractiveMode)
         {
             if (HasSavedLogin())
-                ConsoleUi.Info($"当前已登录为 {CliConfigManager.Config.Username}，将重新授权");
+                ConsoleUi.Info(L.T("cli.app.reauthorizing", CliConfigManager.Config.Username));
             success = await _oauthFlow.InteractiveLoginAsync(_apiClient!);
         }
         else
         {
-            ConsoleUi.Error("登录需要交互式终端，或通过 --code / --refresh-token 提供凭据");
+            ConsoleUi.Error(L.T("cli.app.loginNeedsTerminal"));
             if (CurrentProvider.Type != FrpProviderType.Lolia)
-                ConsoleUi.Command("kairo-cli --oauth", "# 获取授权链接");
+                ConsoleUi.Command("kairo-cli --oauth", L.T("cli.app.comment.getAuthLink"));
             return 1;
         }
 
@@ -266,8 +267,8 @@ public class CliApp : IDisposable
         {
             if (CurrentProvider.Type == FrpProviderType.Lolia)
             {
-                ConsoleUi.Error($"{CurrentProvider.DisplayName} 的授权使用 PKCE，无法单独使用授权码登录");
-                ConsoleUi.Hint("请在交互式终端中运行 kairo-cli login");
+                ConsoleUi.Error(L.T("cli.app.pkceOnly", CurrentProvider.DisplayName));
+                ConsoleUi.Hint(L.T("cli.app.pkceHint"));
                 return false;
             }
             return await _oauthFlow.PerformLoginWithCodeAsync(_apiClient!, options.OAuthCode);
@@ -284,14 +285,14 @@ public class CliApp : IDisposable
         var provider = CurrentProvider;
         if (!HasSavedLogin())
         {
-            ConsoleUi.Info($"{provider.DisplayName} 当前未登录");
+            ConsoleUi.Info(L.T("cli.app.alreadySignedOut", provider.DisplayName));
             return 0;
         }
 
         var username = CliConfigManager.Config.Username;
-        if (options.InteractiveMode && !ConsoleUi.Confirm($"确定要退出 {provider.DisplayName} 账号 {username} 吗?"))
+        if (options.InteractiveMode && !ConsoleUi.Confirm(L.T("cli.app.logoutConfirm", provider.DisplayName, username)))
         {
-            ConsoleUi.Info("已取消");
+            ConsoleUi.Info(L.T("cli.cancelled"));
             return 0;
         }
 
@@ -302,7 +303,7 @@ public class CliApp : IDisposable
         CliConfigManager.Config.ID = 0;
         CliConfigManager.Config.FrpToken = string.Empty;
         CliConfigManager.Save();
-        ConsoleUi.Success($"已退出 {provider.DisplayName} 账号 {username}");
+        ConsoleUi.Success(L.T("cli.app.loggedOut", provider.DisplayName, username));
         return 0;
     }
 
@@ -313,26 +314,33 @@ public class CliApp : IDisposable
         var frpcPath = ProviderFrpcPath.Get(provider);
         var frpcInstalled = !string.IsNullOrWhiteSpace(frpcPath) && File.Exists(frpcPath);
 
-        ConsoleUi.Section("当前状态");
-        ConsoleUi.KeyValue("服务商", $"{provider.DisplayName} ({provider.Id})");
-        if (HasSavedLogin())
-            ConsoleUi.KeyValue("账号", config.ID > 0 ? $"{config.Username} (UID {config.ID})" : config.Username, valueColor: ConsoleColor.Green);
-        else
-            ConsoleUi.KeyValue("账号", "未登录", valueColor: ConsoleColor.Yellow);
-        ConsoleUi.KeyValue("FRP Token", provider.Type == FrpProviderType.Lolia
-            ? "启动时按隧道获取"
-            : string.IsNullOrWhiteSpace(config.FrpToken) ? "无" : SecretMasker.Mask(config.FrpToken));
-        ConsoleUi.KeyValue("frpc", frpcInstalled ? frpcPath : "未安装（启动隧道时会自动下载）",
-            valueColor: frpcInstalled ? null : ConsoleColor.DarkGray);
-        ConsoleUi.KeyValue("下载源", config.UsingDownloadMirror ? "国内镜像优先" : "GitHub");
-        ConsoleUi.KeyValue("配置文件", ConfigHelper.GetSettingsFilePath());
+        var rows = new List<(string Key, string Value, ConsoleColor? Color)>
+        {
+            (L.T("cli.status.provider"), $"{provider.DisplayName} ({provider.Id})", null),
+            HasSavedLogin()
+                ? (L.T("cli.status.account"), config.ID > 0 ? $"{config.Username} (UID {config.ID})" : config.Username, ConsoleColor.Green)
+                : (L.T("cli.status.account"), L.T("cli.status.notSignedIn"), ConsoleColor.Yellow),
+            (L.T("cli.status.frpToken"), provider.Type == FrpProviderType.Lolia
+                ? L.T("cli.status.perTunnelToken")
+                : string.IsNullOrWhiteSpace(config.FrpToken) ? L.T("cli.status.none") : SecretMasker.Mask(config.FrpToken), null),
+            ("frpc", frpcInstalled ? frpcPath : L.T("cli.status.frpcMissing"), frpcInstalled ? null : ConsoleColor.DarkGray),
+            (L.T("cli.status.source"), config.UsingDownloadMirror ? L.T("cli.status.mirrorFirst") : "GitHub", null),
+            (L.T("cli.status.language"), CurrentLanguageDisplay(), null),
+            (L.T("cli.status.configFile"), ConfigHelper.GetSettingsFilePath(), null)
+        };
         if (Logger.LogFilePath != null)
-            ConsoleUi.KeyValue("日志目录", Path.GetDirectoryName(Logger.LogFilePath) ?? Logger.LogFilePath);
+            rows.Add((L.T("cli.status.logDir"), Path.GetDirectoryName(Logger.LogFilePath) ?? Logger.LogFilePath, null));
+
+        ConsoleUi.Section(L.T("cli.status.title"));
+        // 键名随语言变化，按最长的键对齐
+        var keyWidth = rows.Max(row => ConsoleUi.DisplayWidth(row.Key)) + 1;
+        foreach (var row in rows)
+            ConsoleUi.KeyValue(row.Key, row.Value, keyWidth, row.Color);
 
         CliProviderSwitcher.PrintProviders();
         if (!HasSavedLogin())
-            ConsoleUi.Command("kairo-cli login", $"# 登录 {provider.DisplayName}");
-        ConsoleUi.Command("kairo-cli provider <名称>", "# 切换服务商");
+            ConsoleUi.Command("kairo-cli login", L.T("cli.app.comment.login", provider.DisplayName));
+        ConsoleUi.Command(L.T("cli.app.providerCommand"), L.T("cli.app.comment.switchProvider"));
         Console.WriteLine();
     }
 
@@ -355,7 +363,7 @@ public class CliApp : IDisposable
         }
 
         CliTunnelSelector.ShowTunnelList(tunnels, CurrentProvider);
-        ConsoleUi.Command("kairo-cli start <ID,...>", "# 启动指定隧道");
+        ConsoleUi.Command("kairo-cli start <ID,...>", L.T("cli.app.comment.startIds"));
         Console.WriteLine();
         return 0;
     }
@@ -370,7 +378,7 @@ public class CliApp : IDisposable
         {
             if (File.Exists(options.FrpcPath))
                 return options.FrpcPath;
-            ConsoleUi.Error($"指定的 frpc 不存在: {options.FrpcPath}");
+            ConsoleUi.Error(L.T("cli.frpc.pathMissing", options.FrpcPath));
             return null;
         }
 
@@ -378,19 +386,17 @@ public class CliApp : IDisposable
         if (!string.IsNullOrWhiteSpace(frpcPath) && File.Exists(frpcPath))
             return frpcPath;
 
-        ConsoleUi.Info($"未找到 {CurrentProvider.DisplayName} frpc，正在自动下载...");
+        ConsoleUi.Info(L.T("cli.frpc.downloadingAuto", CurrentProvider.DisplayName));
         using var downloader = new FrpcDownloader(CurrentProvider) { ForceGitHub = options.ForceGitHub };
         var downloadResult = await downloader.DownloadAsync(_cts.Token);
         if (!downloadResult.Success)
         {
-            ConsoleUi.Error($"下载 frpc 失败: {downloadResult.Message}");
-            ConsoleUi.Hint(options.ForceGitHub
-                ? "可以使用 --frpc-path 指定本地已有的 frpc"
-                : "可以加上 --github 改用 GitHub 源重试，或使用 --frpc-path 指定本地已有的 frpc");
+            ConsoleUi.Error(L.T("cli.frpc.downloadFailed", downloadResult.Message));
+            ConsoleUi.Hint(L.T(options.ForceGitHub ? "cli.frpc.useLocalHint" : "cli.frpc.useGithubHint"));
             return null;
         }
 
-        ConsoleUi.Dim($"       frpc 位置: {downloadResult.FrpcPath}");
+        ConsoleUi.Dim(L.T("cli.frpc.location", downloadResult.FrpcPath));
         return downloadResult.FrpcPath;
     }
 
@@ -427,7 +433,7 @@ public class CliApp : IDisposable
         }
         else
         {
-            ConsoleUi.Info("未指定隧道 ID，将启动全部隧道");
+            ConsoleUi.Info(L.T("cli.tunnels.startingAll"));
             options.ProxyIds.AddRange(tunnels.Select(t => t.Id));
         }
 
@@ -436,17 +442,21 @@ public class CliApp : IDisposable
 
     private static void ReportTunnelFetchFailure(string message)
     {
-        ConsoleUi.Error($"获取隧道列表失败: {message}");
-        if (!HasSavedLogin())
-            ConsoleUi.Hint("请先运行 kairo-cli login 登录");
-        else
-            ConsoleUi.Hint("请检查网络连接；如果登录已失效，请运行 kairo-cli login 重新登录");
+        ConsoleUi.Error(L.T("cli.tunnels.fetchFailed", message));
+        ConsoleUi.Hint(L.T(HasSavedLogin() ? "cli.tunnels.checkNetwork" : "cli.tunnels.signInFirst"));
     }
 
     private static void ShowNoTunnels()
     {
-        ConsoleUi.Info($"{CurrentProvider.DisplayName} 账号下还没有隧道");
-        ConsoleUi.Hint($"前往 {CurrentProvider.DashboardUrl} 创建隧道后再试");
+        ConsoleUi.Info(L.T("cli.tunnels.none", CurrentProvider.DisplayName));
+        ConsoleUi.Hint(L.T("cli.tunnels.createHint", CurrentProvider.DashboardUrl));
+    }
+
+    private static string CurrentLanguageDisplay()
+    {
+        var code = Localizer.CurrentLanguage;
+        var name = Localizer.Languages.FirstOrDefault(language => language.Code == code)?.NativeName ?? code;
+        return $"{name} ({code})";
     }
 
     private sealed record TunnelResolutionResult(List<Tunnel>? Items, int? ExitCode);

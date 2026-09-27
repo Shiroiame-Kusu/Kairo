@@ -21,4 +21,9 @@
     <ItemGroup>
         <ProjectReference Include="..\Kairo.Core\Kairo.Core.csproj"/>
     </ItemGroup>
+
+    <!-- 界面文本：Localization/Languages/<语言代码>.json -->
+    <ItemGroup>
+        <EmbeddedResource Include="Localization/Languages/*.json" LogicalName="Kairo.Cli.Lang.%(Filename).json" />
+    </ItemGroup>
 </Project>

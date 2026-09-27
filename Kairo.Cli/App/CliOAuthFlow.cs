@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Text;
 using Kairo.Core;
+using Kairo.Core.Localization;
 using Kairo.Core.Providers;
 using Kairo.Cli.Configuration;
 using Kairo.Cli.Services;
@@ -22,11 +23,11 @@ internal sealed class CliOAuthFlow
     {
         Logger.MethodEntry();
         var provider = _providerFactory();
-        ConsoleUi.Section($"登录 {provider.DisplayName}");
+        ConsoleUi.Section(L.T("cli.oauth.signInTitle", provider.DisplayName));
 
         if (!provider.SupportsOAuthLogin)
         {
-            ConsoleUi.Error($"{provider.DisplayName} 未公开 OAuth 登录接口");
+            ConsoleUi.Error(L.T("cli.oauth.unsupported", provider.DisplayName));
             Logger.MethodExit("false (provider unsupported)");
             return false;
         }
@@ -41,13 +42,13 @@ internal sealed class CliOAuthFlow
         var oauthUrl = BuildOAuthUrl(provider, redirectUri, codeChallenge);
         Logger.Debug($"OAuth URL: {oauthUrl}");
 
-        Console.WriteLine("1. 在浏览器中打开以下链接并完成授权:");
+        Console.WriteLine(L.T("cli.oauth.step1"));
         ConsoleUi.WriteLine("   " + oauthUrl, ConsoleColor.Cyan);
         Console.WriteLine();
 
         if (EnvironmentDetector.IsLinuxHeadless())
-            ConsoleUi.Dim("   未检测到图形界面，请在任意设备的浏览器中打开上面的链接");
-        else if (ConsoleUi.Confirm("   是否自动打开浏览器?"))
+            ConsoleUi.Dim(L.T("cli.oauth.headless"));
+        else if (ConsoleUi.Confirm(L.T("cli.oauth.askOpenBrowser")))
             TryOpenBrowser(oauthUrl);
 
         Console.WriteLine();
@@ -55,11 +56,11 @@ internal sealed class CliOAuthFlow
         OAuthCallbackResult? callback = null;
         if (listener != null)
         {
-            Console.WriteLine("2. 授权完成后会自动返回这里。");
-            ConsoleUi.Dim("   如果浏览器不在本机，请复制浏览器地址栏中的完整地址并粘贴到下方");
+            Console.WriteLine(L.T("cli.oauth.step2Loopback"));
+            ConsoleUi.Dim(L.T("cli.oauth.pasteHint"));
             using var cts = new CancellationTokenSource();
             var callbackTask = listener.WaitForCallbackAsync(cts.Token);
-            input = await ConsoleUi.ReadLineUntilAsync("授权码或回调地址", callbackTask);
+            input = await ConsoleUi.ReadLineUntilAsync(L.T("cli.oauth.codeOrUrl"), callbackTask);
             if (input == null)
                 callback = await callbackTask;
             cts.Cancel();
@@ -67,9 +68,9 @@ internal sealed class CliOAuthFlow
         else
         {
             if (usesLoopback)
-                ConsoleUi.Warn($"无法监听本地回调端口 {CliConfigManager.Config.OAuthPort}，授权后请手动粘贴浏览器地址栏中的地址");
-            Console.WriteLine("2. 授权完成后，将页面显示的授权码粘贴到下方（也可以粘贴完整的回调地址）");
-            input = ConsoleUi.Prompt("授权码");
+                ConsoleUi.Warn(L.T("cli.oauth.loopbackFailed", CliConfigManager.Config.OAuthPort));
+            Console.WriteLine(L.T("cli.oauth.step2Code"));
+            input = ConsoleUi.Prompt(L.T("cli.oauth.code"));
         }
 
         var (code, refreshToken, error) = callback != null
@@ -77,11 +78,11 @@ internal sealed class CliOAuthFlow
             : ParseAuthorizationInput(input);
 
         if (callback != null && string.IsNullOrEmpty(error))
-            ConsoleUi.Success("已收到浏览器回调");
+            ConsoleUi.Success(L.T("cli.oauth.callbackReceived"));
 
         if (!string.IsNullOrEmpty(error))
         {
-            ConsoleUi.Error($"授权失败: {error}");
+            ConsoleUi.Error(L.T("cli.oauth.denied", error));
             Logger.MethodExit("false (授权被拒绝)");
             return false;
         }
@@ -93,7 +94,7 @@ internal sealed class CliOAuthFlow
             result = await PerformLoginWithCodeAsync(apiClient, code, codeVerifier, redirectUri);
         else
         {
-            ConsoleUi.Error("授权码不能为空");
+            ConsoleUi.Error(L.T("cli.oauth.emptyCode"));
             result = false;
         }
 
@@ -108,14 +109,14 @@ internal sealed class CliOAuthFlow
         if (!string.IsNullOrWhiteSpace(parsedRefreshToken))
             return await PerformLoginWithRefreshTokenAsync(apiClient, parsedRefreshToken);
 
-        ConsoleUi.Info("正在验证授权码...");
+        ConsoleUi.Info(L.T("cli.oauth.verifying"));
         var loginResult = await apiClient.ExchangeCodeForRefreshTokenAsync(parsedCode, codeVerifier, redirectUri);
         if (!loginResult.Success)
         {
-            ConsoleUi.Error($"登录失败: {loginResult.Message}");
+            ConsoleUi.Error(L.T("cli.oauth.failed", loginResult.Message));
             ConsoleUi.Hint(loginResult.IsNetworkError
-                ? $"无法连接到 {apiClient.Provider.DisplayName}，请检查网络后运行 kairo-cli login 重试"
-                : "授权码只能使用一次且会很快过期，请运行 kairo-cli login 重新授权");
+                ? L.T("cli.oauth.networkRetryLogin", apiClient.Provider.DisplayName)
+                : L.T("cli.oauth.codeExpired"));
             Logger.MethodExit("false");
             return false;
         }
@@ -128,14 +129,14 @@ internal sealed class CliOAuthFlow
     public async Task<bool> PerformLoginWithRefreshTokenAsync(ApiClient apiClient, string refreshToken)
     {
         Logger.MethodEntry($"refreshToken长度={refreshToken.Length}");
-        ConsoleUi.Info("正在使用 Refresh Token 登录...");
+        ConsoleUi.Info(L.T("cli.oauth.usingRefreshToken"));
         var loginResult = await apiClient.LoginWithRefreshTokenAsync(refreshToken);
         if (!loginResult.Success)
         {
-            ConsoleUi.Error($"登录失败: {loginResult.Message}");
+            ConsoleUi.Error(L.T("cli.oauth.failed", loginResult.Message));
             ConsoleUi.Hint(loginResult.IsNetworkError
-                ? $"无法连接到 {apiClient.Provider.DisplayName}，请检查网络后重试"
-                : "Refresh Token 可能已过期，请运行 kairo-cli login 重新授权");
+                ? L.T("cli.oauth.networkRetry", apiClient.Provider.DisplayName)
+                : L.T("cli.oauth.refreshExpired"));
             Logger.MethodExit("false");
             return false;
         }
@@ -150,29 +151,29 @@ internal sealed class CliOAuthFlow
         var provider = _providerFactory();
         if (!provider.SupportsOAuthLogin)
         {
-            ConsoleUi.Error($"{provider.DisplayName} 未公开 OAuth 登录接口");
+            ConsoleUi.Error(L.T("cli.oauth.unsupported", provider.DisplayName));
             return;
         }
         if (provider.Type == FrpProviderType.Lolia)
         {
-            ConsoleUi.Warn($"{provider.DisplayName} 的授权需要在交互模式下完成（PKCE 校验需要同一会话）");
-            ConsoleUi.Command("kairo-cli login", "# 按提示完成授权");
+            ConsoleUi.Warn(L.T("cli.oauth.pkceInteractive", provider.DisplayName));
+            ConsoleUi.Command("kairo-cli login", L.T("cli.oauth.followPrompts"));
             return;
         }
 
         var oauthUrl = BuildOAuthUrl(provider, string.Empty, string.Empty);
-        ConsoleUi.Section($"授权 {provider.DisplayName}");
-        Console.WriteLine("请在浏览器中打开以下链接进行授权:");
+        ConsoleUi.Section(L.T("cli.oauth.authorizeTitle", provider.DisplayName));
+        Console.WriteLine(L.T("cli.oauth.openLink"));
         ConsoleUi.WriteLine("  " + oauthUrl, ConsoleColor.Cyan);
         Console.WriteLine();
-        Console.WriteLine("授权完成后页面会显示授权码 (Code)，复制后执行:");
-        ConsoleUi.Command("kairo-cli --code <授权码>");
+        Console.WriteLine(L.T("cli.oauth.thenRun"));
+        ConsoleUi.Command(L.T("cli.oauth.codeCommand"));
     }
 
     private static void ReportLoginSuccess(IFrpProvider provider, string? username)
     {
-        ConsoleUi.Success($"已登录 {provider.DisplayName}，用户: {username}");
-        ConsoleUi.Dim($"       凭据已保存到 {Kairo.Core.Configuration.ConfigHelper.GetSettingsFilePath()}");
+        ConsoleUi.Success(L.T("cli.oauth.signedIn", provider.DisplayName, username));
+        ConsoleUi.Dim(L.T("cli.oauth.savedTo", Kairo.Core.Configuration.ConfigHelper.GetSettingsFilePath()));
     }
 
     /// <summary>
@@ -216,12 +217,12 @@ internal sealed class CliOAuthFlow
             else if (OperatingSystem.IsWindows())
                 using (Process.Start(new ProcessStartInfo("cmd", $"/c start {url.Replace("&", "^&")}") { UseShellExecute = false, CreateNoWindow = true })) { }
 
-            ConsoleUi.Dim("   已尝试打开浏览器");
+            ConsoleUi.Dim(L.T("cli.oauth.browserOpened"));
         }
         catch (Exception ex)
         {
             Logger.Debug($"打开浏览器失败: {ex.Message}");
-            ConsoleUi.Hint("无法自动打开浏览器，请手动复制链接");
+            ConsoleUi.Hint(L.T("cli.oauth.browserFailed"));
         }
     }
 

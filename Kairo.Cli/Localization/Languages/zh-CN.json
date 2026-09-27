@@ -1,0 +1,258 @@
+{
+  "cli": {
+    "tag": {
+      "success": "成功",
+      "info": "信息",
+      "warn": "警告",
+      "error": "错误",
+      "hint": "提示"
+    },
+    "prompt": {
+      "chooseNumber": "请输入序号",
+      "invalidNumber": "请输入 1-{0} 之间的数字，或输入 q 取消"
+    },
+    "language": {
+      "unsupported": "不支持的语言: {0}（可用: {1}，或 system）"
+    },
+    "unhandledError": "发生未处理的错误: {0}",
+    "rerunWithDebug": "使用 --debug 重新运行可以查看详细信息",
+    "cancelled": "已取消",
+    "args": {
+      "value": {
+        "code": "授权码",
+        "refreshToken": "Refresh Token",
+        "frpToken": "FRP Token",
+        "frpcPath": "frpc 路径",
+        "tunnelIds": "隧道 ID",
+        "language": "语言"
+      },
+      "missingValue": "{0} 需要提供{1}",
+      "missingValueExample": "{0} 需要提供{1}，例如: {0} <{1}>",
+      "unknownCommandSuggest": "未知命令: {0}，您是否想输入 \"{1}\"?",
+      "unknownCommand": "未知命令: {0}",
+      "extraArgument": "多余的参数: {0}",
+      "invalidTunnelId": "无效的隧道 ID: {0}（应为正整数，多个 ID 用逗号分隔）",
+      "unknownOptionSuggest": "未知参数: {0}，您是否想输入 \"{1}\"?",
+      "unknownOption": "未知参数: {0}"
+    },
+    "provider": {
+      "unknown": "未知的服务商: {0}",
+      "available": "可用的服务商: {0}",
+      "alreadyUsing": "当前已在使用 {0}",
+      "switchedSignedIn": "已切换到 {0}（已登录: {1}）",
+      "switchedSignedOut": "已切换到 {0}（尚未登录）",
+      "title": "服务商",
+      "signedInAs": "已登录: {0}",
+      "notSignedIn": "未登录",
+      "current": "(当前)",
+      "optionSignedIn": "{0}  (已登录: {1})"
+    },
+    "tunnels": {
+      "header": {
+        "number": "#",
+        "id": "ID",
+        "name": "名称",
+        "type": "类型",
+        "local": "本地地址",
+        "address": "访问地址",
+        "node": "节点"
+      },
+      "title": "{0} · 共 {1} 个隧道",
+      "selectHint": "  输入序号或隧道 ID，多个用逗号或空格分隔，支持范围（如 1-3）",
+      "selectHint2": "  直接回车或输入 all 启动全部，输入 q 退出",
+      "selectPrompt": "选择要启动的隧道",
+      "selectedAll": "已选择全部 {0} 个隧道",
+      "notFound": "未找到: {0}",
+      "selected": "已选择 {0} 个隧道: {1}",
+      "noneSelected": "没有选中任何隧道，请重新输入",
+      "startingAll": "未指定隧道 ID，将启动全部隧道",
+      "fetchFailed": "获取隧道列表失败: {0}",
+      "signInFirst": "请先运行 kairo-cli login 登录",
+      "checkNetwork": "请检查网络连接；如果登录已失效，请运行 kairo-cli login 重新登录",
+      "none": "{0} 账号下还没有隧道",
+      "createHint": "前往 {0} 创建隧道后再试"
+    },
+    "help": {
+      "usage": "用法",
+      "usageLine": "kairo-cli [命令] [选项]",
+      "commands": "命令",
+      "cmd": {
+        "none": "(无)",
+        "noneDescription": "交互式向导：登录并选择要启动的隧道",
+        "start": "启动隧道，例如 start 1,2,3；未指定 ID 时交互选择",
+        "list": "列出当前账号的所有隧道",
+        "login": "登录（或重新登录）当前服务商",
+        "logout": "退出当前服务商的登录",
+        "status": "查看服务商、登录状态与 frpc 信息",
+        "providerSyntax": "provider [名称]",
+        "provider": "查看或切换服务商 ({0})",
+        "help": "显示帮助 / 版本信息"
+      },
+      "options": "选项",
+      "opt": {
+        "providerSyntax": "--provider [名称]",
+        "provider": "切换服务商并记住选择；省略名称时交互选择",
+        "proxy": "指定要启动的隧道 ID",
+        "list": "列出隧道（同 list）",
+        "oauth": "仅显示 OAuth 授权链接",
+        "codeSyntax": "--code <授权码>",
+        "code": "使用 OAuth 授权码登录",
+        "refreshTokenSyntax": "-r, --refresh-token <令牌>",
+        "refreshToken": "使用 Refresh Token 登录（高级）",
+        "frpTokenSyntax": "-t, --frp-token <令牌>",
+        "frpToken": "指定 FRP Token",
+        "frpcPathSyntax": "-f, --frpc-path <路径>",
+        "frpcPath": "指定 frpc 可执行文件路径",
+        "github": "下载 frpc 时强制使用 GitHub 源",
+        "noInteractive": "禁用所有交互提示（适合脚本与服务）",
+        "langSyntax": "--lang <语言>",
+        "lang": "界面语言：zh-CN、en-US 或 system",
+        "noColor": "禁用彩色输出（也可设置 NO_COLOR 环境变量）",
+        "debug": "输出调试日志",
+        "logFile": "将日志写入文件",
+        "quiet": "安静模式（只显示警告和错误）",
+        "version": "显示版本信息",
+        "help": "显示此帮助信息"
+      },
+      "examples": "示例",
+      "example": {
+        "firstRun": "# 首次使用：选择服务商并登录",
+        "switchLolia": "# 切换到 LoliaFRP",
+        "switchAndList": "# 切换到 LoCyanFrp 并列出隧道",
+        "startIds": "# 启动 ID 为 1 和 2 的隧道",
+        "startAll": "# 不询问，直接启动全部隧道",
+        "lang": "# 用英文显示状态"
+      },
+      "environment": "环境变量",
+      "env": {
+        "configDir": "自定义配置目录",
+        "lang": "界面语言（--lang 优先，其次是配置中的 language）",
+        "noColor": "禁用彩色输出"
+      }
+    },
+    "app": {
+      "seeHelp": "运行 kairo-cli --help 查看所有命令与参数",
+      "chooseProvider": "请选择要使用的服务商:",
+      "usingProvider": "将使用 {0}",
+      "noFrpToken": "未获取到 FRP Token",
+      "noFrpTokenHint": "运行 kairo-cli login 重新登录，或使用 --frp-token 指定",
+      "switchTo": "切换到:",
+      "providerCommand": "kairo-cli provider <名称>",
+      "comment": {
+        "switchProvider": "# 切换服务商",
+        "list": "# 查看隧道",
+        "start": "# 选择并启动隧道",
+        "login": "# 登录 {0}",
+        "getAuthLink": "# 获取授权链接",
+        "startIds": "# 启动指定隧道"
+      },
+      "notSignedIn": "尚未登录 {0}",
+      "signInHint": "在交互式终端中运行以下命令完成登录:",
+      "orUseCode": "       或者先获取授权链接，再使用授权码登录:",
+      "loginWithCodeCommand": "kairo-cli login --code <授权码>",
+      "reauthorizing": "当前已登录为 {0}，将重新授权",
+      "loginNeedsTerminal": "登录需要交互式终端，或通过 --code / --refresh-token 提供凭据",
+      "pkceOnly": "{0} 的授权使用 PKCE，无法单独使用授权码登录",
+      "pkceHint": "请在交互式终端中运行 kairo-cli login",
+      "alreadySignedOut": "{0} 当前未登录",
+      "logoutConfirm": "确定要退出 {0} 账号 {1} 吗?",
+      "loggedOut": "已退出 {0} 账号 {1}"
+    },
+    "status": {
+      "title": "当前状态",
+      "provider": "服务商",
+      "account": "账号",
+      "notSignedIn": "未登录",
+      "frpToken": "FRP Token",
+      "perTunnelToken": "启动时按隧道获取",
+      "none": "无",
+      "frpcMissing": "未安装（启动隧道时会自动下载）",
+      "source": "下载源",
+      "mirrorFirst": "国内镜像优先",
+      "language": "界面语言",
+      "configFile": "配置文件",
+      "logDir": "日志目录"
+    },
+    "frpc": {
+      "pathMissing": "指定的 frpc 不存在: {0}",
+      "downloadingAuto": "未找到 {0} frpc，正在自动下载...",
+      "downloadFailed": "下载 frpc 失败: {0}",
+      "useLocalHint": "可以使用 --frpc-path 指定本地已有的 frpc",
+      "useGithubHint": "可以加上 --github 改用 GitHub 源重试，或使用 --frpc-path 指定本地已有的 frpc",
+      "location": "       frpc 位置: {0}"
+    },
+    "oauth": {
+      "signInTitle": "登录 {0}",
+      "unsupported": "{0} 未公开 OAuth 登录接口",
+      "step1": "1. 在浏览器中打开以下链接并完成授权:",
+      "headless": "   未检测到图形界面，请在任意设备的浏览器中打开上面的链接",
+      "askOpenBrowser": "   是否自动打开浏览器?",
+      "step2Loopback": "2. 授权完成后会自动返回这里。",
+      "pasteHint": "   如果浏览器不在本机，请复制浏览器地址栏中的完整地址并粘贴到下方",
+      "codeOrUrl": "授权码或回调地址",
+      "loopbackFailed": "无法监听本地回调端口 {0}，授权后请手动粘贴浏览器地址栏中的地址",
+      "step2Code": "2. 授权完成后，将页面显示的授权码粘贴到下方（也可以粘贴完整的回调地址）",
+      "code": "授权码",
+      "callbackReceived": "已收到浏览器回调",
+      "denied": "授权失败: {0}",
+      "emptyCode": "授权码不能为空",
+      "verifying": "正在验证授权码...",
+      "failed": "登录失败: {0}",
+      "networkRetryLogin": "无法连接到 {0}，请检查网络后运行 kairo-cli login 重试",
+      "codeExpired": "授权码只能使用一次且会很快过期，请运行 kairo-cli login 重新授权",
+      "usingRefreshToken": "正在使用 Refresh Token 登录...",
+      "networkRetry": "无法连接到 {0}，请检查网络后重试",
+      "refreshExpired": "Refresh Token 可能已过期，请运行 kairo-cli login 重新授权",
+      "pkceInteractive": "{0} 的授权需要在交互模式下完成（PKCE 校验需要同一会话）",
+      "followPrompts": "# 按提示完成授权",
+      "authorizeTitle": "授权 {0}",
+      "openLink": "请在浏览器中打开以下链接进行授权:",
+      "thenRun": "授权完成后页面会显示授权码 (Code)，复制后执行:",
+      "codeCommand": "kairo-cli --code <授权码>",
+      "signedIn": "已登录 {0}，用户: {1}",
+      "savedTo": "       凭据已保存到 {0}",
+      "browserOpened": "   已尝试打开浏览器",
+      "browserFailed": "无法自动打开浏览器，请手动复制链接"
+    },
+    "api": {
+      "status": "API状态: {0} {1}",
+      "notSignedIn": "尚未登录",
+      "refreshing": "登录状态已过期，正在自动刷新..."
+    },
+    "run": {
+      "title": "启动 {0} 个隧道",
+      "noneStarted": "没有成功启动的隧道",
+      "partlyStarted": "已启动 {0}/{1} 个隧道，失败的隧道请查看上方错误信息",
+      "allStarted": "已启动全部 {0} 个隧道",
+      "stopHint": "       按 Ctrl+C 停止所有隧道",
+      "allExited": "所有隧道进程均已退出",
+      "allStopped": "所有隧道已停止",
+      "notOnAccount": "{0} 启动失败: 当前账号下没有这个隧道",
+      "noTunnelInfo": "{0} 启动失败: 未找到隧道信息",
+      "failedWithReason": "{0} 启动失败: {1}",
+      "failed": "{0} 启动失败",
+      "started": "{0} 已启动 (PID {1})",
+      "startedWithAddress": "{0} 已启动 (PID {1}) → {2}",
+      "frpcFailed": "启动 frpc 失败: {0}",
+      "exited": "{0} 已退出",
+      "exitedWithCode": "{0} 已退出，退出码 {1}",
+      "stopping": "正在停止所有隧道..."
+    },
+    "download": {
+      "tag": "下载",
+      "githubForced": "使用 GitHub 源（用户指定）",
+      "cancelled": "下载已取消",
+      "completed": "frpc 下载完成"
+    },
+    "log": {
+      "createFailed": "无法创建日志文件: {0}"
+    },
+    "callback": {
+      "successTitle": "授权完成",
+      "failureTitle": "授权未完成",
+      "success": "Kairo CLI 已收到授权，可以关闭此页面并返回终端。",
+      "failure": "授权失败：{0}，请返回终端重试。",
+      "noCode": "未收到授权码"
+    }
+  }
+}

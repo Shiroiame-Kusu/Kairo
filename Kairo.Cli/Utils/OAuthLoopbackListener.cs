@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using Kairo.Core.Localization;
 
 namespace Kairo.Cli.Utils;
 
@@ -133,11 +134,11 @@ internal sealed class OAuthLoopbackListener : IDisposable
 
     private static string BuildPage(bool success, string error)
     {
-        var title = success ? "授权完成" : "授权未完成";
-        var message = success
-            ? "Kairo CLI 已收到授权，可以关闭此页面并返回终端。"
-            : $"授权失败：{WebUtility.HtmlEncode(string.IsNullOrEmpty(error) ? "未收到授权码" : error)}，请返回终端重试。";
-        return "<!doctype html><html lang=\"zh-CN\"><head><meta charset=\"utf-8\"><title>Kairo - " + title + "</title>" +
+        var title = WebUtility.HtmlEncode(L.T(success ? "cli.callback.successTitle" : "cli.callback.failureTitle"));
+        var message = WebUtility.HtmlEncode(success
+            ? L.T("cli.callback.success")
+            : L.T("cli.callback.failure", string.IsNullOrEmpty(error) ? L.T("cli.callback.noCode") : error));
+        return "<!doctype html><html lang=\"" + Localizer.CurrentLanguage + "\"><head><meta charset=\"utf-8\"><title>Kairo - " + title + "</title>" +
                "<style>body{font-family:system-ui,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;background:#f5f6f8;color:#222}" +
                "main{padding:32px 40px;border-radius:12px;background:#fff;box-shadow:0 8px 30px rgba(0,0,0,.08);text-align:center}" +
                "h1{font-size:20px;margin:0 0 8px}p{margin:0;color:#555}</style></head><body><main><h1>" + title + "</h1><p>" +

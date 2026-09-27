@@ -1,4 +1,5 @@
 using Kairo.Cli.Utils;
+using Kairo.Core.Localization;
 
 namespace Kairo.Cli;
 
@@ -25,7 +26,7 @@ internal static class CliArgumentParser
     {
         "--help", "--version", "--oauth", "--get-oauth-url", "--code", "--refresh-token", "--frp-token",
         "--frpc-path", "--proxy", "--list", "--provider", "--no-interactive", "--github", "--no-mirror",
-        "--debug", "--log-file", "--quiet", "--no-color"
+        "--debug", "--log-file", "--quiet", "--no-color", "--lang", "--language"
     };
 
     public static IReadOnlyCollection<string> CommandNames => Commands.Keys;
@@ -67,23 +68,27 @@ internal static class CliArgumentParser
                     options.GetOAuthUrl = true;
                     break;
                 case "--code":
-                    options.OAuthCode = ReadValue(args, ref i, inlineValue, "--code", "授权码", options);
+                    options.OAuthCode = ReadValue(args, ref i, inlineValue, "--code", L.T("cli.args.value.code"), options);
                     break;
                 case "--refresh-token" or "-r":
-                    options.RefreshToken = ReadValue(args, ref i, inlineValue, "--refresh-token", "Refresh Token", options);
+                    options.RefreshToken = ReadValue(args, ref i, inlineValue, "--refresh-token", L.T("cli.args.value.refreshToken"), options);
                     break;
                 case "--frp-token" or "-t":
-                    options.FrpToken = ReadValue(args, ref i, inlineValue, "--frp-token", "FRP Token", options);
+                    options.FrpToken = ReadValue(args, ref i, inlineValue, "--frp-token", L.T("cli.args.value.frpToken"), options);
                     break;
                 case "--frpc-path" or "-f":
-                    options.FrpcPath = ReadValue(args, ref i, inlineValue, "--frpc-path", "frpc 路径", options);
+                    options.FrpcPath = ReadValue(args, ref i, inlineValue, "--frpc-path", L.T("cli.args.value.frpcPath"), options);
                     break;
                 case "--proxy" or "-p":
-                    var ids = ReadValue(args, ref i, inlineValue, "--proxy", "隧道 ID", options);
+                    var ids = ReadValue(args, ref i, inlineValue, "--proxy", L.T("cli.args.value.tunnelIds"), options);
                     if (ids != null) ParseProxyIds(ids, options);
                     break;
                 case "--list" or "-l":
                     wantsList = true;
+                    break;
+                case "--lang" or "--language":
+                    // 界面语言在 Program 中已提前应用，这里只消费参数值
+                    ReadValue(args, ref i, inlineValue, arg, L.T("cli.args.value.language"), options);
                     break;
                 case "--provider":
                     options.ProviderRequested = true;
@@ -148,8 +153,8 @@ internal static class CliArgumentParser
 
             var suggestion = Suggest(value, Commands.Keys);
             options.Errors.Add(suggestion != null
-                ? $"未知命令: {value}，您是否想输入 \"{suggestion}\"?"
-                : $"未知命令: {value}");
+                ? L.T("cli.args.unknownCommandSuggest", value, suggestion)
+                : L.T("cli.args.unknownCommand", value));
             return;
         }
 
@@ -165,7 +170,7 @@ internal static class CliArgumentParser
             case CliCommand.Help:
                 break;
             default:
-                options.Errors.Add($"多余的参数: {value}");
+                options.Errors.Add(L.T("cli.args.extraArgument", value));
                 break;
         }
     }
@@ -175,14 +180,14 @@ internal static class CliArgumentParser
         if (inlineValue != null)
         {
             if (inlineValue.Length > 0) return inlineValue;
-            options.Errors.Add($"{optionName} 需要提供{valueName}");
+            options.Errors.Add(L.T("cli.args.missingValue", optionName, valueName));
             return null;
         }
 
         if (index + 1 < args.Length && !IsOption(args[index + 1]))
             return args[++index];
 
-        options.Errors.Add($"{optionName} 需要提供{valueName}，例如: {optionName} <{valueName}>");
+        options.Errors.Add(L.T("cli.args.missingValueExample", optionName, valueName));
         Logger.Warning($"{optionName} 缺少参数值");
         return null;
     }
@@ -210,7 +215,7 @@ internal static class CliArgumentParser
             }
             else
             {
-                options.Errors.Add($"无效的隧道 ID: {part.Trim()}（应为正整数，多个 ID 用逗号分隔）");
+                options.Errors.Add(L.T("cli.args.invalidTunnelId", part.Trim()));
             }
         }
     }
@@ -219,8 +224,8 @@ internal static class CliArgumentParser
     {
         var suggestion = Suggest(option, KnownOptions);
         return suggestion != null
-            ? $"未知参数: {option}，您是否想输入 \"{suggestion}\"?"
-            : $"未知参数: {option}";
+            ? L.T("cli.args.unknownOptionSuggest", option, suggestion)
+            : L.T("cli.args.unknownOption", option);
     }
 
     private static string? Suggest(string input, IEnumerable<string> candidates)

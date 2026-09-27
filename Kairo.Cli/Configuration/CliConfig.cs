@@ -26,6 +26,11 @@ public class CliConfig : BaseConfig
     public bool LogToFile { get; set; } = true;
 
     /// <summary>
+    /// 界面语言：语言代码（zh-CN、en-US）或 system；为空时使用简体中文。与 GUI 共用
+    /// </summary>
+    public string Language { get; set; } = "";
+
+    /// <summary>
     /// 保留 CLI 不认识的配置项（例如 GUI 的主题设置），保存时原样写回
     /// </summary>
     [JsonExtensionData]

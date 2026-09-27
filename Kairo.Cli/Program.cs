@@ -1,3 +1,4 @@
+using Kairo.Core.Localization;
 using Kairo.Core.Logging;
 using Kairo.Cli.Configuration;
 using Kairo.Cli.Services;
@@ -39,6 +40,7 @@ class Program
         // 初始化配置
         CliConfigManager.Init();
         ProviderAuth.ApplyCurrent();
+        var invalidLanguage = CliLanguage.Apply(CliLanguage.FindArgument(args), CliConfigManager.Config.Language);
 
         // 如果配置中启用了调试模式，覆盖日志级别
         if (CliConfigManager.Config.DebugMode && logLevel > LogLevel.Debug)
@@ -60,6 +62,9 @@ class Program
                 Logger.Debug(message);
         };
 
+        if (invalidLanguage != null)
+            ConsoleUi.Warn(L.T("cli.language.unsupported", invalidLanguage, string.Join(", ", Localizer.Languages.Select(l => l.Code))));
+
         Logger.Debug($"命令行参数: {string.Join(" ", args)}");
         Logger.Debug($"配置目录: {Kairo.Core.Configuration.ConfigHelper.GetConfigDirectory()}");
         Logger.Debug($"运行时: {System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription}");
@@ -76,8 +81,8 @@ class Program
         catch (Exception ex)
         {
             Logger.Exception(ex, "程序运行时发生未处理异常");
-            ConsoleUi.Error($"发生未处理的错误: {ex.Message}");
-            ConsoleUi.Hint("使用 --debug 重新运行可以查看详细信息");
+            ConsoleUi.Error(L.T("cli.unhandledError", ex.Message));
+            ConsoleUi.Hint(L.T("cli.rerunWithDebug"));
             return 1;
         }
     }

@@ -1,3 +1,4 @@
+using Kairo.Core.Localization;
 using Kairo.Core.Providers;
 using Kairo.Cli.Configuration;
 using Kairo.Cli.Services;
@@ -23,8 +24,8 @@ internal static class CliProviderSwitcher
         if (FrpProviderRegistry.TryGet(name, out provider))
             return true;
 
-        ConsoleUi.Error($"未知的服务商: {name}");
-        ConsoleUi.Hint("可用的服务商: " + string.Join(", ", FrpProviderRegistry.All.Select(p => $"{p.Id} ({p.DisplayName})")));
+        ConsoleUi.Error(L.T("cli.provider.unknown", name));
+        ConsoleUi.Hint(L.T("cli.provider.available", string.Join(", ", FrpProviderRegistry.All.Select(p => $"{p.Id} ({p.DisplayName})"))));
         return false;
     }
 
@@ -36,7 +37,7 @@ internal static class CliProviderSwitcher
         var current = Current;
         if (string.Equals(current.Id, provider.Id, StringComparison.OrdinalIgnoreCase))
         {
-            ConsoleUi.Info($"当前已在使用 {provider.DisplayName}");
+            ConsoleUi.Info(L.T("cli.provider.alreadyUsing", provider.DisplayName));
             return;
         }
 
@@ -48,13 +49,13 @@ internal static class CliProviderSwitcher
 
         var state = ProviderAuth.Peek(provider);
         ConsoleUi.Success(IsLoggedIn(provider)
-            ? $"已切换到 {provider.DisplayName}（已登录: {state.Username}）"
-            : $"已切换到 {provider.DisplayName}（尚未登录）");
+            ? L.T("cli.provider.switchedSignedIn", provider.DisplayName, state.Username)
+            : L.T("cli.provider.switchedSignedOut", provider.DisplayName));
     }
 
     public static void PrintProviders()
     {
-        ConsoleUi.Section("服务商");
+        ConsoleUi.Section(L.T("cli.provider.title"));
         var current = Current;
         var nameWidth = FrpProviderRegistry.All.Max(p => ConsoleUi.DisplayWidth(p.DisplayName)) + 2;
         foreach (var provider in FrpProviderRegistry.All)
@@ -66,11 +67,11 @@ internal static class CliProviderSwitcher
             ConsoleUi.Write(ConsoleUi.PadRight(provider.DisplayName, nameWidth), isCurrent ? ConsoleColor.White : ConsoleColor.Gray);
             ConsoleUi.Write(ConsoleUi.PadRight(provider.Id, 8), ConsoleColor.DarkGray);
             if (IsLoggedIn(provider))
-                ConsoleUi.Write($"已登录: {state.Username}", ConsoleColor.Green);
+                ConsoleUi.Write(L.T("cli.provider.signedInAs", state.Username), ConsoleColor.Green);
             else
-                ConsoleUi.Write("未登录", ConsoleColor.DarkGray);
+                ConsoleUi.Write(L.T("cli.provider.notSignedIn"), ConsoleColor.DarkGray);
             if (isCurrent)
-                ConsoleUi.Write("  (当前)", ConsoleColor.DarkGray);
+                ConsoleUi.Write("  " + L.T("cli.provider.current"), ConsoleColor.DarkGray);
             Console.WriteLine();
         }
         Console.WriteLine();
@@ -83,7 +84,7 @@ internal static class CliProviderSwitcher
         var current = Current;
         var labels = providers
             .Select(p => IsLoggedIn(p)
-                ? $"{p.DisplayName}  (已登录: {ProviderAuth.Peek(p).Username})"
+                ? L.T("cli.provider.optionSignedIn", p.DisplayName, ProviderAuth.Peek(p).Username)
                 : p.DisplayName)
             .ToList();
         var defaultIndex = Math.Max(0, providers.ToList().FindIndex(p => p.Id == current.Id));

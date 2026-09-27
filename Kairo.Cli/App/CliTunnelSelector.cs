@@ -1,3 +1,4 @@
+using Kairo.Core.Localization;
 using Kairo.Core.Models;
 using Kairo.Core.Providers;
 using Kairo.Cli.Utils;
@@ -6,14 +7,15 @@ namespace Kairo.Cli;
 
 internal static class CliTunnelSelector
 {
-    private static readonly string[] Headers = { "#", "ID", "名称", "类型", "本地地址", "访问地址", "节点" };
+    private static readonly string[] HeaderKeys = { "number", "id", "name", "type", "local", "address", "node" };
+    private static string[] Headers => HeaderKeys.Select(key => L.T("cli.tunnels.header." + key)).ToArray();
     private static readonly int[] MaxWidths = { 4, 8, 24, 6, 21, 36, 16 };
     private static readonly int[] MinWidths = { 1, 2, 8, 4, 9, 12, 4 };
     private const int ColumnGap = 2;
 
     public static void ShowTunnelList(IReadOnlyList<Tunnel> tunnels, IFrpProvider provider)
     {
-        ConsoleUi.Section($"{provider.DisplayName} · 共 {tunnels.Count} 个隧道");
+        ConsoleUi.Section(L.Plural("cli.tunnels.title", tunnels.Count, provider.DisplayName, tunnels.Count));
 
         var rows = tunnels.Select((t, i) => new[]
         {
@@ -26,11 +28,12 @@ internal static class CliTunnelSelector
             string.IsNullOrWhiteSpace(t.NodeInfo?.Name) ? "-" : t.NodeInfo!.Name!
         }).ToList();
 
-        var widths = ComputeWidths(rows);
+        var headers = Headers;
+        var widths = ComputeWidths(rows, headers);
 
         Console.Write("  ");
-        for (var c = 0; c < Headers.Length; c++)
-            ConsoleUi.Write(Cell(Headers[c], widths[c], c), ConsoleColor.DarkGray);
+        for (var c = 0; c < headers.Length; c++)
+            ConsoleUi.Write(Cell(headers[c], widths[c], c), ConsoleColor.DarkGray);
         Console.WriteLine();
         ConsoleUi.WriteLine("  " + new string('─', widths.Sum() + ColumnGap * (widths.Length - 1)), ConsoleColor.DarkGray);
 
@@ -63,21 +66,21 @@ internal static class CliTunnelSelector
 
     public static List<int>? InteractiveSelectTunnels(IReadOnlyList<Tunnel> tunnels)
     {
-        ConsoleUi.Dim("  输入序号或隧道 ID，多个用逗号或空格分隔，支持范围（如 1-3）");
-        ConsoleUi.Dim("  直接回车或输入 all 启动全部，输入 q 退出");
+        ConsoleUi.Dim(L.T("cli.tunnels.selectHint"));
+        ConsoleUi.Dim(L.T("cli.tunnels.selectHint2"));
 
         while (true)
         {
-            var input = ConsoleUi.Prompt("选择要启动的隧道", "all")?.ToLowerInvariant();
+            var input = ConsoleUi.Prompt(L.T("cli.tunnels.selectPrompt"), "all")?.ToLowerInvariant();
             if (input == null || input is "q" or "quit" or "exit")
             {
-                ConsoleUi.Info("已取消");
+                ConsoleUi.Info(L.T("cli.cancelled"));
                 return null;
             }
 
             if (input is "all" or "a" or "*")
             {
-                ConsoleUi.Info($"已选择全部 {tunnels.Count} 个隧道");
+                ConsoleUi.Info(L.Plural("cli.tunnels.selectedAll", tunnels.Count));
                 return tunnels.Select(t => t.Id).ToList();
             }
 
@@ -94,16 +97,16 @@ internal static class CliTunnelSelector
             }
 
             if (invalid.Count > 0)
-                ConsoleUi.Warn($"未找到: {string.Join(", ", invalid)}");
+                ConsoleUi.Warn(L.T("cli.tunnels.notFound", string.Join(", ", invalid)));
 
             if (selectedIds.Count > 0)
             {
                 var names = selectedIds.Select(id => tunnels.First(t => t.Id == id).ProxyName);
-                ConsoleUi.Info($"已选择 {selectedIds.Count} 个隧道: {string.Join(", ", names)}");
+                ConsoleUi.Info(L.Plural("cli.tunnels.selected", selectedIds.Count, selectedIds.Count, string.Join(", ", names)));
                 return selectedIds;
             }
 
-            ConsoleUi.Warn("没有选中任何隧道，请重新输入");
+            ConsoleUi.Warn(L.T("cli.tunnels.noneSelected"));
         }
     }
 
@@ -138,13 +141,13 @@ internal static class CliTunnelSelector
         return tunnels.FirstOrDefault(t => t.Id == num)?.Id;
     }
 
-    private static int[] ComputeWidths(IReadOnlyList<string[]> rows)
+    private static int[] ComputeWidths(IReadOnlyList<string[]> rows, IReadOnlyList<string> headers)
     {
-        var widths = new int[Headers.Length];
-        for (var c = 0; c < Headers.Length; c++)
+        var widths = new int[headers.Count];
+        for (var c = 0; c < headers.Count; c++)
         {
             var content = rows.Count == 0 ? 0 : rows.Max(r => ConsoleUi.DisplayWidth(r[c]));
-            widths[c] = Math.Min(MaxWidths[c], Math.Max(ConsoleUi.DisplayWidth(Headers[c]), content));
+            widths[c] = Math.Min(MaxWidths[c], Math.Max(ConsoleUi.DisplayWidth(headers[c]), content));
         }
 
         // 终端过窄时依次收缩：访问地址 → 名称 → 节点 → 本地地址
@@ -159,7 +162,7 @@ internal static class CliTunnelSelector
     }
 
     private static string Cell(string text, int width, int column) =>
-        column == Headers.Length - 1 ? text : ConsoleUi.PadRight(text, width) + new string(' ', ColumnGap);
+        column == HeaderKeys.Length - 1 ? text : ConsoleUi.PadRight(text, width) + new string(' ', ColumnGap);
 
     private static ConsoleColor TypeColor(string type) => type.ToLowerInvariant() switch
     {

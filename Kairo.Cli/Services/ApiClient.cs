@@ -3,6 +3,7 @@ using Kairo.Core.Models;
 using Kairo.Core.Providers;
 using Kairo.Cli.Configuration;
 using Kairo.Cli.Utils;
+using Kairo.Core.Localization;
 
 namespace Kairo.Cli.Services;
 
@@ -93,7 +94,7 @@ public class ApiClient : IDisposable
             {
                 Logger.Error($"登录失败: code={result.Code}, message={result.Message}");
                 Logger.MethodExit("失败");
-                return new LoginResult { Success = false, Message = $"API状态: {result.Code} {result.Message}" };
+                return new LoginResult { Success = false, Message = L.T("cli.api.status", result.Code, result.Message) };
             }
 
             CliConfigManager.Config.ID = result.Data.UserId;
@@ -162,7 +163,7 @@ public class ApiClient : IDisposable
         try
         {
             if (!await EnsureLoggedInAsync())
-                return FrpApiResult<List<Tunnel>>.Fail(401, "尚未登录");
+                return FrpApiResult<List<Tunnel>>.Fail(401, L.T("cli.api.notSignedIn"));
 
             var result = await WithAuthRetryAsync(() => _provider.GetTunnelsAsync(_http, CliConfigManager.Config.ID));
             if (!result.Success)
@@ -189,7 +190,7 @@ public class ApiClient : IDisposable
     public async Task<FrpApiResult<FrpcConfigResult>> GetFrpcConfigAsync(Tunnel tunnel)
     {
         if (!await EnsureLoggedInAsync())
-            return FrpApiResult<FrpcConfigResult>.Fail(401, "尚未登录");
+            return FrpApiResult<FrpcConfigResult>.Fail(401, L.T("cli.api.notSignedIn"));
 
         var frpTunnel = new FrpTunnel
         {
@@ -229,7 +230,7 @@ public class ApiClient : IDisposable
         if (string.IsNullOrWhiteSpace(refreshToken))
             return result;
 
-        ConsoleUi.Info("登录状态已过期，正在自动刷新...");
+        ConsoleUi.Info(L.T("cli.api.refreshing"));
         var login = await LoginWithRefreshTokenAsync(refreshToken);
         return login.Success ? await call() : result;
     }
