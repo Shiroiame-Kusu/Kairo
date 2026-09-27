@@ -77,14 +77,20 @@ public static class ConfigHelper
     /// </summary>
     public static T Load<T>(JsonTypeInfo<T> typeInfo) where T : new()
     {
+        var path = GetSettingsFilePath();
         try
         {
-            var path = GetSettingsFilePath();
             if (File.Exists(path))
             {
                 var json = File.ReadAllText(path);
                 return JsonSerializer.Deserialize(json, typeInfo) ?? new T();
             }
+        }
+        catch (JsonException ex)
+        {
+            // 配置损坏时先备份，避免随后的保存覆盖掉用户数据
+            Kairo.Core.Logging.CoreLogger.Output(Kairo.Core.Logging.CoreLogLevel.Warn, "配置文件损坏，已备份并使用默认配置", ex);
+            BackupCorruptFile(path);
         }
         catch (System.Exception ex)
         {
@@ -94,19 +100,41 @@ public static class ConfigHelper
     }
 
     /// <summary>
-    /// 保存配置（使用 JsonTypeInfo 用于 AOT）
+    /// 保存配置（使用 JsonTypeInfo 用于 AOT）。先写入临时文件再替换，避免写入中断导致配置损坏
     /// </summary>
     public static void Save<T>(T config, JsonTypeInfo<T> typeInfo)
     {
+        var path = GetSettingsFilePath();
+        var tempPath = path + ".tmp";
         try
         {
             EnsureConfigDirectoryExists();
             var json = JsonSerializer.Serialize(config, typeInfo);
-            File.WriteAllText(GetSettingsFilePath(), json);
+            File.WriteAllText(tempPath, json);
+            File.Move(tempPath, path, overwrite: true);
         }
         catch (System.Exception ex)
         {
             Kairo.Core.Logging.CoreLogger.Output(Kairo.Core.Logging.CoreLogLevel.Error, "Unhandled exception in Kairo.Core/Configuration/ConfigHelper.cs:100", ex);
+            try { if (File.Exists(tempPath)) File.Delete(tempPath); }
+            catch (System.Exception cleanupEx)
+            {
+                Kairo.Core.Logging.CoreLogger.Output(Kairo.Core.Logging.CoreLogLevel.Warn, "清理临时配置文件失败", cleanupEx);
+            }
+        }
+    }
+
+    private static void BackupCorruptFile(string path)
+    {
+        try
+        {
+            if (!File.Exists(path)) return;
+            var backup = $"{path}.corrupt_{DateTime.UtcNow:yyyyMMddHHmmssfff}.bak";
+            File.Copy(path, backup, overwrite: false);
+        }
+        catch (System.Exception ex)
+        {
+            Kairo.Core.Logging.CoreLogger.Output(Kairo.Core.Logging.CoreLogLevel.Warn, "备份损坏的配置文件失败", ex);
         }
     }
 }
