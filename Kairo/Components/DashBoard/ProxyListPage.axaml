@@ -100,7 +100,7 @@
         <Border Grid.Row="1" CornerRadius="8" Padding="12" Background="{DynamicResource LayerFillColorDefaultBrush}">
             <Panel>
                 <ScrollViewer IsVisible="{Binding ShowList}" HorizontalScrollBarVisibility="Disabled">
-                    <fa:FAItemsRepeater ItemsSource="{Binding Proxies}" Margin="0,0,4,0">
+                    <fa:FAItemsRepeater x:Name="ProxyRepeater" ItemsSource="{Binding Proxies}" Margin="0,0,4,0">
                         <fa:FAItemsRepeater.Layout>
                             <fa:FAUniformGridLayout MinItemWidth="250" MinColumnSpacing="10" MinRowSpacing="10"
                                                     ItemsStretch="Fill" />

@@ -19,6 +19,8 @@ namespace Kairo.ViewModels
         private readonly ApiClient _api = new();
         private bool _isLoaded;
         private bool _isLoading;
+        private Task? _refreshTask;
+        private bool _refreshQueued;
         private string _loadError = string.Empty;
         private ProxyCardViewModel? _selected;
 
@@ -127,10 +129,41 @@ namespace Kairo.ViewModels
             Selected = ReferenceEquals(Selected, vm) ? null : vm;
         }
 
-        public async Task RefreshAsync()
+        /// <summary>
+        /// 刷新隧道列表。刷新进行中再次调用时不会并发请求（避免列表重复），而是在当前刷新结束后再刷新一次，
+        /// 保证创建、删除隧道后看到的是最新数据；返回的任务在所有刷新完成后结束
+        /// </summary>
+        public Task RefreshAsync()
         {
-            // 避免并发刷新导致列表重复
-            if (IsLoading) return;
+            if (_refreshTask is { IsCompleted: false })
+            {
+                _refreshQueued = true;
+                return _refreshTask;
+            }
+
+            _refreshTask = RefreshLoopAsync();
+            return _refreshTask;
+        }
+
+        private async Task RefreshLoopAsync()
+        {
+            do
+            {
+                _refreshQueued = false;
+                await RefreshOnceAsync();
+            } while (_refreshQueued);
+        }
+
+        /// <summary>选中指定隧道（如刚创建的隧道），不在列表中时返回 null</summary>
+        public ProxyCardViewModel? SelectProxy(int proxyId)
+        {
+            var vm = Proxies.FirstOrDefault(p => p.Proxy.Id == proxyId);
+            if (vm != null) Selected = vm;
+            return vm;
+        }
+
+        private async Task RefreshOnceAsync()
+        {
             IsLoading = true;
             try
             {
