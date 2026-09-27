@@ -28,6 +28,18 @@ internal static class FrpcProcessManager
 
     public static event Action<int>? ProxyExited; // new event
 
+    /// <summary>运行中的隧道数量发生变化（启动、停止或进程退出）</summary>
+    public static event Action? RunningChanged;
+
+    private static void RaiseRunningChanged()
+    {
+        try { RunningChanged?.Invoke(); }
+        catch (Exception ex)
+        {
+            AppLogger.Exception("RunningChanged handler failed", ex);
+        }
+    }
+
     public static bool IsRunning(int proxyId)
     {
         lock (_processes) return _processes.ContainsKey(proxyId);
@@ -142,6 +154,7 @@ internal static class FrpcProcessManager
                 {
                     AppLogger.Exception("Unhandled exception in Kairo/Utils/Frp/FrpcProcessManager.cs:132", ex);
                 }
+                RaiseRunningChanged();
             };
             if (!proc.Start())
             {
@@ -156,6 +169,7 @@ internal static class FrpcProcessManager
             }
             AppLogger.Output(LogType.Info, FrpcLogDestinations, $"[FRPC] 已启动隧道 {proxyId}, PID={proc.Id}");
             onStarted?.Invoke("已启动");
+            RaiseRunningChanged();
             return true;
         }
         catch (Exception ex)
@@ -187,10 +201,14 @@ internal static class FrpcProcessManager
                 }
                 _processes.Remove(proxyId);
                 AppLogger.Output(LogType.Info, FrpcLogDestinations, $"[FRPC] 已结束隧道 {proxyId}");
-                return true;
+            }
+            else
+            {
+                return false;
             }
         }
-        return false;
+        RaiseRunningChanged();
+        return true;
     }
 
     public static int StopAll()
