@@ -19,6 +19,10 @@ namespace Kairo;
 
 public partial class App : Application
 {
+    /// <summary>
+    /// Avalonia 12（SkiaSharp 3）会真正按 RGB 子像素（LCD）抗锯齿绘制文字，在灰度抗锯齿的桌面、深色背景或非 RGB 排列的屏幕上
+    /// 会出现彩色毛边（Avalonia 11 实际是灰度）。样式为每个顶层窗口（含弹出层）设置此属性，改用灰度抗锯齿
+    /// </summary>
     public static readonly AttachedProperty<bool> UseGrayscaleTextRenderingProperty = AvaloniaProperty.RegisterAttached<App, Visual, bool>(
         "UseGrayscaleTextRendering",
         false);
