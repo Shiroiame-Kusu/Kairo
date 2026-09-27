@@ -1,5 +1,6 @@
 using System;
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
 using Kairo.ViewModels;
@@ -38,6 +39,23 @@ public partial class ProxyListPage : UserControl
             vm.OpenCreateWindowRequested -= OpenCreateWindow;
             vm.OpenNodePingWindowRequested -= OpenNodePingWindow;
         }
+    }
+
+    /// <summary>页面快捷键：F5 刷新，Ctrl/⌘+N 创建隧道</summary>
+    public bool HandleShortcut(KeyEventArgs e)
+    {
+        if (DataContext is not ProxyListPageViewModel vm) return false;
+        if (e.Key == Key.F5 && e.KeyModifiers == KeyModifiers.None)
+        {
+            if (vm.RefreshCommand.CanExecute(null)) vm.RefreshCommand.Execute(null);
+            return true;
+        }
+        if (e.Key == Key.N && (e.KeyModifiers == KeyModifiers.Control || e.KeyModifiers == KeyModifiers.Meta))
+        {
+            vm.CreateCommand.Execute(null);
+            return true;
+        }
+        return false;
     }
 
     private void OpenCreateWindow()

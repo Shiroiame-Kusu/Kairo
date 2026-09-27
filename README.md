@@ -6,6 +6,7 @@
 [English README](README.en.md)
 
 ## 亮点
+- **多服务商**：支持 LoCyanFrp 与 LoliaFRP，各自保存登录状态，可随时切换。
 - **统一工作台**：登录、刷新令牌、签到、账号统计集中管理。
 - **隧道全生命周期**：创建/修改/启动/停止/删除/批量操作一站式完成。
 - **frpc 集成管理**：自动识别平台并下载匹配的 frpc 版本，校验后即可使用。
@@ -37,7 +38,7 @@ dotnet run --project Kairo/Kairo.csproj --configuration Release
 dotnet publish Kairo/Kairo.csproj -c Release -r win-x64 --self-contained true
 ```
 
-> 构建过程中会使用 Avalonia 11、FluentAvaloniaUI，并执行 `Components/BuildInfo.sh`。请确保脚本具备可执行权限（`chmod +x`）。
+> 构建过程中会使用 Avalonia 12、FluentAvaloniaUI，并执行 `Components/BuildInfo.sh`。请确保脚本具备可执行权限（`chmod +x`）。
 
 ## 功能概览
 - **账号与鉴权**：账号密码登录、刷新令牌、获取访问密钥。
@@ -54,37 +55,47 @@ Kairo 提供独立的 CLI 版本 (`kairo-cli`)，用于在没有图形界面的�
 ### CLI 命令参考
 
 ```bash
-# 显示帮助
-kairo-cli --help
+# 交互式向导：首次使用会引导选择服务商并完成登录，然后选择要启动的隧道
+kairo-cli
 
-# 显示版本信息
-kairo-cli --version
+# 查看登录状态、当前服务商与 frpc 信息
+kairo-cli status
 
-# 获取 OAuth 授权 URL（首次使用）
-kairo-cli --oauth
+# 查看或切换服务商（切换后会记住选择，各服务商的登录状态互不影响）
+kairo-cli provider
+kairo-cli provider lolia
 
-# 使用 Refresh Token 登录
-kairo-cli --refresh-token <your_token>
+# 登录 / 退出当前服务商
+kairo-cli login
+kairo-cli logout
 
-# 列出所有隧道
-kairo-cli --list
+# 列出隧道
+kairo-cli list
 
-# 启动指定隧道
-kairo-cli --proxy 123,456
+# 启动指定隧道（不指定 ID 时交互选择，--no-interactive 时启动全部）
+kairo-cli start 123,456
+
+# 切换服务商后直接执行其它命令
+kairo-cli --provider locyan list
 
 # 指定 frpc 路径和 FRP Token
-kairo-cli --frpc-path /path/to/frpc --frp-token <token> --proxy 123
+kairo-cli start 123 --frpc-path /path/to/frpc --frp-token <token>
 ```
 
+原有的参数写法（`--list`、`--proxy`、`--oauth`、`--code`、`--refresh-token` 等）仍然可用，完整说明见 `kairo-cli --help`。
+
 ### 首次使用流程
-1. 运行 `kairo-cli --oauth` 获取授权 URL
-2. 在浏览器中打开 URL 并完成授权
-3. 复制页面显示的 Refresh Token
-4. 运行 `kairo-cli --refresh-token <token>` 完成登录
-5. 运行 `kairo-cli` 启动隧道（会自动下载 frpc）
+1. 运行 `kairo-cli`，选择要使用的服务商
+2. 在浏览器中打开显示的授权链接并完成授权
+   - LoCyanFrp：将页面显示的授权码粘贴回终端
+   - LoliaFRP：浏览器与 CLI 在同一台设备时会自动完成；否则把浏览器地址栏中的完整地址粘贴回终端
+3. 登录后选择要启动的隧道（缺少 frpc 时会自动下载）
+
+在无法交互的环境（如 systemd 服务）中，可先用 `kairo-cli --oauth` 获取 LoCyanFrp 授权链接，再执行 `kairo-cli login --code <授权码>`，之后使用 `kairo-cli start <ID> --no-interactive` 启动。
 
 ### 环境变量
-- `KAIRO_CONFIG_DIR`：自定义配置文件目录路径
+- `KAIRO_CONFIG_DIR`：自定义配置文件目录路径（CLI 与 GUI 共用同一份配置）
+- `NO_COLOR`：禁用彩色输出（也可使用 `--no-color`）
 
 ## 文档
 - 所有 API 与流程文档位于 `docs/`（中文）。示例：

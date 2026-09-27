@@ -1,28 +1,74 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:fa="using:FluentAvalonia.UI.Controls"
              xmlns:vm="clr-namespace:Kairo.ViewModels"
              x:Class="Kairo.Components.DashBoard.ProxyCard"
              x:DataType="vm:ProxyCardViewModel">
-  <Border x:Name="RootBorder" Classes="proxy-card" DoubleTapped="OnCardDoubleTapped" PointerPressed="OnCardPointerPressed">
+  <Border x:Name="RootBorder" Classes="proxy-card"
+          Classes.running="{Binding IsRunning}"
+          Classes.selected="{Binding IsSelected}"
+          Classes.busy="{Binding IsBusy}"
+          DoubleTapped="OnCardDoubleTapped" PointerPressed="OnCardPointerPressed">
     <FlyoutBase.AttachedFlyout>
-      <MenuFlyout>
-        <MenuItem Header="刷新" Command="{Binding RefreshCommand}" />
-        <Separator/>
-        <MenuItem Header="新建隧道" Command="{Binding CreateCommand}" />
-        <MenuItem Header="删除隧道" Command="{Binding DeleteCommand}" />
-        <Separator/>
-        <MenuItem Header="启动隧道" Command="{Binding StartCommand}" />
-        <MenuItem Header="停止隧道" Command="{Binding StopCommand}" />
+      <MenuFlyout Placement="BottomEdgeAlignedRight">
+        <MenuItem Header="启动隧道" Command="{Binding StartCommand}">
+          <MenuItem.Icon><fa:FASymbolIcon Symbol="Play" /></MenuItem.Icon>
+        </MenuItem>
+        <MenuItem Header="停止隧道" Command="{Binding StopCommand}">
+          <MenuItem.Icon><fa:FASymbolIcon Symbol="Stop" /></MenuItem.Icon>
+        </MenuItem>
+        <MenuItem Header="复制访问地址" Command="{Binding CopyAddressCommand}">
+          <MenuItem.Icon><fa:FASymbolIcon Symbol="Copy" /></MenuItem.Icon>
+        </MenuItem>
+        <Separator />
+        <MenuItem Header="新建隧道" Command="{Binding CreateCommand}">
+          <MenuItem.Icon><fa:FASymbolIcon Symbol="Add" /></MenuItem.Icon>
+        </MenuItem>
+        <MenuItem Header="刷新列表" Command="{Binding RefreshCommand}">
+          <MenuItem.Icon><fa:FASymbolIcon Symbol="Refresh" /></MenuItem.Icon>
+        </MenuItem>
+        <Separator />
+        <MenuItem Header="删除隧道" Command="{Binding DeleteCommand}">
+          <MenuItem.Icon><fa:FASymbolIcon Symbol="Delete" /></MenuItem.Icon>
+        </MenuItem>
       </MenuFlyout>
     </FlyoutBase.AttachedFlyout>
-    <!-- Remove zero padding; style now provides Padding=10 -->
-    <StackPanel x:Name="MainPanel" Spacing="6" Margin="0">
-      <StackPanel Orientation="Horizontal" Spacing="4">
-        <TextBlock Text="{Binding Name}" FontWeight="SemiBold"/>
-        <Ellipse x:Name="Indicator" Width="10" Height="10" StrokeThickness="2" Margin="4,0,0,0">
-        </Ellipse>
+
+    <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="*,Auto" RowSpacing="2">
+      <!-- 状态点、名称与操作按钮 -->
+      <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8" VerticalAlignment="Center">
+        <Ellipse Classes="status-dot" Width="8" Height="8" VerticalAlignment="Center" />
+        <TextBlock Grid.Column="1" Text="{Binding Name}" FontWeight="SemiBold" VerticalAlignment="Center"
+                   TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Name}" />
+      </Grid>
+      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
+        <Button Theme="{StaticResource TransparentButton}" Padding="6" Command="{Binding ToggleCommand}"
+                ToolTip.Tip="{Binding ToggleToolTip}">
+          <Panel>
+            <fa:FASymbolIcon Symbol="Play" FontSize="16" IsVisible="{Binding !IsRunning}" />
+            <fa:FASymbolIcon Symbol="Stop" FontSize="16" IsVisible="{Binding IsRunning}" />
+          </Panel>
+        </Button>
+        <Button Theme="{StaticResource TransparentButton}" Padding="6" Click="OnMoreClick" ToolTip.Tip="更多操作">
+          <fa:FASymbolIcon Symbol="More" FontSize="16" />
+        </Button>
       </StackPanel>
-      <TextBlock Text="{Binding RouteText}" FontSize="12" TextWrapping="Wrap"/>
-    </StackPanel>
+
+      <!-- 协议、本地地址 → 访问地址 -->
+      <Grid Grid.Row="1" Grid.ColumnSpan="2" Margin="16,2,4,0" ColumnDefinitions="Auto,*" ColumnSpacing="6">
+        <Border Classes="type-badge">
+          <TextBlock Text="{Binding TypeText}" />
+        </Border>
+        <TextBlock Grid.Column="1" FontSize="12" VerticalAlignment="Center"
+                   Text="{Binding RouteText}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding RouteText}" />
+      </Grid>
+
+      <!-- 节点与状态 -->
+      <Grid Grid.Row="2" Grid.ColumnSpan="2" Margin="16,0,4,0" ColumnDefinitions="*,Auto" ColumnSpacing="8">
+        <TextBlock FontSize="12" Text="{Binding NodeText}" TextTrimming="CharacterEllipsis"
+                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+        <TextBlock Grid.Column="1" Classes="status-text" FontSize="12" Text="{Binding StatusText}" />
+      </Grid>
+    </Grid>
   </Border>
 </UserControl>

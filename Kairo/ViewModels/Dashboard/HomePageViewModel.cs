@@ -13,9 +13,10 @@ namespace Kairo.ViewModels
         private readonly ApiClient _api = new();
 
         private string _welcomeText = "欢迎回来，";
-        private string _bandwidthText = "上行/下行带宽: -/-";
-        private string _trafficText = "剩余流量: -";
+        private string _bandwidthText = "- / - Mbps";
+        private string _trafficText = "- GB";
         private string _announcement = "加载公告中...";
+        private bool _isAnnouncementLoading;
         private bool _signButtonVisible = true;
         private bool _signedBorderVisible;
         private IImage? _avatarImage;
@@ -47,15 +48,34 @@ namespace Kairo.ViewModels
         public bool SignButtonVisible
         {
             get => _signButtonVisible;
-            set => SetProperty(ref _signButtonVisible, value);
+            set
+            {
+                if (SetProperty(ref _signButtonVisible, value))
+                    OnPropertyChanged(nameof(SignUnavailable));
+            }
         }
 
         public bool SignedBorderVisible
         {
             get => _signedBorderVisible;
-            set => SetProperty(ref _signedBorderVisible, value);
+            set
+            {
+                if (SetProperty(ref _signedBorderVisible, value))
+                    OnPropertyChanged(nameof(SignUnavailable));
+            }
         }
 
+        /// <summary>当前服务商或账号不支持签到</summary>
+        public bool SignUnavailable => !SignButtonVisible && !SignedBorderVisible;
+
+        public bool IsAnnouncementLoading
+        {
+            get => _isAnnouncementLoading;
+            private set => SetProperty(ref _isAnnouncementLoading, value);
+        }
+
+        public string ProviderName => Global.CurrentProvider.DisplayName;
+        public bool SignSupported => Global.CurrentProvider.SupportsSign;
         public string UserNameText => string.IsNullOrWhiteSpace(Global.Config.Username) ? "未登录" : Global.Config.Username;
         public string UserIdText => Global.Config.ID > 0 ? Global.Config.ID.ToString() : "-";
         public string LoginStatusText => SessionState.IsLoggedIn ? "已登录" : "未登录";
@@ -70,18 +90,20 @@ namespace Kairo.ViewModels
         }
 
         public AsyncRelayCommand SignCommand { get; }
+        public AsyncRelayCommand RefreshAnnouncementCommand { get; }
 
         public HomePageViewModel()
         {
             SignCommand = new AsyncRelayCommand(SignAsync, () => SignButtonVisible);
+            RefreshAnnouncementCommand = new AsyncRelayCommand(RefreshAnnouncementAsync);
         }
 
         public async Task InitializeAsync()
         {
             WelcomeText = $"欢迎回来，{Global.Config.Username ?? string.Empty}";
-            BandwidthText = $"上行/下行带宽: {SessionState.Inbound * 8 / 1024}/{SessionState.Outbound * 8 / 1024}Mbps";
+            BandwidthText = $"{SessionState.Inbound * 8 / 1024} / {SessionState.Outbound * 8 / 1024} Mbps";
             var trafficGb = SessionState.Traffic / 1024d;
-            TrafficText = $"剩余流量: {trafficGb:0.00}GB";
+            TrafficText = $"{trafficGb:0.00} GB";
             OnPropertyChanged(nameof(UserNameText));
             OnPropertyChanged(nameof(UserIdText));
             OnPropertyChanged(nameof(LoginStatusText));
@@ -100,6 +122,7 @@ namespace Kairo.ViewModels
 
         public async Task RefreshAnnouncementAsync()
         {
+            IsAnnouncementLoading = true;
             try
             {
                 var result = await _api.GetAnnouncementAsync();
@@ -111,6 +134,10 @@ namespace Kairo.ViewModels
             {
                 AppLogger.Exception("Unhandled exception in Kairo/ViewModels/Dashboard/HomePageViewModel.cs:109", ex);
                 Announcement = "获取公告异常: " + ex.Message;
+            }
+            finally
+            {
+                IsAnnouncementLoading = false;
             }
         }
 
@@ -147,7 +174,7 @@ namespace Kairo.ViewModels
                 {
                     var gained = result.Data?.GainedTrafficGb ?? 0;
                     SessionState.Traffic += gained * 1024;
-                    TrafficText = $"剩余流量: {(SessionState.Traffic / 1024):0.00}GB";
+                    TrafficText = $"{(SessionState.Traffic / 1024):0.00} GB";
                     SignButtonVisible = false;
                     SignedBorderVisible = true;
                     (Access.DashBoard as DashBoard)?.OpenSnackbar("签到成功", $"获得 {gained:0.00}GB 流量", FAInfoBarSeverity.Success);

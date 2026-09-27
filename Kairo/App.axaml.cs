@@ -1,4 +1,8 @@
 using System;
+using System.Collections.Generic;
+using System.Runtime.InteropServices;
+using System.Threading;
+using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
@@ -18,6 +22,10 @@ public partial class App : Application
     public static readonly AttachedProperty<bool> UseGrayscaleTextRenderingProperty = AvaloniaProperty.RegisterAttached<App, Visual, bool>(
         "UseGrayscaleTextRendering",
         false);
+
+    // 保持引用，避免信号注册被回收
+    private static readonly List<PosixSignalRegistration> ShutdownSignalRegistrations = new();
+    private static int _signalShutdownStarted;
 
     static App()
     {
@@ -41,8 +49,8 @@ public partial class App : Application
             return;
         }
         CrashInterception.Init(); // already hooks AppDomain + TaskScheduler
-        // Ensure frpc child processes are killed on ANY exit path
-        // (SIGTERM, Environment.Exit, updater, etc.)
+        // Ensure frpc child processes are killed on normal exit paths (shutdown, Environment.Exit, updater, etc.).
+        // ProcessExit is NOT raised for an unhandled SIGTERM; signals are handled in RegisterShutdownSignals.
         AppDomain.CurrentDomain.ProcessExit += (_, _) =>
         {
             try { FrpcProcessManager.StopAll(); }
@@ -83,20 +91,54 @@ public partial class App : Application
             Access.MainWindow = desktop.MainWindow; // store reference for Logger dialogs
             desktop.Exit += async (_, __) =>
             {
-                try { await OAuthCallbackHandler.StopAsync(); }
-                catch (Exception ex)
-                {
-                    AppLogger.Exception("Unhandled exception in Kairo/App.axaml.cs:64", ex);
-                }
+                // 先同步结束 frpc：退出时调度器随即关闭，await 之后的代码不一定还会执行
                 try { FrpcProcessManager.StopAll(); }
                 catch (Exception ex)
                 {
                     AppLogger.Exception("Unhandled exception in Kairo/App.axaml.cs:65", ex);
                 }
+                try { await OAuthCallbackHandler.StopAsync(); }
+                catch (Exception ex)
+                {
+                    AppLogger.Exception("Unhandled exception in Kairo/App.axaml.cs:64", ex);
+                }
             };
+            RegisterShutdownSignals(desktop);
         }
 
         base.OnFrameworkInitializationCompleted();
+    }
+
+    /// <summary>
+    /// 收到 SIGTERM（kill、注销会话）或 SIGINT（终端 Ctrl+C）时，按托盘「退出」相同的流程关闭应用，
+    /// 确保 frpc 子进程被结束。界面线程无响应时 5 秒后强制退出
+    /// </summary>
+    private static void RegisterShutdownSignals(IClassicDesktopStyleApplicationLifetime desktop)
+    {
+        foreach (var signal in new[] { PosixSignal.SIGTERM, PosixSignal.SIGINT })
+        {
+            try
+            {
+                ShutdownSignalRegistrations.Add(PosixSignalRegistration.Create(signal, context =>
+                {
+                    context.Cancel = true;
+                    if (Interlocked.Exchange(ref _signalShutdownStarted, 1) == 1) return;
+
+                    var received = context.Signal;
+                    AppLogger.Output(LogType.Info, $"收到 {received}，正在退出 Kairo");
+                    Dispatcher.UIThread.Post(() => desktop.Shutdown());
+                    _ = Task.Run(async () =>
+                    {
+                        await Task.Delay(TimeSpan.FromSeconds(5));
+                        Environment.Exit(received == PosixSignal.SIGINT ? 130 : 143);
+                    });
+                }));
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Exception($"无法注册 {signal} 信号处理", ex);
+            }
+        }
     }
 
     private static void ApplyTextRenderingOptions(Visual visual)

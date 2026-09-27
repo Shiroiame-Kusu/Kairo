@@ -87,7 +87,7 @@ public partial class MainWindow : Window
     {
         EnsureDashboard().Show();
         Hide();
-        if (_showHideMenuItem != null) _showHideMenuItem.Header = "隐藏窗口";
+        if (_showHideMenuItem != null) _showHideMenuItem.Header = "隐藏面板";
         await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
     }
 
@@ -175,7 +175,7 @@ public partial class MainWindow : Window
                 var dbNew = new DashBoard();
                 Access.DashBoard = dbNew;
                 dbNew.Show();
-                if (_showHideMenuItem != null) _showHideMenuItem.Header = "隐藏窗口";
+                if (_showHideMenuItem != null) _showHideMenuItem.Header = "隐藏面板";
             }
         }
         else
@@ -212,6 +212,16 @@ public partial class MainWindow : Window
         Activate();
         if (_showHideMenuItem != null)
             _showHideMenuItem.Header = IsVisible ? "隐藏窗口" : "显示窗口";
+    }
+
+    /// <summary>
+    /// 从面板切换服务商：关闭面板回到登录页，目标服务商已保存登录状态时自动登录
+    /// </summary>
+    public async Task SwitchProviderAsync(string providerId)
+    {
+        LogoutCleanup();
+        PrepareForLogin();
+        await _viewModel.SwitchProviderAsync(providerId);
     }
 
     public void OnLoggedOut()

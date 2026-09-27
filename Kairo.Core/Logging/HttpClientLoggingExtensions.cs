@@ -50,7 +50,7 @@ public static class CoreLogger
     {
         try
         {
-            var dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Kairo", "logs", "core");
+            var dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData, Environment.SpecialFolderOption.Create), "Kairo", "logs", "core");
             Directory.CreateDirectory(dir);
             var file = Path.Combine(dir, DateTime.Now.ToString("yyyy-MM-dd") + ".log");
             lock (FileLock)

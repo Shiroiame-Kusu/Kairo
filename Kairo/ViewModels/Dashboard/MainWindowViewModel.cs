@@ -9,6 +9,7 @@ using System.Security.Cryptography;
 using Avalonia.Media;
 using Avalonia.Threading;
 using FluentAvalonia.UI.Controls;
+using Kairo.Core;
 using Kairo.Core.Providers;
 using Kairo.Models;
 using Kairo.Utils;
@@ -23,6 +24,7 @@ namespace Kairo.ViewModels
         private readonly ApiClient _api = new();
         private CancellationTokenSource? _loginTimeoutCts;
         private bool _isLoggingIn;
+        private bool _isWaitingForBrowser;
         private bool _isLoggedIn;
         private string _tipText = string.Empty;
         private string _snackbarTitle = string.Empty;
@@ -50,6 +52,7 @@ namespace Kairo.ViewModels
                 OnPropertyChanged(nameof(BannerSource));
                 OnPropertyChanged(nameof(IconSource));
                 OnPropertyChanged(nameof(IsLoginEnabled));
+                NotifySavedSessionChanged();
                 StartOAuthCommand.RaiseCanExecuteChanged();
                 ProviderChanged?.Invoke(this, EventArgs.Empty);
             }
@@ -59,6 +62,38 @@ namespace Kairo.ViewModels
         public IImage IconSource => ProviderBranding.GetIconImage(Global.CurrentProvider);
 
         public RelayCommand StartOAuthCommand { get; }
+        public RelayCommand UseOtherAccountCommand { get; }
+        public RelayCommand CancelLoginCommand { get; }
+
+        /// <summary>当前服务商是否保存了可用于自动登录的会话</summary>
+        public bool HasSavedSession => !string.IsNullOrWhiteSpace(Global.Config.RefreshToken);
+
+        public string LoginButtonText => HasSavedSession && !string.IsNullOrWhiteSpace(Global.Config.Username)
+            ? $"以 {Global.Config.Username} 继续"
+            : "登录";
+
+        public string LoginHintText => HasSavedSession
+            ? $"已保存 {Global.CurrentProvider.DisplayName} 的登录状态"
+            : "将在浏览器中完成 OAuth 授权";
+
+        public string LoginStatusText => IsWaitingForBrowser ? "等待浏览器授权…" : "正在登录…";
+
+        public string VersionText => $"v{Global.Version} \"{Global.VersionName}\" · {Global.Branch.ToDisplayName()} {Global.Revision}";
+
+        public bool IsWaitingForBrowser
+        {
+            get => _isWaitingForBrowser;
+            private set
+            {
+                if (!Dispatcher.UIThread.CheckAccess())
+                {
+                    Dispatcher.UIThread.Post(() => IsWaitingForBrowser = value);
+                    return;
+                }
+                if (SetProperty(ref _isWaitingForBrowser, value))
+                    OnPropertyChanged(nameof(LoginStatusText));
+            }
+        }
 
         private static void RunOnUi(Action action)
         {
@@ -80,12 +115,14 @@ namespace Kairo.ViewModels
                 }
                 if (SetProperty(ref _isLoggingIn, value))
                 {
+                    if (!value) IsWaitingForBrowser = false;
                     OnPropertyChanged(nameof(IsLoginFormVisible));
                     OnPropertyChanged(nameof(IsLoginStatusVisible));
                     OnPropertyChanged(nameof(IsLoginEnabled));
                     OnPropertyChanged(nameof(LoginFormOpacity));
                     OnPropertyChanged(nameof(LoginStatusOpacity));
                     StartOAuthCommand.RaiseCanExecuteChanged();
+                    UseOtherAccountCommand.RaiseCanExecuteChanged();
                 }
             }
         }
@@ -148,7 +185,50 @@ namespace Kairo.ViewModels
         {
             _selectedProvider = Providers.FirstOrDefault(provider => provider.Id.Equals(Global.Config.ProviderId, StringComparison.OrdinalIgnoreCase))
                 ?? Providers.FirstOrDefault();
-            StartOAuthCommand = new RelayCommand(StartOAuthFlow, () => !IsLoggingIn && Global.CurrentProvider.SupportsOAuthLogin);
+            StartOAuthCommand = new RelayCommand(StartLogin, () => !IsLoggingIn && Global.CurrentProvider.SupportsOAuthLogin);
+            UseOtherAccountCommand = new RelayCommand(StartOAuthFlow, () => !IsLoggingIn && Global.CurrentProvider.SupportsOAuthLogin);
+            CancelLoginCommand = new RelayCommand(CancelLogin);
+        }
+
+        /// <summary>
+        /// 登录按钮：已保存会话时直接使用 Refresh Token 登录，否则走浏览器 OAuth
+        /// </summary>
+        public void StartLogin()
+        {
+            if (IsLoggingIn) return;
+            if (HasSavedSession)
+            {
+                _ = LoginWithRefreshTokenAsync(Global.Config.RefreshToken);
+                return;
+            }
+            StartOAuthFlow();
+        }
+
+        /// <summary>
+        /// 取消等待浏览器授权。保留 PKCE 校验码，用户稍后在浏览器完成授权时仍可登录
+        /// </summary>
+        private void CancelLogin()
+        {
+            if (!IsWaitingForBrowser) return;
+            CancelLoginTimeout();
+            IsLoggingIn = false;
+            ShowSnackbar("已取消", "可以重新点击登录", FAInfoBarSeverity.Informational);
+        }
+
+        public async Task SwitchProviderAsync(string providerId)
+        {
+            var option = Providers.FirstOrDefault(p => p.Id.Equals(providerId, StringComparison.OrdinalIgnoreCase));
+            if (option == null) return;
+            SelectedProvider = option;
+            if (HasSavedSession)
+                await LoginWithRefreshTokenAsync(Global.Config.RefreshToken, auto: true);
+        }
+
+        private void NotifySavedSessionChanged()
+        {
+            OnPropertyChanged(nameof(HasSavedSession));
+            OnPropertyChanged(nameof(LoginButtonText));
+            OnPropertyChanged(nameof(LoginHintText));
         }
 
         public async Task InitializeAsync()
@@ -187,6 +267,7 @@ namespace Kairo.ViewModels
                 Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
                 BeginLoginTimeout();
                 IsLoggingIn = true;
+                IsWaitingForBrowser = true;
             }
             catch (Exception ex)
             {
@@ -228,6 +309,7 @@ namespace Kairo.ViewModels
         {
             if (IsLoggedIn) return;
             IsLoggingIn = true;
+            IsWaitingForBrowser = false;
             try
             {
                 var token = await _api.ExchangeCodeForRefreshTokenAsync(code, _pkceCodeVerifier);
@@ -258,6 +340,7 @@ namespace Kairo.ViewModels
         {
             if (IsLoggedIn) return;
             IsLoggingIn = true;
+            IsWaitingForBrowser = false;
             try
             {
                 if (string.IsNullOrWhiteSpace(refreshToken))
@@ -277,6 +360,7 @@ namespace Kairo.ViewModels
                     Global.Config.ID = 0;
                     Global.Config.FrpToken = string.Empty;
                     ConfigManager.Save();
+                    NotifySavedSessionChanged();
                     IsLoggingIn = false;
                     return;
                 }
@@ -400,6 +484,7 @@ namespace Kairo.ViewModels
             IsSnackbarOpen = false;
             _pkceCodeVerifier = string.Empty;
             _userInfo = null;
+            NotifySavedSessionChanged();
         }
     }
 

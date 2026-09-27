@@ -9,10 +9,11 @@ class Program
 {
     public static async Task<int> Main(string[] args)
     {
-        // 解析日志相关参数（在正式解析前）
+        // 解析日志与输出相关参数（在正式解析前）
         var logLevel = LogLevel.Info;
         var logToFile = true;
-        
+        var noColor = false;
+
         foreach (var arg in args)
         {
             switch (arg.ToLowerInvariant())
@@ -25,10 +26,16 @@ class Program
                     break;
                 case "--quiet" or "-q":
                     logLevel = LogLevel.Warning;
+                    ConsoleUi.Quiet = true;
+                    break;
+                case "--no-color":
+                    noColor = true;
                     break;
             }
         }
-        
+
+        ConsoleUi.Configure(noColor);
+
         // 初始化配置
         CliConfigManager.Init();
         ProviderAuth.ApplyCurrent();
@@ -38,7 +45,9 @@ class Program
             logLevel = LogLevel.Debug;
         if (CliConfigManager.Config.LogToFile)
             logToFile = true;
-        
+        if (logLevel == LogLevel.Debug)
+            ConsoleUi.Quiet = false;
+
         // 初始化日志系统
         Logger.Initialize(logLevel, logToFile);
         CoreLogger.Sink = (level, message) =>
@@ -67,6 +76,8 @@ class Program
         catch (Exception ex)
         {
             Logger.Exception(ex, "程序运行时发生未处理异常");
+            ConsoleUi.Error($"发生未处理的错误: {ex.Message}");
+            ConsoleUi.Hint("使用 --debug 重新运行可以查看详细信息");
             return 1;
         }
     }

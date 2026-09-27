@@ -32,6 +32,25 @@ internal static class ProviderAuth
         }, save);
     }
 
+    /// <summary>
+    /// 查看指定服务商保存的登录状态（当前服务商以正在使用的配置为准）
+    /// </summary>
+    public static ProviderAuthState Peek(IFrpProvider provider)
+    {
+        if (string.Equals(provider.Id, FrpProviderRegistry.Get(CliConfigManager.Config.ProviderId).Id, StringComparison.OrdinalIgnoreCase))
+        {
+            return new ProviderAuthState
+            {
+                AccessToken = CliConfigManager.Config.AccessToken,
+                RefreshToken = CliConfigManager.Config.RefreshToken,
+                Username = CliConfigManager.Config.Username,
+                ID = CliConfigManager.Config.ID,
+                FrpToken = CliConfigManager.Config.FrpToken
+            };
+        }
+        return Get(provider);
+    }
+
     public static void ClearCurrent(bool save = true) => Clear(FrpProviderRegistry.Get(CliConfigManager.Config.ProviderId), save);
 
     public static void Clear(IFrpProvider provider, bool save = true) => Set(provider, new ProviderAuthState(), save);

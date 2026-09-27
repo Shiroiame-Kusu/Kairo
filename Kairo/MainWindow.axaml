@@ -19,6 +19,7 @@
         Background="Transparent">
     <Window.KeyBindings>
         <KeyBinding Command="{Binding StartOAuthCommand}" Gesture="Enter" />
+        <KeyBinding Command="{Binding CancelLoginCommand}" Gesture="Escape" />
     </Window.KeyBindings>
     <Window.Styles>
         <!-- Style for fade transitions on controls -->
@@ -48,50 +49,61 @@
                                 </Border>
                             </Grid>
                             <!-- Login Status -->
-                            <Grid Grid.Row="3">
-                                <StackPanel x:Name="LoginStatusPanel" Orientation="Horizontal"
-                                            HorizontalAlignment="Center"
-                                            VerticalAlignment="Center" Classes="fade"
-                                            Opacity="{Binding LoginStatusOpacity}"
-                                            IsVisible="{Binding IsLoginStatusVisible}">
+                            <StackPanel x:Name="LoginStatusPanel" Grid.Row="3" Spacing="16"
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center" Classes="fade"
+                                        Opacity="{Binding LoginStatusOpacity}"
+                                        IsVisible="{Binding IsLoginStatusVisible}">
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                                     <fa:FAProgressRing Width="28" Height="28" IsActive="True" />
-                                    <TextBlock Margin="15,0" FontSize="16" VerticalAlignment="Center" Text="正在登录" />
+                                    <TextBlock Margin="15,0" FontSize="16" VerticalAlignment="Center" Text="{Binding LoginStatusText}" />
                                 </StackPanel>
-                            </Grid>
+                                <TextBlock HorizontalAlignment="Center" FontSize="12" TextWrapping="Wrap" TextAlignment="Center"
+                                           Text="请在浏览器中完成授权，完成后会自动返回"
+                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                           IsVisible="{Binding IsWaitingForBrowser}" />
+                                <Button HorizontalAlignment="Center" MinWidth="96" Content="取消"
+                                        ToolTip.Tip="取消等待 (Esc)"
+                                        Command="{Binding CancelLoginCommand}"
+                                        IsVisible="{Binding IsWaitingForBrowser}" />
+                            </StackPanel>
                             <!-- Login Form -->
-                            <Border x:Name="LoginForm" Grid.Row="3" Margin="12" Padding="0" CornerRadius="8"
+                            <Border x:Name="LoginForm" Grid.Row="3" Margin="12" Padding="28,20" CornerRadius="8"
                                     Background="{DynamicResource LayerFillColorAltBrush}" Classes="fade"
                                     Opacity="{Binding LoginFormOpacity}"
                                     IsVisible="{Binding IsLoginFormVisible}">
-                                <Grid RowDefinitions="220,*">
-                                    <Grid>
-                                        <Grid RowDefinitions="Auto,Auto,Auto" VerticalAlignment="Center">
-                                            <ComboBox Margin="50,0,50,12"
-                                                      HorizontalAlignment="Stretch"
-                                                      ItemsSource="{Binding Providers}"
-                                                      SelectedItem="{Binding SelectedProvider, Mode=TwoWay}" />
-                                            <TextBlock Grid.Row="1" Margin="0,0,0,0" HorizontalAlignment="Center"
-                                                       Text="使用OAuth进行登录" FontSize="16" />
-                                            <Button x:Name="LoginButton" Grid.Row="2" Margin="50,16,50,0" Content="登录"
-                                                    Height="36" HorizontalAlignment="Stretch"
-                                                    Command="{Binding StartOAuthCommand}"
-                                                    IsEnabled="{Binding IsLoginEnabled}" />
-                                        </Grid>
-                                    </Grid>
-                                    <!-- <Grid Grid.Row="1" ColumnDefinitions="*,*" Margin="0,8,0,0"> -->
-                                    <!--   <HyperlinkButton HorizontalAlignment="Center" VerticalAlignment="Center" Content="没有账号? 前往注册" Tag="https://dashboard.locyanfrp.cn/auth/register" Click="HyperlinkButton_Click" /> -->
-                                    <!--   <HyperlinkButton Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center" Content="忘记密码?" Tag="https://dashboard.locyanfrp.cn/reset_password" Click="HyperlinkButton_Click" /> -->
-                                    <!-- </Grid> -->
-                                </Grid>
+                                <StackPanel Spacing="8">
+                                    <TextBlock Text="服务商" FontSize="12"
+                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                    <ComboBox HorizontalAlignment="Stretch"
+                                              ItemsSource="{Binding Providers}"
+                                              SelectedItem="{Binding SelectedProvider, Mode=TwoWay}" />
+                                    <Button x:Name="LoginButton" Classes="accent" Margin="0,8,0,0" Height="36"
+                                            HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                            Command="{Binding StartOAuthCommand}"
+                                            IsEnabled="{Binding IsLoginEnabled}">
+                                        <TextBlock Text="{Binding LoginButtonText}" TextTrimming="CharacterEllipsis" />
+                                    </Button>
+                                    <TextBlock HorizontalAlignment="Center" FontSize="12" Text="{Binding LoginHintText}"
+                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                    <HyperlinkButton HorizontalAlignment="Center" Padding="4,0" FontSize="12"
+                                                     Content="使用其他账号登录"
+                                                     Command="{Binding UseOtherAccountCommand}"
+                                                     IsVisible="{Binding HasSavedSession}" />
+                                </StackPanel>
                             </Border>
                         </Grid>
-                        <TextBlock x:Name="Tips" Text="{Binding TipText}" HorizontalAlignment="Center"
-                                   VerticalAlignment="Bottom"
-                                   Foreground="Gray" FontSize="11" Margin="0,4" />
+
                         <fa:FAInfoBar x:Name="Snackbar" IsOpen="{Binding IsSnackbarOpen}" Title="{Binding SnackbarTitle}"
                                     Message="{Binding SnackbarMessage}" Severity="{Binding SnackbarSeverity}"
                                     Margin="0,8,0,0" HorizontalAlignment="Stretch" VerticalAlignment="Top" />
                     </Grid>
+                    <TextBlock x:Name="Tips" Grid.Column="0" Grid.ColumnSpan="3" Text="{Binding TipText}"
+                               HorizontalAlignment="Center" VerticalAlignment="Bottom" TextTrimming="CharacterEllipsis"
+                               Foreground="Gray" FontSize="11" Margin="180,4" />
+                    <TextBlock Grid.Column="2" Text="{Binding VersionText}" HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                               Margin="0,4,12,4" FontSize="11"
+                               Foreground="{DynamicResource TextFillColorTertiaryBrush}" />
                 </Grid>
             </Grid>
         </Border>
