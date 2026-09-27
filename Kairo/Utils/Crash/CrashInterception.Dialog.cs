@@ -11,6 +11,7 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
+using Kairo.Core.Localization;
 
 namespace Kairo.Utils
 {
@@ -53,7 +54,7 @@ namespace Kairo.Utils
 
             items.Add(new TabItem
             {
-                Header = "概览",
+                Header = L.T("crash.tab.overview"),
                 Content = new ScrollViewer
                 {
                     Content = new TextBlock
@@ -68,7 +69,7 @@ namespace Kairo.Utils
             {
                 items.Add(new TabItem
                 {
-                    Header = "异常",
+                    Header = L.T("crash.tab.exception"),
                     Content = new ScrollViewer
                     {
                         Content = new TextBlock
@@ -88,7 +89,7 @@ namespace Kairo.Utils
                     sb.AppendLine(l.Type + " | " + l.Text);
                 items.Add(new TabItem
                 {
-                    Header = "日志",
+                    Header = L.T("crash.tab.log"),
                     Content = new ScrollViewer
                     {
                         Content = new TextBlock
@@ -127,9 +128,9 @@ namespace Kairo.Utils
 
             foreach (var it in items) tabs.Items.Add(it);
 
-            var btnCopy = new Button { Content = "复制", Width = 80 };
-            var btnFolder = new Button { Content = "打开目录", Width = 90 };
-            var btnClose = new Button { Content = "关闭", Width = 80 };
+            var btnCopy = new Button { Content = L.T("common.copy"), MinWidth = 80 };
+            var btnFolder = new Button { Content = L.T("crash.openFolder"), MinWidth = 90 };
+            var btnClose = new Button { Content = L.T("common.close"), MinWidth = 80 };
 
             btnCopy.Click += async (_, _) =>
             {
@@ -200,7 +201,7 @@ namespace Kairo.Utils
 
             return new Window
             {
-                Title = "Kairo - 崩溃报告 (" + report.Id + ")",
+                Title = L.T("crash.windowTitle", report.Id),
                 Width = 760,
                 Height = 560,
                 CanResize = true,
@@ -211,24 +212,25 @@ namespace Kairo.Utils
         private static string BuildOverviewText(CrashReport report)
         {
             var sb = new StringBuilder();
-            sb.AppendLine("发生了未处理的异常，已生成崩溃报告。");
+            sb.AppendLine(L.T("crash.summary"));
             sb.AppendLine();
             sb.AppendLine($"ID: {report.Id}");
-            sb.AppendLine($"时间: {report.Time:yyyy-MM-dd HH:mm:ss}");
-            sb.AppendLine($"版本: {report.Version} - {report.Branch}.{report.Revision}");
-            sb.AppendLine($"运行时: .NET {Environment.Version}");
-            sb.AppendLine($"运行时框架: {System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription}");
-            sb.AppendLine($"系统: {System.Runtime.InteropServices.RuntimeInformation.OSDescription}");
-            sb.AppendLine($"进程架构: {System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture}");
+            sb.AppendLine(L.T("crash.time", report.Time.ToString("yyyy-MM-dd HH:mm:ss")));
+            sb.AppendLine(L.T("crash.version", report.Version, report.Branch, report.Revision));
+            sb.AppendLine(L.T("crash.runtime", Environment.Version));
+            sb.AppendLine(L.T("crash.framework", System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription));
+            sb.AppendLine(L.T("crash.os", System.Runtime.InteropServices.RuntimeInformation.OSDescription));
+            sb.AppendLine(L.T("crash.arch", System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture));
             sb.AppendLine($"Uptime: {report.Uptime}");
-            sb.AppendLine($"异常: {report.ExceptionType}");
-            sb.AppendLine($"消息: {report.Message}");
+            sb.AppendLine(L.T("crash.exception", report.ExceptionType));
+            sb.AppendLine(L.T("crash.message", report.Message));
             sb.AppendLine();
-            sb.AppendLine($"◦ 崩溃文件保存在 {CurrentOptions.CrashDirectory}");
-            sb.AppendLine("◦ 点击 复制 以复制完整报告，可粘贴到 Issue");
-            sb.AppendLine("◦ 点击 打开目录 直达日志文件夹");
+            sb.AppendLine(L.T("crash.savedTo", CurrentOptions.CrashDirectory));
+            sb.AppendLine(L.T("crash.copyHint"));
+            sb.AppendLine(L.T("crash.folderHint"));
             sb.AppendLine();
-            sb.AppendLine("提交 Issue: https://github.com/Shiroiame-Kusu/Kairo/issues/new?assignees=&labels=%E2%9D%97+%E5%B4%A9%E6%BA%83&template=crash_report.yml&title=崩溃反馈+" + Uri.EscapeDataString(report.ExceptionType));
+            // Issue 模板和标签由维护者定义，链接本身不翻译
+            sb.AppendLine(L.T("crash.reportIssue", "https://github.com/Shiroiame-Kusu/Kairo/issues/new?assignees=&labels=%E2%9D%97+%E5%B4%A9%E6%BA%83&template=crash_report.yml&title=崩溃反馈+" + Uri.EscapeDataString(report.ExceptionType)));
             return sb.ToString();
         }
     }

@@ -2,6 +2,7 @@ using System;
 using System.ComponentModel;
 using Kairo.Components;
 using Kairo.Components.DashBoard;
+using Kairo.Core.Localization;
 using Kairo.Core.Models;
 using Kairo.Utils.Logger;
 
@@ -26,7 +27,7 @@ namespace Kairo.ViewModels
 
         public bool HasPublicAddress => !string.IsNullOrEmpty(PublicAddress);
 
-        public string RouteText => $"{LocalAddress} → {PublicAddress ?? (TunnelAddress.IsPeerToPeer(Proxy.ProxyType) ? "点对点连接" : "-")}";
+        public string RouteText => $"{LocalAddress} → {PublicAddress ?? (TunnelAddress.IsPeerToPeer(Proxy.ProxyType) ? L.T("tunnel.peerToPeer") : "-")}";
 
         public string NodeText
         {
@@ -34,13 +35,13 @@ namespace Kairo.ViewModels
             {
                 var node = Proxy.NodeInfo?.Name;
                 if (string.IsNullOrWhiteSpace(node)) node = Proxy.NodeInfo?.Host ?? Proxy.NodeInfo?.Ip;
-                if (string.IsNullOrWhiteSpace(node)) node = Proxy.Node > 0 ? $"节点 {Proxy.Node}" : "未知节点";
+                if (string.IsNullOrWhiteSpace(node)) node = Proxy.Node > 0 ? L.T("tunnel.nodeNumber", Proxy.Node) : L.T("tunnel.unknownNode");
                 return $"{node} · #{Proxy.Id}";
             }
         }
 
-        public string StatusText => IsBusy ? "启动中…" : IsRunning ? "运行中" : "未启动";
-        public string ToggleToolTip => IsRunning ? "停止隧道" : "启动隧道";
+        public string StatusText => L.T(IsBusy ? "tunnel.starting" : IsRunning ? "tunnel.running" : "tunnel.idle");
+        public string ToggleToolTip => L.T(IsRunning ? "tunnel.stop" : "tunnel.start");
 
         public bool IsRunning
         {

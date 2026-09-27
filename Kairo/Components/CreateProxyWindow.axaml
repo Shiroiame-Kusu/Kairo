@@ -2,10 +2,11 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:fa="using:FluentAvalonia.UI.Controls"
         xmlns:vm="clr-namespace:Kairo.ViewModels"
+        xmlns:l="using:Kairo.Localization"
         x:Class="Kairo.Components.CreateProxyWindow"
         x:CompileBindings="True"
         x:DataType="vm:CreateProxyWindowViewModel"
-        Title="创建隧道" Width="540" Height="660" MinWidth="460" MinHeight="480"
+        Title="{l:Loc create.windowTitle}" Width="540" Height="660" MinWidth="460" MinHeight="480"
         WindowStartupLocation="CenterOwner">
   <Window.Styles>
     <Style Selector="TextBlock.group-title">
@@ -25,39 +26,39 @@
 
   <Grid RowDefinitions="Auto,*,Auto" Margin="20,16" RowSpacing="12">
     <StackPanel Spacing="2">
-      <TextBlock Text="创建新隧道" FontSize="20" FontWeight="SemiBold" />
-      <TextBlock Text="把本地服务通过节点映射到公网" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+      <TextBlock Text="{l:Loc create.title}" FontSize="20" FontWeight="SemiBold" />
+      <TextBlock Text="{l:Loc create.subtitle}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
     </StackPanel>
 
     <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled">
       <StackPanel Spacing="10" Margin="0,0,12,0">
-        <TextBlock Classes="group-title" Text="基本信息" />
+        <TextBlock Classes="group-title" Text="{l:Loc create.basicInfo}" />
         <Grid ColumnDefinitions="*,140" ColumnSpacing="12">
           <StackPanel>
-            <TextBlock Classes="field-label" Text="隧道名称" />
-            <TextBox Text="{Binding Name, Mode=TwoWay}" PlaceholderText="例如 minecraft" />
+            <TextBlock Classes="field-label" Text="{l:Loc create.name}" />
+            <TextBox Text="{Binding Name, Mode=TwoWay}" PlaceholderText="{l:Loc create.namePlaceholder}" />
           </StackPanel>
           <StackPanel Grid.Column="1">
-            <TextBlock Classes="field-label" Text="协议类型" />
+            <TextBlock Classes="field-label" Text="{l:Loc create.type}" />
             <ComboBox HorizontalAlignment="Stretch" ItemsSource="{Binding Types}" SelectedItem="{Binding SelectedType, Mode=TwoWay}" />
           </StackPanel>
         </Grid>
 
-        <TextBlock Classes="group-title" Text="本地服务" />
+        <TextBlock Classes="group-title" Text="{l:Loc create.localService}" />
         <Grid ColumnDefinitions="*,140" ColumnSpacing="12">
           <StackPanel>
-            <TextBlock Classes="field-label" Text="本地 IP" />
+            <TextBlock Classes="field-label" Text="{l:Loc create.localIp}" />
             <TextBox Text="{Binding LocalIp, Mode=TwoWay}" PlaceholderText="127.0.0.1" />
           </StackPanel>
           <StackPanel Grid.Column="1">
-            <TextBlock Classes="field-label" Text="本地端口" />
-            <TextBox Text="{Binding LocalPort, Mode=TwoWay}" PlaceholderText="例如 25565" />
+            <TextBlock Classes="field-label" Text="{l:Loc create.localPort}" />
+            <TextBox Text="{Binding LocalPort, Mode=TwoWay}" PlaceholderText="{l:Loc create.localPortPlaceholder}" />
           </StackPanel>
         </Grid>
 
-        <TextBlock Classes="group-title" Text="节点与访问方式" />
+        <TextBlock Classes="group-title" Text="{l:Loc create.nodeSection}" />
         <StackPanel>
-          <TextBlock Classes="field-label" Text="节点" />
+          <TextBlock Classes="field-label" Text="{l:Loc create.node}" />
           <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
             <ComboBox HorizontalAlignment="Stretch" ItemsSource="{Binding Nodes}" SelectedItem="{Binding SelectedNode, Mode=TwoWay}"
                       PlaceholderText="{Binding NodePlaceholder}">
@@ -71,7 +72,7 @@
             <Button Grid.Column="2" Command="{Binding PingCommand}" IsEnabled="{Binding CanPing}" IsVisible="{Binding CanPing}">
               <StackPanel Orientation="Horizontal" Spacing="6">
                 <fa:FASymbolIcon Symbol="Clock" FontSize="14" />
-                <TextBlock Text="测试延迟" />
+                <TextBlock Text="{l:Loc create.ping}" />
               </StackPanel>
             </Button>
           </Grid>
@@ -81,39 +82,39 @@
                 DataContext="{Binding SelectedNode}" IsVisible="{Binding $self.DataContext, Converter={x:Static ObjectConverters.IsNotNull}}">
           <StackPanel Spacing="4" x:DataType="vm:CreateProxyWindowViewModel+NodeItem">
             <TextBlock TextWrapping="Wrap">
-              <Run Text="名称：" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+              <Run Text="{l:Loc create.nodeName}" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
               <Run Text="{Binding DisplayName, TargetNullValue=—}"/>
             </TextBlock>
             <TextBlock TextWrapping="Wrap">
-              <Run Text="端口范围：" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+              <Run Text="{l:Loc create.nodePorts}" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
               <Run Text="{Binding PortRangeDisplay, TargetNullValue=—}"/>
             </TextBlock>
             <TextBlock TextWrapping="Wrap">
-              <Run Text="描述：" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-              <Run Text="{Binding DescriptionDisplay, TargetNullValue=暂无}"/>
+              <Run Text="{l:Loc create.nodeDescription}" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+              <Run Text="{Binding DescriptionDisplay, TargetNullValue=—}"/>
             </TextBlock>
           </StackPanel>
         </Border>
 
         <StackPanel IsVisible="{Binding NeedRemotePort}">
-          <TextBlock Classes="field-label" Text="远端端口" />
-          <TextBox Text="{Binding RemotePort, Mode=TwoWay}" PlaceholderText="留空则随机分配" />
+          <TextBlock Classes="field-label" Text="{l:Loc create.remotePort}" />
+          <TextBox Text="{Binding RemotePort, Mode=TwoWay}" PlaceholderText="{l:Loc create.remotePortPlaceholder}" />
         </StackPanel>
 
         <StackPanel IsVisible="{Binding NeedDomain}">
-          <TextBlock Classes="field-label" Text="绑定域名" />
+          <TextBlock Classes="field-label" Text="{l:Loc create.domain}" />
           <TextBox Text="{Binding Domain, Mode=TwoWay}" PlaceholderText="example.com" />
         </StackPanel>
 
         <StackPanel IsVisible="{Binding NeedSecretKey}">
-          <TextBlock Classes="field-label" Text="访问密钥" />
-          <TextBox Text="{Binding SecretKey, Mode=TwoWay}" PlaceholderText="访问端需要填写相同的密钥" />
+          <TextBlock Classes="field-label" Text="{l:Loc create.secretKey}" />
+          <TextBox Text="{Binding SecretKey, Mode=TwoWay}" PlaceholderText="{l:Loc create.secretKeyPlaceholder}" />
         </StackPanel>
 
-        <TextBlock Classes="group-title" Text="高级选项" IsVisible="{Binding ShowAdvancedOptions}" />
+        <TextBlock Classes="group-title" Text="{l:Loc create.advanced}" IsVisible="{Binding ShowAdvancedOptions}" />
         <StackPanel Orientation="Horizontal" Spacing="20" IsVisible="{Binding ShowAdvancedOptions}">
-          <CheckBox Content="启用加密" IsChecked="{Binding UseEncryption}" ToolTip.Tip="加密客户端与节点之间的数据" />
-          <CheckBox Content="启用压缩" IsChecked="{Binding UseCompression}" ToolTip.Tip="压缩传输数据，节省流量但会增加 CPU 占用" />
+          <CheckBox Content="{l:Loc create.encryption}" IsChecked="{Binding UseEncryption}" ToolTip.Tip="{l:Loc create.encryptionTip}" />
+          <CheckBox Content="{l:Loc create.compression}" IsChecked="{Binding UseCompression}" ToolTip.Tip="{l:Loc create.compressionTip}" />
         </StackPanel>
       </StackPanel>
     </ScrollViewer>
@@ -124,10 +125,10 @@
       <Button Grid.Column="1" Classes="accent" MinWidth="88" IsDefault="True" Command="{Binding CreateCommand}">
         <StackPanel Orientation="Horizontal" Spacing="6">
           <fa:FASymbolIcon Symbol="Add" FontSize="14" />
-          <TextBlock Text="创建" />
+          <TextBlock Text="{l:Loc create.create}" />
         </StackPanel>
       </Button>
-      <Button Grid.Column="2" MinWidth="88" IsCancel="True" Content="取消" Command="{Binding CancelCommand}" />
+      <Button Grid.Column="2" MinWidth="88" IsCancel="True" Content="{l:Loc common.cancel}" Command="{Binding CancelCommand}" />
     </Grid>
   </Grid>
 </Window>

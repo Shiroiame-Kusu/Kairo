@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Threading;
 using FluentAvalonia.UI.Controls;
+using Kairo.Core.Localization;
 using Kairo.Core.Models;
 using Kairo.Core.Services;
 using Kairo.Utils;
@@ -23,7 +24,7 @@ namespace Kairo.ViewModels
         private bool _isFailed;
         private bool _isCompleted;
 
-        private string _statusText = "正在获取最新版本信息...";
+        private string _statusText = L.T("download.fetchingLatest");
         private double _progressValue;
         private bool _isIndeterminate = true;
         private string _progressText = string.Empty;
@@ -96,7 +97,7 @@ namespace Kairo.ViewModels
         public RelayCommand CloseCommand => _closeCommand;
         public RelayCommand RetryCommand => _retryCommand;
 
-        public string HeaderText => $"下载 {Global.CurrentProvider.DisplayName} frpc";
+        public string HeaderText => L.T("download.header", Global.CurrentProvider.DisplayName);
 
         /// <summary>下载失败或被取消，可以重试</summary>
         public bool IsFailed
@@ -155,7 +156,7 @@ namespace Kairo.ViewModels
                 CanCancel = true;
                 CanClose = false;
                 ResetProgressUI();
-                SetStatus("正在获取版本信息...");
+                SetStatus(L.T("core.download.fetchingRelease"));
 
                 var result = await _downloadService.InstallAsync(
                     Global.CurrentProvider,
@@ -165,7 +166,7 @@ namespace Kairo.ViewModels
 
                 if (!result.Success)
                 {
-                    SetStatus($"下载失败: {result.Message}");
+                    SetStatus(L.T("download.failed", result.Message));
                     CanClose = true;
                     CanCancel = false;
                     IsFailed = true;
@@ -176,18 +177,18 @@ namespace Kairo.ViewModels
                 Global.Config.FrpcVersion = result.Version;
                 ConfigManager.Save();
 
-                SetStatus("完成");
+                SetStatus(L.T("core.download.completed"));
                 Dispatcher.UIThread.Post(() =>
                 {
                     IsIndeterminate = false;
                     ProgressValue = 100;
-                    ProgressText = "完成";
+                    ProgressText = L.T("core.download.completed");
                     SpeedText = string.Empty;
                     CanClose = true;
                     CanCancel = false;
                     IsCompleted = true;
                     (Access.DashBoard as DashBoard)?.OpenSnackbar(
-                        "下载完成",
+                        L.T("download.completed"),
                         result.FrpcPath,
                         FAInfoBarSeverity.Success);
                 });
@@ -195,7 +196,7 @@ namespace Kairo.ViewModels
             catch (OperationCanceledException ex)
             {
                 AppLogger.Exception("Unhandled exception in Kairo/ViewModels/Windows/DownloadFrpcWindowViewModel.cs:159", ex);
-                SetStatus("已取消");
+                SetStatus(L.T("download.cancelled"));
                 Dispatcher.UIThread.Post(() =>
                 {
                     CanClose = true;
@@ -206,7 +207,7 @@ namespace Kairo.ViewModels
             catch (Exception ex)
             {
                 AppLogger.Exception("Unhandled exception in Kairo/ViewModels/Windows/DownloadFrpcWindowViewModel.cs:168", ex);
-                SetStatus("下载失败: " + ex.Message);
+                SetStatus(L.T("download.failed", ex.Message));
                 Dispatcher.UIThread.Post(() =>
                 {
                     CanClose = true;
@@ -221,7 +222,7 @@ namespace Kairo.ViewModels
             if (!CanCancel) return;
             CanCancel = false;
             _cts.Cancel();
-            SetStatus("已取消");
+            SetStatus(L.T("download.cancelled"));
             CanClose = true;
             IsFailed = true;
         }
@@ -265,14 +266,14 @@ namespace Kairo.ViewModels
                                 ? $"{FormatBytes(progress.ReceivedBytes)} / {FormatBytes(progress.TotalBytes)} ({progress.Percent:F1}%)"
                                 : FormatBytes(progress.ReceivedBytes);
                             SpeedText = progress.SpeedBytesPerSecond > 0
-                                ? $"速度: {FormatSpeed(progress.SpeedBytesPerSecond)}"
+                                ? L.T("download.speed", FormatSpeed(progress.SpeedBytesPerSecond))
                                 : string.Empty;
                         }
                         break;
                     case FrpcDownloadStage.Completed:
                         IsIndeterminate = false;
                         ProgressValue = 100;
-                        ProgressText = "完成";
+                        ProgressText = L.T("core.download.completed");
                         SpeedText = string.Empty;
                         break;
                 }

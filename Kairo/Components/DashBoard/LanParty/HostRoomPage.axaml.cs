@@ -4,6 +4,7 @@ using Avalonia.Input;
 using Avalonia.Markup.Xaml;
 using Kairo.Utils;
 using Kairo.ViewModels;
+using Kairo.Core.Localization;
 
 namespace Kairo.Components.DashBoard.LanParty;
 
@@ -58,7 +59,7 @@ public partial class HostRoomPage : UserControl
         catch (Exception ex)
         {
             AppLogger.Exception("Unhandled exception in Kairo/Components/DashBoard/LanParty/HostRoomPage.axaml.cs:58", ex);
-            _viewModel.StatusText = "打开 Ping 窗口失败: " + ex.Message;
+            _viewModel.StatusText = L.T("create.pingFailed", ex.Message);
         }
     }
 

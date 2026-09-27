@@ -11,6 +11,7 @@ using Avalonia.Media;
 using Avalonia.Threading;
 using Kairo.Components.OAuth;
 using Kairo.Core.Logging;
+using Kairo.Localization;
 using Kairo.Utils;
 using Kairo.Utils.Configuration; // added for Access
 using Kairo.Utils.Logger;
@@ -64,6 +65,7 @@ public partial class App : Application
             }
         };
         ConfigManager.Init();
+        LanguageSettings.ApplySaved();
         CoreLogger.Sink = (level, message) => Logger.OutputNetwork(level switch
         {
             CoreLogLevel.Error => LogType.Error,

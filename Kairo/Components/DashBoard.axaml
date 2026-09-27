@@ -5,6 +5,7 @@
         xmlns:fa="using:FluentAvalonia.UI.Controls"
         xmlns:controls="clr-namespace:Kairo.Controls"
         xmlns:vm="clr-namespace:Kairo.ViewModels"
+        xmlns:l="using:Kairo.Localization"
         mc:Ignorable="d"
         x:Class="Kairo.Components.DashBoard.DashBoard"
         x:DataType="vm:DashBoardViewModel"
@@ -33,29 +34,29 @@
                                            AlwaysShowHeader="False"
                                            SelectionChanged="NavView_OnSelectionChanged">
                             <fa:FANavigationView.MenuItems>
-                                <fa:FANavigationViewItem x:Name="HomeNavItem" Content="开始" Tag="home">
+                                <fa:FANavigationViewItem x:Name="HomeNavItem" Content="{l:Loc nav.home}" Tag="home">
                                     <fa:FANavigationViewItem.IconSource>
                                         <fa:FASymbolIconSource Symbol="Home" />
                                     </fa:FANavigationViewItem.IconSource>
                                 </fa:FANavigationViewItem>
-                                <fa:FANavigationViewItem Content="隧道列表" Tag="proxylist">
+                                <fa:FANavigationViewItem Content="{l:Loc nav.tunnels}" Tag="proxylist">
                                     <fa:FANavigationViewItem.IconSource>
                                         <fa:FASymbolIconSource Symbol="List" />
                                     </fa:FANavigationViewItem.IconSource>
                                 </fa:FANavigationViewItem>
-                                <fa:FANavigationViewItem x:Name="LanPartyNavItem" Content="联机房间" Tag="lanparty">
+                                <fa:FANavigationViewItem x:Name="LanPartyNavItem" Content="{l:Loc nav.lanParty}" Tag="lanparty">
                                     <fa:FANavigationViewItem.IconSource>
                                         <fa:FASymbolIconSource Symbol="People" />
                                     </fa:FANavigationViewItem.IconSource>
                                 </fa:FANavigationViewItem>
-                                <fa:FANavigationViewItem Content="运行状态" Tag="status">
+                                <fa:FANavigationViewItem Content="{l:Loc nav.status}" Tag="status">
                                     <fa:FANavigationViewItem.IconSource>
                                         <fa:FASymbolIconSource Symbol="Code" />
                                     </fa:FANavigationViewItem.IconSource>
                                 </fa:FANavigationViewItem>
                             </fa:FANavigationView.MenuItems>
                             <fa:FANavigationView.FooterMenuItems>
-                                <fa:FANavigationViewItem Content="设置" Tag="settings">
+                                <fa:FANavigationViewItem Content="{l:Loc nav.settings}" Tag="settings">
                                     <fa:FANavigationViewItem.IconSource>
                                         <fa:FASymbolIconSource Symbol="Settings" />
                                     </fa:FANavigationViewItem.IconSource>

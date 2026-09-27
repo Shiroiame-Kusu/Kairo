@@ -10,6 +10,7 @@ using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using FluentAvalonia.UI.Controls;
 using Kairo.Controls;
+using Kairo.Core.Localization;
 using Kairo.Core.Providers;
 using Kairo.Utils;
 using Avalonia.Threading; // added for DispatcherTimer
@@ -81,12 +82,12 @@ namespace Kairo.Components.DashBoard
                 {
                     var win = new DownloadFrpcWindow();
                     win.Show(this);
-                    OpenSnackbar("提示", "检测到未安装 frpc, 正在打开下载窗口", FAInfoBarSeverity.Informational);
+                    OpenSnackbar(L.T("dashboard.notice"), L.T("dashboard.frpcMissing"), FAInfoBarSeverity.Informational);
                 }
                 catch (Exception ex)
                 {
                     AppLogger.Exception("Unhandled exception in Kairo/Components/DashBoard.axaml.cs:81", ex);
-                    OpenSnackbar("检测异常", ex.Message, FAInfoBarSeverity.Warning);
+                    OpenSnackbar(L.T("dashboard.checkFailed"), ex.Message, FAInfoBarSeverity.Warning);
                 }
             }
 
@@ -103,15 +104,15 @@ namespace Kairo.Components.DashBoard
                 var result = await FrpcUpdateChecker.CheckAsync();
                 if (result.Skipped || !result.UpdateAvailable) return;
 
-                string local = result.LocalVersion ?? "unknown";
-                string remote = result.RemoteVersion ?? "unknown";
-                OpenSnackbar("发现 FRPC 更新", $"当前 {local}, 最新 {remote}");
+                string local = result.LocalVersion ?? L.T("common.unknown");
+                string remote = result.RemoteVersion ?? L.T("common.unknown");
+                OpenSnackbar(L.T("dashboard.frpcUpdateFound"), L.T("dashboard.frpcUpdateVersions", local, remote));
 
                 if (FrpcUpdateChecker.IsManagedFrpcPath(ProviderFrpcPath.Get(Global.CurrentProvider)))
                 {
                     var win = new DownloadFrpcWindow();
                     win.Show(this);
-                    OpenSnackbar("更新 FRPC", "已打开下载窗口", FAInfoBarSeverity.Informational);
+                    OpenSnackbar(L.T("dashboard.frpcUpdating"), L.T("dashboard.downloadWindowOpened"), FAInfoBarSeverity.Informational);
                 }
             }
             catch (Exception ex)

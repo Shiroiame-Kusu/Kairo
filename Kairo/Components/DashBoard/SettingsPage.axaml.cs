@@ -12,6 +12,7 @@ using Avalonia.Markup.Xaml;
 using Avalonia.Controls.Primitives;
 using Avalonia.Platform.Storage;
 using Kairo.Core;
+using Kairo.Core.Localization;
 using Kairo.Utils;
 using Kairo.Utils.Configuration;
 using Kairo.ViewModels;
@@ -208,14 +209,14 @@ namespace Kairo.Components.DashBoard
             var files = await top.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
             {
                 AllowMultiple = false,
-                Title = "选择 frpc 可执行文件"
+                Title = L.T("settings.frpc.pickerTitle")
             });
             var file = files.Count > 0 ? files[0] : null;
             if (file == null) return;
 
             vm.FrpcPath = file.Path.LocalPath;
             ConfigManager.Save();
-            (Access.DashBoard as DashBoard)?.OpenSnackbar("已选择", vm.FrpcPath);
+            (Access.DashBoard as DashBoard)?.OpenSnackbar(L.T("settings.frpc.selected"), vm.FrpcPath);
         }
 
         private async void CopyTokenBtn_OnClick(object? sender, RoutedEventArgs e)
@@ -224,7 +225,7 @@ namespace Kairo.Components.DashBoard
             var clipboard = TopLevel.GetTopLevel(this)?.Clipboard;
             if (clipboard == null) return;
             await clipboard.SetTextAsync(Global.Config.FrpToken);
-            (Access.DashBoard as DashBoard)?.OpenSnackbar("已复制", "FRP Token 已复制，请勿分享给他人");
+            (Access.DashBoard as DashBoard)?.OpenSnackbar(L.T("settings.security.copied"), L.T("settings.security.tokenCopied"));
         }
 
         private async void OpenConfigDir_OnClick(object? sender, RoutedEventArgs e)
@@ -236,13 +237,13 @@ namespace Kairo.Components.DashBoard
                 if (launcher == null || !Directory.Exists(vm.ConfigDirectory) ||
                     !await launcher.LaunchDirectoryInfoAsync(new DirectoryInfo(vm.ConfigDirectory)))
                 {
-                    (Access.DashBoard as DashBoard)?.OpenSnackbar("无法打开目录", vm.ConfigDirectory, FluentAvalonia.UI.Controls.FAInfoBarSeverity.Warning);
+                    (Access.DashBoard as DashBoard)?.OpenSnackbar(L.T("settings.dataDir.openFailed"), vm.ConfigDirectory, FluentAvalonia.UI.Controls.FAInfoBarSeverity.Warning);
                 }
             }
             catch (Exception ex)
             {
                 AppLogger.Exception("打开配置目录失败", ex);
-                (Access.DashBoard as DashBoard)?.OpenSnackbar("无法打开目录", ex.Message, FluentAvalonia.UI.Controls.FAInfoBarSeverity.Warning);
+                (Access.DashBoard as DashBoard)?.OpenSnackbar(L.T("settings.dataDir.openFailed"), ex.Message, FluentAvalonia.UI.Controls.FAInfoBarSeverity.Warning);
             }
         }
 
@@ -253,7 +254,7 @@ namespace Kairo.Components.DashBoard
             var flyout = new MenuFlyout { Placement = PlacementMode.BottomEdgeAlignedRight };
             foreach (var provider in vm.OtherProviders)
             {
-                var item = new MenuItem { Header = $"切换到 {provider.DisplayName}" };
+                var item = new MenuItem { Header = L.T("settings.provider.switchTo", provider.DisplayName) };
                 item.Click += async (_, _) => await SwitchProviderAsync(provider);
                 flyout.Items.Add(item);
             }
@@ -263,10 +264,10 @@ namespace Kairo.Components.DashBoard
         private static async System.Threading.Tasks.Task SwitchProviderAsync(Kairo.Core.Providers.IFrpProvider provider)
         {
             var running = FrpcProcessManager.RunningCount;
-            var message = $"切换到 {provider.DisplayName} 需要回到登录页面";
-            message += running > 0 ? $"，正在运行的 {running} 个隧道会被停止。" : "。";
-            message += $"\n当前账号的登录状态会被保留，之后可以随时切换回 {Global.CurrentProvider.DisplayName}。";
-            if (!await DialogHelper.ConfirmAsync(Access.DashBoard, "切换服务商", message, "切换"))
+            var message = running > 0
+                ? L.Plural("settings.provider.switchConfirmRunning", running, provider.DisplayName, Global.CurrentProvider.DisplayName, running)
+                : L.T("settings.provider.switchConfirm", provider.DisplayName, Global.CurrentProvider.DisplayName);
+            if (!await DialogHelper.ConfirmAsync(Access.DashBoard, L.T("settings.provider.switch"), message, L.T("settings.provider.switchButton")))
                 return;
 
             FrpcProcessManager.StopAll();
@@ -277,10 +278,11 @@ namespace Kairo.Components.DashBoard
         private async void SignOutBtn_OnClick(object? sender, RoutedEventArgs e)
         {
             var running = FrpcProcessManager.RunningCount;
-            var message = $"确定要退出 {Global.CurrentProvider.DisplayName} 账号 {Global.Config.Username} 吗？";
-            if (running > 0)
-                message += $"\n正在运行的 {running} 个隧道也会被停止。";
-            if (!await DialogHelper.ConfirmAsync(Access.DashBoard, "退出登录", message, "退出登录", destructive: true))
+            var message = running > 0
+                ? L.Plural("settings.signOut.confirmRunning", running, Global.CurrentProvider.DisplayName, Global.Config.Username, running)
+                : L.T("settings.signOut.confirm", Global.CurrentProvider.DisplayName, Global.Config.Username);
+            var signOut = L.T("settings.security.signOut");
+            if (!await DialogHelper.ConfirmAsync(Access.DashBoard, signOut, message, signOut, destructive: true))
                 return;
 
             FrpcProcessManager.StopAll();
@@ -292,7 +294,7 @@ namespace Kairo.Components.DashBoard
             Global.Config.FrpToken = string.Empty;
             ConfigManager.Save();
             AppLogger.ClearCache();
-            (Access.DashBoard as DashBoard)?.OpenSnackbar("已退出", "请重新登录");
+            (Access.DashBoard as DashBoard)?.OpenSnackbar(L.T("settings.signOut.done"), L.T("settings.signOut.doneHint"));
 
             if (Access.MainWindow is MainWindow mw)
             {
@@ -319,7 +321,7 @@ namespace Kairo.Components.DashBoard
             _easterCount++;
             if (_easterCount >= 3)
             {
-                (Access.DashBoard as DashBoard)?.OpenSnackbar("???", "别点啦");
+                (Access.DashBoard as DashBoard)?.OpenSnackbar("???", L.T("settings.easterEgg.stop"));
             }
         }
 
@@ -329,7 +331,7 @@ namespace Kairo.Components.DashBoard
             if (btn != null) btn.IsEnabled = false;
             try
             {
-                (Access.DashBoard as DashBoard)?.OpenSnackbar("检查更新", "正在从 GitHub 获取最新版本...");
+                (Access.DashBoard as DashBoard)?.OpenSnackbar(L.T("settings.appUpdate.check"), L.T("settings.appUpdate.checking"));
                 using var api = new ApiClient();
 
                 // Parse current version using AppVersion
@@ -355,7 +357,7 @@ namespace Kairo.Components.DashBoard
 
                 if (remoteVersion == null)
                 {
-                    (Access.DashBoard as DashBoard)?.OpenSnackbar("未找到版本", $"分支 {currentVersion.ChannelName}");
+                    (Access.DashBoard as DashBoard)?.OpenSnackbar(L.T("settings.appUpdate.notFound"), L.T("settings.appUpdate.channel", currentVersion.ChannelName));
                     return;
                 }
 
@@ -364,41 +366,41 @@ namespace Kairo.Components.DashBoard
 
                 if (!updateAvailable)
                 {
-                    (Access.DashBoard as DashBoard)?.OpenSnackbar("已是最新", $"当前 {currentVersion}");
+                    (Access.DashBoard as DashBoard)?.OpenSnackbar(L.T("settings.appUpdate.upToDate"), L.T("settings.appUpdate.current", currentVersion));
                     return;
                 }
 
                 // Check if updater is available
                 if (!UpdaterHelper.IsUpdaterAvailable())
                 {
-                    (Access.DashBoard as DashBoard)?.OpenSnackbar("更新失败", "未找到 Updater 组件");
+                    (Access.DashBoard as DashBoard)?.OpenSnackbar(L.T("settings.appUpdate.failed"), L.T("settings.appUpdate.noUpdater"));
                     return;
                 }
 
-                (Access.DashBoard as DashBoard)?.OpenSnackbar("发现新版本", $"将退出并更新到 {remoteVersion.Value}");
+                (Access.DashBoard as DashBoard)?.OpenSnackbar(L.T("settings.appUpdate.found"), L.T("settings.appUpdate.willUpdate", remoteVersion.Value));
 
                 // Prepare and launch updater
                 if (!UpdaterHelper.PrepareUpdate(remoteVersion.Value))
                 {
-                    (Access.DashBoard as DashBoard)?.OpenSnackbar("更新失败", "准备更新器失败");
+                    (Access.DashBoard as DashBoard)?.OpenSnackbar(L.T("settings.appUpdate.failed"), L.T("settings.appUpdate.prepareFailed"));
                     return;
                 }
 
                 try
                 {
-                    (Access.DashBoard as DashBoard)?.OpenSnackbar("正在更新", "程序即将退出并更新");
+                    (Access.DashBoard as DashBoard)?.OpenSnackbar(L.T("settings.appUpdate.updating"), L.T("settings.appUpdate.quitting"));
                     UpdaterHelper.LaunchUpdaterAndExit();
                 }
                 catch (Exception exLaunch)
                 {
                     AppLogger.Exception("Unhandled exception in Kairo/Components/DashBoard/SettingsPage.axaml.cs:343", exLaunch);
-                    (Access.DashBoard as DashBoard)?.OpenSnackbar("启动更新失败", exLaunch.Message);
+                    (Access.DashBoard as DashBoard)?.OpenSnackbar(L.T("settings.appUpdate.launchFailed"), exLaunch.Message);
                 }
             }
             catch (Exception ex)
             {
                 AppLogger.Exception("Unhandled exception in Kairo/Components/DashBoard/SettingsPage.axaml.cs:348", ex);
-                (Access.DashBoard as DashBoard)?.OpenSnackbar("检查失败", ex.Message);
+                (Access.DashBoard as DashBoard)?.OpenSnackbar(L.T("settings.appUpdate.checkFailed"), ex.Message);
             }
             finally
             {

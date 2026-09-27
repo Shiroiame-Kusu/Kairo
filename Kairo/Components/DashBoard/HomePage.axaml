@@ -2,6 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:fa="using:FluentAvalonia.UI.Controls"
              xmlns:vm="clr-namespace:Kairo.ViewModels"
+             xmlns:l="using:Kairo.Localization"
              x:Class="Kairo.Components.DashBoard.HomePage"
              x:DataType="vm:HomePageViewModel">
     <UserControl.Styles>
@@ -28,7 +29,7 @@
                         <fa:FASymbolIcon Symbol="Home" FontSize="22" />
                         <TextBlock VerticalAlignment="Center" FontSize="24" Text="{Binding WelcomeText}" TextTrimming="CharacterEllipsis" />
                     </StackPanel>
-                    <TextBlock Text="首页概览与公告" Opacity="0.8" />
+                    <TextBlock Text="{l:Loc home.subtitle}" Opacity="0.8" />
                 </StackPanel>
                 <Border Grid.Column="1" VerticalAlignment="Bottom" CornerRadius="4" Padding="8,2"
                         Background="{DynamicResource SubtleFillColorSecondaryBrush}">
@@ -43,7 +44,7 @@
                 <StackPanel Spacing="4">
                     <StackPanel Orientation="Horizontal" Spacing="6">
                         <fa:FASymbolIcon Symbol="Sync" FontSize="13" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                        <TextBlock Classes="caption" Text="带宽（上行 / 下行）" />
+                        <TextBlock Classes="caption" Text="{l:Loc home.bandwidth}" />
                     </StackPanel>
                     <TextBlock Classes="stat-value" Text="{Binding BandwidthText}" />
                 </StackPanel>
@@ -52,7 +53,7 @@
                 <StackPanel Spacing="4">
                     <StackPanel Orientation="Horizontal" Spacing="6">
                         <fa:FASymbolIcon Symbol="Cloud" FontSize="13" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                        <TextBlock Classes="caption" Text="剩余流量" />
+                        <TextBlock Classes="caption" Text="{l:Loc home.traffic}" />
                     </StackPanel>
                     <TextBlock Classes="stat-value" Text="{Binding TrafficText}" />
                 </StackPanel>
@@ -61,19 +62,19 @@
                 <StackPanel Spacing="4">
                     <StackPanel Orientation="Horizontal" Spacing="6">
                         <fa:FASymbolIcon Symbol="Calendar" FontSize="13" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                        <TextBlock Classes="caption" Text="每日签到" />
+                        <TextBlock Classes="caption" Text="{l:Loc home.dailyCheckIn}" />
                     </StackPanel>
                     <Button Classes="accent" HorizontalAlignment="Left" Command="{Binding SignCommand}" IsVisible="{Binding SignButtonVisible}">
                         <StackPanel Orientation="Horizontal" Spacing="6">
                             <fa:FASymbolIcon Symbol="Accept" FontSize="14" />
-                            <TextBlock Text="签到领流量" />
+                            <TextBlock Text="{l:Loc home.checkIn}" />
                         </StackPanel>
                     </Button>
                     <StackPanel Orientation="Horizontal" Spacing="6" IsVisible="{Binding SignedBorderVisible}" Margin="0,4,0,0">
                         <fa:FASymbolIcon Symbol="Checkmark" FontSize="16" Foreground="{DynamicResource SystemFillColorSuccessBrush}" />
-                        <TextBlock VerticalAlignment="Center" Text="今天已经签到过啦" />
+                        <TextBlock VerticalAlignment="Center" Text="{l:Loc home.checkedIn}" />
                     </StackPanel>
-                    <TextBlock Margin="0,4,0,0" Text="暂不可用" IsVisible="{Binding SignUnavailable}"
+                    <TextBlock Margin="0,4,0,0" Text="{l:Loc home.unavailable}" IsVisible="{Binding SignUnavailable}"
                                Foreground="{DynamicResource TextFillColorTertiaryBrush}" />
                 </StackPanel>
             </Border>
@@ -99,9 +100,9 @@
                     <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="12" RowSpacing="6">
                         <TextBlock Classes="caption" Text="UID" VerticalAlignment="Center" />
                         <TextBlock Grid.Column="1" Text="{Binding UserIdText}" />
-                        <TextBlock Grid.Row="1" Classes="caption" Text="状态" VerticalAlignment="Center" />
+                        <TextBlock Grid.Row="1" Classes="caption" Text="{l:Loc home.status}" VerticalAlignment="Center" />
                         <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding LoginStatusText}" />
-                        <TextBlock Grid.Row="2" Classes="caption" Text="邮箱" VerticalAlignment="Center" />
+                        <TextBlock Grid.Row="2" Classes="caption" Text="{l:Loc home.email}" VerticalAlignment="Center" />
                         <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding UserEmailText}" TextTrimming="CharacterEllipsis" MaxWidth="160" />
                     </Grid>
                 </StackPanel>
@@ -113,12 +114,12 @@
                     <Grid ColumnDefinitions="*,Auto">
                         <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                             <fa:FASymbolIcon Symbol="Alert" FontSize="14" />
-                            <TextBlock Text="公告" FontWeight="SemiBold" />
+                            <TextBlock Text="{l:Loc home.announcement}" FontWeight="SemiBold" />
                         </StackPanel>
                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
                             <fa:FAProgressRing Width="16" Height="16" IsActive="{Binding IsAnnouncementLoading}"
                                                IsVisible="{Binding IsAnnouncementLoading}" />
-                            <Button Theme="{StaticResource TransparentButton}" Padding="6,4" ToolTip.Tip="刷新公告"
+                            <Button Theme="{StaticResource TransparentButton}" Padding="6,4" ToolTip.Tip="{l:Loc home.refreshAnnouncement}"
                                     Command="{Binding RefreshAnnouncementCommand}">
                                 <fa:FASymbolIcon Symbol="Refresh" FontSize="14" />
                             </Button>

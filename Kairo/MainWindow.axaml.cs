@@ -8,6 +8,7 @@ using Avalonia.Media;
 using Avalonia.Threading;
 using FluentAvalonia.UI.Controls;
 using Kairo.Components.DashBoard;
+using Kairo.Core.Localization;
 using Kairo.Models;
 using Kairo.Utils;
 using Kairo.ViewModels;
@@ -32,7 +33,12 @@ public partial class MainWindow : Window
         SetupTrayIcon();
         HookViewModel();
         Opened += async (_, _) => await _viewModel.InitializeAsync();
-        Closed += (_, _) => DisposeTrayIcon();
+        Localizer.LanguageChanged += UpdateTrayMenu;
+        Closed += (_, _) =>
+        {
+            Localizer.LanguageChanged -= UpdateTrayMenu;
+            DisposeTrayIcon();
+        };
     }
 
     /// <summary>
@@ -65,7 +71,7 @@ public partial class MainWindow : Window
     private void HookViewModel()
     {
         _viewModel.LoginSucceeded += OnLoginSucceeded;
-        _viewModel.LoginFailed += (_, msg) => _viewModel.ShowSnackbar("登录失败", msg, FAInfoBarSeverity.Error);
+        _viewModel.LoginFailed += (_, msg) => _viewModel.ShowSnackbar(L.T("login.failed"), msg, FAInfoBarSeverity.Error);
         _viewModel.ProviderChanged += (_, _) => ApplyProviderIcon();
     }
 
@@ -87,7 +93,7 @@ public partial class MainWindow : Window
     {
         EnsureDashboard().Show();
         Hide();
-        if (_showHideMenuItem != null) _showHideMenuItem.Header = "隐藏面板";
+        UpdateTrayMenu();
         await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
     }
 
@@ -117,9 +123,9 @@ public partial class MainWindow : Window
         try
         {
             var menu = new NativeMenu();
-            _showHideMenuItem = new NativeMenuItem("隐藏窗口");
+            _showHideMenuItem = new NativeMenuItem(L.T("tray.hideWindow"));
             _showHideMenuItem.Click += (_, _) => ToggleWindowVisibility();
-            _exitMenuItem = new NativeMenuItem("退出");
+            _exitMenuItem = new NativeMenuItem(L.T("tray.exit"));
             _exitMenuItem.Click += (_, _) => ShutdownApplication();
             menu.Items.Add(_showHideMenuItem);
             menu.Items.Add(new NativeMenuItemSeparator());
@@ -160,22 +166,15 @@ public partial class MainWindow : Window
             if (Access.DashBoard is DashBoard db)
             {
                 if (db.IsVisible)
-                {
                     db.Hide();
-                    if (_showHideMenuItem != null) _showHideMenuItem.Header = "显示面板";
-                }
                 else
-                {
                     db.Show();
-                    if (_showHideMenuItem != null) _showHideMenuItem.Header = "隐藏面板";
-                }
             }
             else
             {
                 var dbNew = new DashBoard();
                 Access.DashBoard = dbNew;
                 dbNew.Show();
-                if (_showHideMenuItem != null) _showHideMenuItem.Header = "隐藏面板";
             }
         }
         else
@@ -183,15 +182,27 @@ public partial class MainWindow : Window
             if (IsVisible)
             {
                 Hide();
-                if (_showHideMenuItem != null) _showHideMenuItem.Header = "显示窗口";
             }
             else
             {
                 Show();
                 Activate();
-                if (_showHideMenuItem != null) _showHideMenuItem.Header = "隐藏窗口";
             }
         }
+        UpdateTrayMenu();
+    }
+
+    /// <summary>托盘菜单文字随窗口状态和界面语言更新</summary>
+    private void UpdateTrayMenu()
+    {
+        if (_showHideMenuItem != null)
+        {
+            _showHideMenuItem.Header = SessionState.IsLoggedIn
+                ? L.T(Access.DashBoard is { IsVisible: true } ? "tray.hideDashboard" : "tray.showDashboard")
+                : L.T(IsVisible ? "tray.hideWindow" : "tray.showWindow");
+        }
+        if (_exitMenuItem != null)
+            _exitMenuItem.Header = L.T("tray.exit");
     }
 
     private void DisposeTrayIcon()
@@ -210,8 +221,7 @@ public partial class MainWindow : Window
         SessionState.Reset();
         Show();
         Activate();
-        if (_showHideMenuItem != null)
-            _showHideMenuItem.Header = IsVisible ? "隐藏窗口" : "显示窗口";
+        UpdateTrayMenu();
     }
 
     /// <summary>
@@ -227,8 +237,7 @@ public partial class MainWindow : Window
     public void OnLoggedOut()
     {
         SessionState.IsLoggedIn = false;
-        if (_showHideMenuItem != null)
-            _showHideMenuItem.Header = IsVisible ? "隐藏窗口" : "显示窗口";
+        UpdateTrayMenu();
     }
 
     public static void LogoutCleanup()

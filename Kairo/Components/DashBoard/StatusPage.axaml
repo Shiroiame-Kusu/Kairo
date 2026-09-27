@@ -3,6 +3,7 @@
              xmlns:fa="using:FluentAvalonia.UI.Controls"
              xmlns:vm="clr-namespace:Kairo.ViewModels"
              xmlns:conv="clr-namespace:Kairo.Utils.Converters"
+             xmlns:l="using:Kairo.Localization"
              x:Class="Kairo.Components.DashBoard.StatusPage"
              x:DataType="vm:StatusPageViewModel">
   <UserControl.Resources>
@@ -25,9 +26,9 @@
         <StackPanel Spacing="4">
           <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
             <fa:FASymbolIcon Symbol="Code" FontSize="22" />
-            <TextBlock Text="运行状态" FontSize="24" VerticalAlignment="Center" />
+            <TextBlock Text="{l:Loc status.title}" FontSize="24" VerticalAlignment="Center" />
           </StackPanel>
-          <TextBlock Text="查看日志与进程状态" Opacity="0.8" />
+          <TextBlock Text="{l:Loc status.subtitle}" Opacity="0.8" />
         </StackPanel>
         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Bottom">
           <Ellipse Classes="running-dot" Classes.active="{Binding HasRunning}" Width="8" Height="8" VerticalAlignment="Center" />
@@ -44,16 +45,16 @@
         <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="6" IsVisible="{Binding !HasLines}">
           <fa:FASymbolIcon Symbol="Document" FontSize="32" HorizontalAlignment="Center"
                            Foreground="{DynamicResource TextFillColorTertiaryBrush}" />
-          <TextBlock Text="暂无日志" HorizontalAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-          <TextBlock Text="启动隧道后，frpc 的输出会显示在这里" FontSize="12" HorizontalAlignment="Center"
+          <TextBlock Text="{l:Loc status.noLogs}" HorizontalAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+          <TextBlock Text="{l:Loc status.noLogsHint}" FontSize="12" HorizontalAlignment="Center"
                      Foreground="{DynamicResource TextFillColorTertiaryBrush}" />
         </StackPanel>
         <Button x:Name="JumpToBottomBtn" IsVisible="False" Click="JumpToBottom_OnClick"
                 HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,12,8"
-                ToolTip.Tip="回到最新日志并恢复自动滚动">
+                ToolTip.Tip="{l:Loc status.jumpToBottomTip}">
           <StackPanel Orientation="Horizontal" Spacing="6">
             <fa:FASymbolIcon Symbol="ChevronDown" FontSize="14" />
-            <TextBlock Text="回到底部" />
+            <TextBlock Text="{l:Loc status.jumpToBottom}" />
           </StackPanel>
         </Button>
       </Panel>
@@ -64,19 +65,19 @@
         <Button Grid.Column="0" Command="{Binding StopAllCommand}">
           <StackPanel Orientation="Horizontal" Spacing="6">
             <fa:FASymbolIcon Symbol="Stop" FontSize="14" />
-            <TextBlock Text="强制结束所有隧道" />
+            <TextBlock Text="{l:Loc status.stopAll}" />
           </StackPanel>
         </Button>
-        <Button Grid.Column="2" Command="{Binding CopyCommand}" ToolTip.Tip="复制全部日志，便于反馈问题">
+        <Button Grid.Column="2" Command="{Binding CopyCommand}" ToolTip.Tip="{l:Loc status.copyLogsTip}">
           <StackPanel Orientation="Horizontal" Spacing="6">
             <fa:FASymbolIcon Symbol="Copy" FontSize="14" />
-            <TextBlock Text="复制日志" />
+            <TextBlock Text="{l:Loc status.copyLogs}" />
           </StackPanel>
         </Button>
         <Button Grid.Column="3" Command="{Binding ClearCommand}">
           <StackPanel Orientation="Horizontal" Spacing="6">
             <fa:FASymbolIcon Symbol="Clear" FontSize="14" />
-            <TextBlock Text="清空" />
+            <TextBlock Text="{l:Loc status.clear}" />
           </StackPanel>
         </Button>
       </Grid>

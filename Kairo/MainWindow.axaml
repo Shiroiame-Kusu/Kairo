@@ -5,6 +5,7 @@
         xmlns:fa="using:FluentAvalonia.UI.Controls"
         xmlns:controls="clr-namespace:Kairo.Controls"
         xmlns:vm="clr-namespace:Kairo.ViewModels"
+        xmlns:l="using:Kairo.Localization"
         mc:Ignorable="d"
         x:Class="Kairo.MainWindow"
         x:DataType="vm:MainWindowViewModel"
@@ -29,6 +30,13 @@
                     <DoubleTransition Property="Opacity" Duration="0:0:0.3" Easing="CircularEaseOut" />
                 </Transitions>
             </Setter>
+        </Style>
+        <!-- 页脚里的语言选择保持紧凑 -->
+        <Style Selector="controls|LanguageSelector.footer ComboBox">
+            <Setter Property="MinHeight" Value="28" />
+            <Setter Property="MinWidth" Value="120" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Padding" Value="10,3,6,3" />
         </Style>
     </Window.Styles>
     <Grid Background="Transparent">
@@ -59,11 +67,11 @@
                                     <TextBlock Margin="15,0" FontSize="16" VerticalAlignment="Center" Text="{Binding LoginStatusText}" />
                                 </StackPanel>
                                 <TextBlock HorizontalAlignment="Center" FontSize="12" TextWrapping="Wrap" TextAlignment="Center"
-                                           Text="请在浏览器中完成授权，完成后会自动返回"
+                                           Text="{l:Loc login.browserHint}"
                                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                            IsVisible="{Binding IsWaitingForBrowser}" />
-                                <Button HorizontalAlignment="Center" MinWidth="96" Content="取消"
-                                        ToolTip.Tip="取消等待 (Esc)"
+                                <Button HorizontalAlignment="Center" MinWidth="96" Content="{l:Loc common.cancel}"
+                                        ToolTip.Tip="{l:Loc login.cancelWaitTip}"
                                         Command="{Binding CancelLoginCommand}"
                                         IsVisible="{Binding IsWaitingForBrowser}" />
                             </StackPanel>
@@ -73,7 +81,7 @@
                                     Opacity="{Binding LoginFormOpacity}"
                                     IsVisible="{Binding IsLoginFormVisible}">
                                 <StackPanel Spacing="8">
-                                    <TextBlock Text="服务商" FontSize="12"
+                                    <TextBlock Text="{l:Loc login.provider}" FontSize="12"
                                                Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                                     <ComboBox HorizontalAlignment="Stretch"
                                               ItemsSource="{Binding Providers}"
@@ -87,7 +95,7 @@
                                     <TextBlock HorizontalAlignment="Center" FontSize="12" Text="{Binding LoginHintText}"
                                                Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                                     <HyperlinkButton HorizontalAlignment="Center" Padding="4,0" FontSize="12"
-                                                     Content="使用其他账号登录"
+                                                     Content="{l:Loc login.useOtherAccount}"
                                                      Command="{Binding UseOtherAccountCommand}"
                                                      IsVisible="{Binding HasSavedSession}" />
                                 </StackPanel>
@@ -101,6 +109,11 @@
                     <TextBlock x:Name="Tips" Grid.Column="0" Grid.ColumnSpan="3" Text="{Binding TipText}"
                                HorizontalAlignment="Center" VerticalAlignment="Bottom" TextTrimming="CharacterEllipsis"
                                Foreground="Gray" FontSize="11" Margin="180,4" />
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" Margin="12,0,0,6"
+                                HorizontalAlignment="Left" VerticalAlignment="Bottom">
+                        <fa:FASymbolIcon Symbol="Globe" FontSize="14" Foreground="{DynamicResource TextFillColorTertiaryBrush}" />
+                        <controls:LanguageSelector Classes="footer" />
+                    </StackPanel>
                     <TextBlock Grid.Column="2" Text="{Binding VersionText}" HorizontalAlignment="Right" VerticalAlignment="Bottom"
                                Margin="0,4,12,4" FontSize="11"
                                Foreground="{DynamicResource TextFillColorTertiaryBrush}" />

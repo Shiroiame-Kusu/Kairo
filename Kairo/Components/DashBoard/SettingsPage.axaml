@@ -2,6 +2,8 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:fa="using:FluentAvalonia.UI.Controls"
              xmlns:vm="clr-namespace:Kairo.ViewModels"
+             xmlns:l="using:Kairo.Localization"
+             xmlns:controls="clr-namespace:Kairo.Controls"
              x:Class="Kairo.Components.DashBoard.SettingsPage"
              x:DataType="vm:SettingsPageViewModel"
              VerticalAlignment="Stretch">
@@ -43,9 +45,9 @@
       <StackPanel Spacing="4">
         <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
           <fa:FASymbolIcon Symbol="Settings" FontSize="22" />
-          <TextBlock Text="设置" FontSize="26" VerticalAlignment="Center" />
+          <TextBlock Text="{l:Loc settings.title}" FontSize="26" VerticalAlignment="Center" />
         </StackPanel>
-        <TextBlock Text="管理客户端、外观与账号" Opacity="0.8" />
+        <TextBlock Text="{l:Loc settings.subtitle}" Opacity="0.8" />
       </StackPanel>
     </Border>
 
@@ -55,31 +57,31 @@
           <Border x:Name="NavGeneral" Tag="general" Classes="settings-nav-item active" PointerPressed="NavItem_OnPointerPressed">
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
               <fa:FASymbolIcon Symbol="Home" FontSize="14" />
-              <TextBlock Grid.Column="1" Text="常规" VerticalAlignment="Center" />
+              <TextBlock Grid.Column="1" Text="{l:Loc settings.section.general}" VerticalAlignment="Center" />
             </Grid>
           </Border>
           <Border x:Name="NavAppearance" Tag="appearance" Classes="settings-nav-item" PointerPressed="NavItem_OnPointerPressed">
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
               <fa:FASymbolIcon Symbol="DarkTheme" FontSize="14" />
-              <TextBlock Grid.Column="1" Text="外观" VerticalAlignment="Center" />
+              <TextBlock Grid.Column="1" Text="{l:Loc settings.section.appearance}" VerticalAlignment="Center" />
             </Grid>
           </Border>
           <Border x:Name="NavUpdate" Tag="update" Classes="settings-nav-item" PointerPressed="NavItem_OnPointerPressed">
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
               <fa:FASymbolIcon Symbol="CloudDownload" FontSize="14" />
-              <TextBlock Grid.Column="1" Text="下载与更新" VerticalAlignment="Center" />
+              <TextBlock Grid.Column="1" Text="{l:Loc settings.section.update}" VerticalAlignment="Center" />
             </Grid>
           </Border>
           <Border x:Name="NavAccount" Tag="account" Classes="settings-nav-item" PointerPressed="NavItem_OnPointerPressed">
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
               <fa:FASymbolIcon Symbol="Contact" FontSize="14" />
-              <TextBlock Grid.Column="1" Text="账号" VerticalAlignment="Center" />
+              <TextBlock Grid.Column="1" Text="{l:Loc settings.section.account}" VerticalAlignment="Center" />
             </Grid>
           </Border>
           <Border x:Name="NavAbout" Tag="about" Classes="settings-nav-item" PointerPressed="NavItem_OnPointerPressed">
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
               <fa:FASymbolIcon Symbol="Help" FontSize="14" />
-              <TextBlock Grid.Column="1" Text="关于" VerticalAlignment="Center" />
+              <TextBlock Grid.Column="1" Text="{l:Loc settings.section.about}" VerticalAlignment="Center" />
             </Grid>
           </Border>
         </StackPanel>
@@ -89,18 +91,18 @@
         <StackPanel Spacing="12">
           <Border x:Name="SectionGeneral" Classes="settings-card">
             <StackPanel Spacing="10">
-              <TextBlock Classes="section-title" Text="常规" />
+              <TextBlock Classes="section-title" Text="{l:Loc settings.section.general}" />
               <Border Classes="settings-item">
                 <Grid RowDefinitions="Auto,Auto" RowSpacing="8">
                   <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8" VerticalAlignment="Center">
                     <StackPanel Spacing="2">
-                      <TextBlock Text="Frpc 路径" />
+                      <TextBlock Text="{l:Loc settings.frpc.path}" />
                       <TextBlock Classes="item-description" Text="{Binding FrpcStatusText}" />
                     </StackPanel>
-                    <Button Grid.Column="1" Click="SelectFile_OnClick" ToolTip.Tip="选择本地已有的 frpc 可执行文件">
+                    <Button Grid.Column="1" Click="SelectFile_OnClick" ToolTip.Tip="{l:Loc settings.frpc.chooseTip}">
                       <StackPanel Orientation="Horizontal" Spacing="6">
                         <fa:FASymbolIcon Symbol="OpenFile" FontSize="14" />
-                        <TextBlock Text="选择文件" />
+                        <TextBlock Text="{l:Loc settings.frpc.choose}" />
                       </StackPanel>
                     </Button>
                     <Button Grid.Column="2" x:Name="DownloadFrpcBtn" Click="DownloadFrpcBtn_OnClick">
@@ -110,14 +112,14 @@
                       </StackPanel>
                     </Button>
                   </Grid>
-                  <TextBox Grid.Row="1" IsReadOnly="True" Text="{Binding FrpcPath}" PlaceholderText="未设置" HorizontalAlignment="Stretch" />
+                  <TextBox Grid.Row="1" IsReadOnly="True" Text="{Binding FrpcPath}" PlaceholderText="{l:Loc settings.frpc.notSet}" HorizontalAlignment="Stretch" />
                 </Grid>
               </Border>
               <Border Classes="settings-item">
                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12" VerticalAlignment="Center">
                   <StackPanel Spacing="2">
-                    <TextBlock Text="国内镜像" />
-                    <TextBlock Classes="item-description" Text="下载 frpc 时优先使用国内镜像" />
+                    <TextBlock Text="{l:Loc settings.mirror.title}" />
+                    <TextBlock Classes="item-description" Text="{l:Loc settings.mirror.description}" />
                   </StackPanel>
                   <ToggleSwitch Grid.Column="1" IsChecked="{Binding UseMirror, Mode=TwoWay}" />
                 </Grid>
@@ -125,13 +127,13 @@
               <Border Classes="settings-item">
                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12" VerticalAlignment="Center">
                   <StackPanel Spacing="2">
-                    <TextBlock Text="数据目录" />
+                    <TextBlock Text="{l:Loc settings.dataDir.title}" />
                     <TextBlock Classes="item-description" Text="{Binding ConfigDirectory}" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" />
                   </StackPanel>
-                  <Button Grid.Column="1" Click="OpenConfigDir_OnClick" ToolTip.Tip="配置文件、下载的 frpc 都保存在这里">
+                  <Button Grid.Column="1" Click="OpenConfigDir_OnClick" ToolTip.Tip="{l:Loc settings.dataDir.tip}">
                     <StackPanel Orientation="Horizontal" Spacing="6">
                       <fa:FASymbolIcon Symbol="OpenFolder" FontSize="14" />
-                      <TextBlock Text="打开目录" />
+                      <TextBlock Text="{l:Loc settings.dataDir.open}" />
                     </StackPanel>
                   </Button>
                 </Grid>
@@ -141,15 +143,30 @@
 
           <Border x:Name="SectionAppearance" Classes="settings-card">
             <StackPanel Spacing="10">
-              <TextBlock Classes="section-title" Text="外观" />
+              <TextBlock Classes="section-title" Text="{l:Loc settings.section.appearance}" />
               <Border Classes="settings-item">
                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12" VerticalAlignment="Center">
                   <StackPanel Spacing="2">
-                    <TextBlock Text="主题" />
-                    <TextBlock Classes="item-description" Text="选择浅色、深色，或自动匹配系统设置" />
+                    <TextBlock Text="{l:Loc settings.theme.title}" />
+                    <TextBlock Classes="item-description" Text="{l:Loc settings.theme.description}" />
                   </StackPanel>
                   <ComboBox Grid.Column="1" MinWidth="140" ItemsSource="{Binding ThemeOptions}"
-                            SelectedIndex="{Binding ThemeIndex, Mode=TwoWay}" />
+                            SelectedIndex="{Binding ThemeIndex, Mode=TwoWay}">
+                    <ComboBox.ItemTemplate>
+                      <DataTemplate x:DataType="l:LocalizedOption">
+                        <TextBlock Text="{Binding Text}" />
+                      </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                  </ComboBox>
+                </Grid>
+              </Border>
+              <Border Classes="settings-item">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12" VerticalAlignment="Center">
+                  <StackPanel Spacing="2">
+                    <TextBlock Text="{l:Loc language.label}" />
+                    <TextBlock Classes="item-description" Text="{l:Loc settings.language.description}" />
+                  </StackPanel>
+                  <controls:LanguageSelector Grid.Column="1" />
                 </Grid>
               </Border>
             </StackPanel>
@@ -157,17 +174,17 @@
 
           <Border x:Name="SectionUpdate" Classes="settings-card">
             <StackPanel Spacing="10">
-              <TextBlock Classes="section-title" Text="下载与更新" />
+              <TextBlock Classes="section-title" Text="{l:Loc settings.section.update}" />
               <Border Classes="settings-item">
                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12" VerticalAlignment="Center">
                   <StackPanel Spacing="2">
-                    <TextBlock Text="应用更新" />
-                    <TextBlock Classes="item-description" Text="检查当前分支是否有新版本" />
+                    <TextBlock Text="{l:Loc settings.appUpdate.title}" />
+                    <TextBlock Classes="item-description" Text="{l:Loc settings.appUpdate.description}" />
                   </StackPanel>
                   <Button Grid.Column="1" x:Name="CheckUpdateBtn" Click="CheckUpdateBtn_OnClick">
                     <StackPanel Orientation="Horizontal" Spacing="6">
                       <fa:FASymbolIcon Symbol="Sync" FontSize="14" />
-                      <TextBlock Text="检查更新" />
+                      <TextBlock Text="{l:Loc settings.appUpdate.check}" />
                     </StackPanel>
                   </Button>
                 </Grid>
@@ -175,8 +192,8 @@
               <Border Classes="settings-item" IsVisible="False">
                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12" VerticalAlignment="Center">
                   <StackPanel Spacing="2">
-                    <TextBlock Text="更新分支" />
-                    <TextBlock Classes="item-description" Text="Alpha 可切换到任意分支" />
+                    <TextBlock Text="{l:Loc settings.branch.title}" />
+                    <TextBlock Classes="item-description" Text="{l:Loc settings.branch.description}" />
                   </StackPanel>
                   <ComboBox Grid.Column="1" Width="200" SelectedIndex="{Binding UpdateBranchIndex, Mode=TwoWay}">
                     <ComboBoxItem Content="Release"/>
@@ -191,18 +208,18 @@
 
           <Border x:Name="SectionAccount" Classes="settings-card">
             <StackPanel Spacing="10">
-              <TextBlock Classes="section-title" Text="账号" />
+              <TextBlock Classes="section-title" Text="{l:Loc settings.section.account}" />
               <Border Classes="settings-item">
                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12" VerticalAlignment="Center">
                   <StackPanel Spacing="2">
-                    <TextBlock Text="服务商" />
+                    <TextBlock Text="{l:Loc settings.provider.title}" />
                     <TextBlock Classes="item-description" Text="{Binding AccountText}" />
                   </StackPanel>
                   <Button Grid.Column="1" x:Name="SwitchProviderBtn" IsVisible="{Binding CanSwitchProvider}"
-                          Click="SwitchProviderBtn_OnClick" ToolTip.Tip="当前账号的登录状态会被保留，可随时切换回来">
+                          Click="SwitchProviderBtn_OnClick" ToolTip.Tip="{l:Loc settings.provider.switchTip}">
                     <StackPanel Orientation="Horizontal" Spacing="6">
                       <fa:FASymbolIcon Symbol="Switch" FontSize="14" />
-                      <TextBlock Text="切换服务商" />
+                      <TextBlock Text="{l:Loc settings.provider.switch}" />
                     </StackPanel>
                   </Button>
                 </Grid>
@@ -210,19 +227,19 @@
               <Border Classes="settings-item">
                 <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8" VerticalAlignment="Center">
                   <StackPanel Spacing="2">
-                    <TextBlock Text="安全" />
-                    <TextBlock Classes="item-description" Text="复制 FRP Token 或退出当前账号" />
+                    <TextBlock Text="{l:Loc settings.security.title}" />
+                    <TextBlock Classes="item-description" Text="{l:Loc settings.security.description}" />
                   </StackPanel>
                   <Button Grid.Column="1" x:Name="CopyTokenBtn" Click="CopyTokenBtn_OnClick" IsVisible="{Binding CanCopyToken}">
                     <StackPanel Orientation="Horizontal" Spacing="6">
                       <fa:FASymbolIcon Symbol="Copy" FontSize="14" />
-                      <TextBlock Text="复制 Token" />
+                      <TextBlock Text="{l:Loc settings.security.copyToken}" />
                     </StackPanel>
                   </Button>
                   <Button Grid.Column="2" x:Name="SignOutBtn" Click="SignOutBtn_OnClick">
                     <StackPanel Orientation="Horizontal" Spacing="6">
                       <fa:FASymbolIcon Symbol="LeaveChat" FontSize="14" />
-                      <TextBlock Text="退出登录" />
+                      <TextBlock Text="{l:Loc settings.security.signOut}" />
                     </StackPanel>
                   </Button>
                 </Grid>
@@ -230,22 +247,22 @@
               <Border Classes="settings-item" IsVisible="False">
                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12" VerticalAlignment="Center">
                   <StackPanel Spacing="2">
-                    <TextBlock Text="调试模式" />
-                    <TextBlock Classes="item-description" Text="启用更多日志与调试能力" />
+                    <TextBlock Text="{l:Loc settings.debug.title}" />
+                    <TextBlock Classes="item-description" Text="{l:Loc settings.debug.description}" />
                   </StackPanel>
                   <ToggleSwitch Grid.Column="1" IsChecked="{Binding DebugMode, Mode=TwoWay}" />
                 </Grid>
               </Border>
               <StackPanel Spacing="8" IsVisible="False">
-                <Button x:Name="EasterEggBtn" Content="不要点击这个按钮哦" Click="EasterEggBtn_OnClick" HorizontalAlignment="Left"/>
-                <TextBlock Text="会有意想不到的后果"/>
+                <Button x:Name="EasterEggBtn" Content="{l:Loc settings.easterEgg.button}" Click="EasterEggBtn_OnClick" HorizontalAlignment="Left"/>
+                <TextBlock Text="{l:Loc settings.easterEgg.hint}"/>
               </StackPanel>
             </StackPanel>
           </Border>
 
           <Border x:Name="SectionAbout" Classes="settings-card">
             <StackPanel Spacing="10">
-              <TextBlock Classes="section-title" Text="关于" />
+              <TextBlock Classes="section-title" Text="{l:Loc settings.section.about}" />
               <Border Classes="settings-item">
                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
                   <StackPanel Spacing="4">
@@ -254,8 +271,8 @@
                     <TextBlock Text="{Binding CopyrightText}" FontSize="12" />
                   </StackPanel>
                   <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center">
-                    <HyperlinkButton Content="GitHub 仓库" Padding="4,2" HorizontalAlignment="Right" NavigateUri="https://github.com/Shiroiame-Kusu/Kairo" />
-                    <HyperlinkButton Content="问题反馈" Padding="4,2" HorizontalAlignment="Right" NavigateUri="https://github.com/Shiroiame-Kusu/Kairo/issues" />
+                    <HyperlinkButton Content="{l:Loc settings.about.repository}" Padding="4,2" HorizontalAlignment="Right" NavigateUri="https://github.com/Shiroiame-Kusu/Kairo" />
+                    <HyperlinkButton Content="{l:Loc settings.about.issues}" Padding="4,2" HorizontalAlignment="Right" NavigateUri="https://github.com/Shiroiame-Kusu/Kairo/issues" />
                   </StackPanel>
                 </Grid>
               </Border>

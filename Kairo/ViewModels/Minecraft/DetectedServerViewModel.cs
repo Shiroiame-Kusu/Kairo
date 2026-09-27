@@ -1,6 +1,7 @@
 using System.Net;
 using HakuuLib.MultiplayerLAN.Minecraft.Bedrock.Discovery;
 using HakuuLib.MultiplayerLAN.Minecraft.Java.Discovery;
+using Kairo.Core.Localization;
 
 namespace Kairo.ViewModels;
 
@@ -10,7 +11,7 @@ public class DetectedServerViewModel : ViewModelBase
     public int Port { get; }
     public IPEndPoint Sender { get; }
     public MinecraftEdition Edition { get; }
-    public string EditionDisplay => Edition == MinecraftEdition.Java ? "Java" : "基岩";
+    public string EditionDisplay => Edition == MinecraftEdition.Java ? "Java" : L.T("lan.edition.bedrock");
     public string AddressDisplay => $"{Sender.Address}:{Port}";
     public string? VersionName { get; }
     public int? PlayerCount { get; }

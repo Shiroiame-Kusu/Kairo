@@ -2,10 +2,11 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:fa="using:FluentAvalonia.UI.Controls"
         xmlns:vm="clr-namespace:Kairo.ViewModels"
+        xmlns:l="using:Kairo.Localization"
         x:Class="Kairo.Components.DownloadFrpcWindow"
         x:CompileBindings="True"
         x:DataType="vm:DownloadFrpcWindowViewModel"
-        Title="下载 FRPC" Width="460" Height="280" MinWidth="400" MinHeight="240"
+        Title="{l:Loc download.windowTitle}" Width="460" Height="280" MinWidth="400" MinHeight="240"
         WindowStartupLocation="CenterOwner">
   <Grid RowDefinitions="Auto,*,Auto" Margin="20,16" RowSpacing="12">
     <StackPanel Spacing="6">
@@ -31,7 +32,7 @@
       </Grid>
       <TextBlock FontSize="12" TextWrapping="Wrap" IsVisible="{Binding IsFailed}"
                  Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                 Text="可以稍后重试，或在「设置 → 国内镜像」中切换下载源后再试" />
+                 Text="{l:Loc download.retryHint}" />
       <TextBlock FontSize="11" Margin="0,6,0,0" TextWrapping="Wrap" Text="{Binding TipText}"
                  Foreground="{DynamicResource TextFillColorTertiaryBrush}" />
     </StackPanel>
@@ -40,11 +41,11 @@
       <Button Classes="accent" MinWidth="80" Command="{Binding RetryCommand}" IsVisible="{Binding IsFailed}">
         <StackPanel Orientation="Horizontal" Spacing="6">
           <fa:FASymbolIcon Symbol="Refresh" FontSize="14" />
-          <TextBlock Text="重试" />
+          <TextBlock Text="{l:Loc common.retry}" />
         </StackPanel>
       </Button>
-      <Button MinWidth="80" Content="取消" Command="{Binding CancelCommand}" IsVisible="{Binding CanCancel}" />
-      <Button MinWidth="80" Content="关闭" Command="{Binding CloseCommand}" IsEnabled="{Binding CanClose}" />
+      <Button MinWidth="80" Content="{l:Loc common.cancel}" Command="{Binding CancelCommand}" IsVisible="{Binding CanCancel}" />
+      <Button MinWidth="80" Content="{l:Loc common.close}" Command="{Binding CloseCommand}" IsEnabled="{Binding CanClose}" />
     </StackPanel>
   </Grid>
 </Window>

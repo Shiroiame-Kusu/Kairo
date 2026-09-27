@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using HakuuLib.MultiplayerLAN.Minecraft.Java.Discovery;
 using HakuuLib.MultiplayerLAN.Minecraft.Java.Forwarding;
+using Kairo.Core.Localization;
 
 namespace Kairo.Utils
 {
@@ -25,7 +26,7 @@ namespace Kairo.Utils
             while (port <= 65535 && IsPortInUse(port))
                 port++;
             if (port > 65535)
-                throw new Exception("无可用高位端口, 请检查您的网络情况");
+                throw new Exception(L.T("network.noHighPort"));
             return CreateForwarder(port, remoteHost, remotePort);
         }
 
@@ -138,7 +139,7 @@ namespace Kairo.Utils
             while (IsPortInUse(port) && port < 65535)
                 port++;
             if (port > 65535)
-                throw new Exception("无可用端口");
+                throw new Exception(L.T("network.noPort"));
             return port;
         }
     }

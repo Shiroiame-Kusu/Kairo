@@ -4,6 +4,7 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
+using Kairo.Core.Localization;
 using Kairo.ViewModels;
 using Kairo.Utils;
 using FluentAvalonia.UI.Controls;
@@ -66,7 +67,7 @@ public partial class ProxyListPage : UserControl
             var win = new CreateProxyWindow();
             win.Created += async (id, name) =>
             {
-                (Access.DashBoard as DashBoard)?.OpenSnackbar("创建成功", name, FAInfoBarSeverity.Success);
+                (Access.DashBoard as DashBoard)?.OpenSnackbar(L.T("tunnels.created"), name, FAInfoBarSeverity.Success);
                 if (DataContext is not ProxyListPageViewModel vm) return;
                 await vm.RefreshAsync();
                 if (vm.SelectProxy(id) is { } created)
@@ -80,7 +81,7 @@ public partial class ProxyListPage : UserControl
         catch (Exception ex)
         {
             AppLogger.Exception("Unhandled exception in Kairo/Components/DashBoard/ProxyListPage.axaml.cs:59", ex);
-            (Access.DashBoard as DashBoard)?.OpenSnackbar("打开失败", ex.Message, FAInfoBarSeverity.Error);
+            (Access.DashBoard as DashBoard)?.OpenSnackbar(L.T("common.openFailed"), ex.Message, FAInfoBarSeverity.Error);
         }
     }
 
@@ -120,7 +121,7 @@ public partial class ProxyListPage : UserControl
         catch (Exception ex)
         {
             AppLogger.Exception("Unhandled exception in Kairo/Components/DashBoard/ProxyListPage.axaml.cs:75", ex);
-            (Access.DashBoard as DashBoard)?.OpenSnackbar("打开失败", ex.Message, FAInfoBarSeverity.Error);
+            (Access.DashBoard as DashBoard)?.OpenSnackbar(L.T("common.openFailed"), ex.Message, FAInfoBarSeverity.Error);
         }
     }
 }

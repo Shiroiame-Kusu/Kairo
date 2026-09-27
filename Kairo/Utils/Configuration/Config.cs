@@ -27,6 +27,9 @@ namespace Kairo.Utils.Configuration
         public bool FollowSystemTheme = true;
         public bool DarkTheme = false;
 
+        // 界面语言：语言代码（zh-CN、en-US）或 "system"；为空时使用简体中文。与 kairo-cli 共用
+        public string Language = "";
+
         // Preferred update branch: "Stable", "Beta", or "Alpha" (case-insensitive). Empty = follow current branch.
         public string UpdateBranch = "";
 

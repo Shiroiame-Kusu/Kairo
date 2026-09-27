@@ -6,6 +6,7 @@ using Avalonia.Input.Platform;
 using Avalonia.Threading;
 using FluentAvalonia.UI.Controls;
 using Kairo.Components.DashBoard;
+using Kairo.Core.Localization;
 using Kairo.Utils;
 using Kairo.Utils.Logger;
 
@@ -26,7 +27,7 @@ namespace Kairo.ViewModels
 
         public int RunningCount => DesignModeHelper.IsDesign ? 2 : FrpcProcessManager.RunningCount;
         public bool HasRunning => RunningCount > 0;
-        public string RunningText => HasRunning ? $"{RunningCount} 个隧道运行中" : "当前没有运行中的隧道";
+        public string RunningText => HasRunning ? L.Plural("status.running", RunningCount) : L.T("status.noneRunning");
         public bool HasLines => Lines.Count > 0;
 
         public StatusPageViewModel()
@@ -164,11 +165,11 @@ namespace Kairo.ViewModels
         {
             var running = FrpcProcessManager.RunningCount;
             if (running == 0) return;
-            if (!await DialogHelper.ConfirmAsync(Access.DashBoard, "结束所有隧道", $"确定要强制结束正在运行的 {running} 个隧道吗？", "全部结束", destructive: true))
+            if (!await DialogHelper.ConfirmAsync(Access.DashBoard, L.T("status.stopAllTitle"), L.Plural("status.stopAllConfirm", running), L.T("status.stopAllButton"), destructive: true))
                 return;
 
             int stopped = FrpcProcessManager.StopAll();
-            (Access.DashBoard as DashBoard)?.OpenSnackbar("已停止", $"结束 {stopped} 个隧道", FAInfoBarSeverity.Informational);
+            (Access.DashBoard as DashBoard)?.OpenSnackbar(L.T("status.stopped"), L.Plural("status.stoppedCount", stopped), FAInfoBarSeverity.Informational);
         }
 
         private void ClearLogs()
@@ -186,7 +187,7 @@ namespace Kairo.ViewModels
                 var clipboard = TopLevel.GetTopLevel(Access.DashBoard)?.Clipboard;
                 if (clipboard == null) return;
                 await clipboard.SetTextAsync(text);
-                (Access.DashBoard as DashBoard)?.OpenSnackbar("已复制", $"已复制 {Lines.Count} 行日志", FAInfoBarSeverity.Success);
+                (Access.DashBoard as DashBoard)?.OpenSnackbar(L.T("status.copied"), L.Plural("status.copiedLines", Lines.Count), FAInfoBarSeverity.Success);
             }
             catch (Exception ex)
             {

@@ -3,6 +3,7 @@
              xmlns:fa="using:FluentAvalonia.UI.Controls"
              xmlns:vm="clr-namespace:Kairo.ViewModels"
              xmlns:local="clr-namespace:Kairo.Components.DashBoard"
+             xmlns:l="using:Kairo.Localization"
              x:Class="Kairo.Components.DashBoard.ProxyListPage"
              x:DataType="vm:ProxyListPageViewModel">
     <UserControl.Styles>
@@ -88,9 +89,9 @@
                 <StackPanel Spacing="4">
                     <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                         <fa:FASymbolIcon Symbol="List" FontSize="22" />
-                        <TextBlock VerticalAlignment="Center" FontSize="24" Text="隧道列表" />
+                        <TextBlock VerticalAlignment="Center" FontSize="24" Text="{l:Loc tunnels.title}" />
                     </StackPanel>
-                    <TextBlock Text="管理并快速操作你的隧道" Opacity="0.8" />
+                    <TextBlock Text="{l:Loc tunnels.subtitle}" Opacity="0.8" />
                 </StackPanel>
                 <TextBlock Grid.Column="1" VerticalAlignment="Bottom" Text="{Binding SummaryText}"
                            Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
@@ -115,18 +116,18 @@
 
                 <StackPanel Classes="state-panel" IsVisible="{Binding ShowLoadingState}">
                     <fa:FAProgressRing Width="32" Height="32" IsActive="{Binding ShowLoadingState}" />
-                    <TextBlock Text="正在加载隧道…" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                    <TextBlock Text="{l:Loc tunnels.loading}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                 </StackPanel>
 
                 <StackPanel Classes="state-panel" IsVisible="{Binding ShowEmptyState}">
                     <fa:FASymbolIcon Symbol="Globe" FontSize="40" HorizontalAlignment="Center"
                                      Foreground="{DynamicResource TextFillColorTertiaryBrush}" />
-                    <TextBlock Text="还没有隧道" FontSize="18" FontWeight="SemiBold" />
-                    <TextBlock Text="创建一个隧道，把本地服务分享到公网" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                    <TextBlock Text="{l:Loc tunnels.emptyTitle}" FontSize="18" FontWeight="SemiBold" />
+                    <TextBlock Text="{l:Loc tunnels.emptyHint}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                     <Button Classes="accent" HorizontalAlignment="Center" Margin="0,6,0,0" Command="{Binding CreateCommand}">
                         <StackPanel Orientation="Horizontal" Spacing="6">
                             <fa:FASymbolIcon Symbol="Add" FontSize="14" />
-                            <TextBlock Text="创建新隧道" />
+                            <TextBlock Text="{l:Loc tunnels.create}" />
                         </StackPanel>
                     </Button>
                 </StackPanel>
@@ -134,12 +135,12 @@
                 <StackPanel Classes="state-panel" IsVisible="{Binding ShowErrorState}">
                     <fa:FASymbolIcon Symbol="Important" FontSize="40" HorizontalAlignment="Center"
                                      Foreground="{DynamicResource SystemFillColorCriticalBrush}" />
-                    <TextBlock Text="隧道加载失败" FontSize="18" FontWeight="SemiBold" />
+                    <TextBlock Text="{l:Loc tunnels.loadFailed}" FontSize="18" FontWeight="SemiBold" />
                     <TextBlock Text="{Binding LoadError}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                     <Button HorizontalAlignment="Center" Margin="0,6,0,0" Command="{Binding RefreshCommand}">
                         <StackPanel Orientation="Horizontal" Spacing="6">
                             <fa:FASymbolIcon Symbol="Refresh" FontSize="14" />
-                            <TextBlock Text="重试" />
+                            <TextBlock Text="{l:Loc common.retry}" />
                         </StackPanel>
                     </Button>
                 </StackPanel>
@@ -148,26 +149,26 @@
 
         <Border Grid.Row="2" CornerRadius="8" Padding="12" Background="{DynamicResource LayerFillColorDefaultBrush}">
             <Grid ColumnDefinitions="Auto,Auto,Auto,*" ColumnSpacing="8">
-                <Button Grid.Column="0" Classes="accent" Command="{Binding CreateCommand}" ToolTip.Tip="创建新隧道 (Ctrl+N)">
+                <Button Grid.Column="0" Classes="accent" Command="{Binding CreateCommand}" ToolTip.Tip="{l:Loc tunnels.createTip}">
                     <StackPanel Orientation="Horizontal" Spacing="6">
                         <fa:FASymbolIcon Symbol="Add" FontSize="14" />
-                        <TextBlock Text="创建新隧道" />
+                        <TextBlock Text="{l:Loc tunnels.create}" />
                     </StackPanel>
                 </Button>
-                <Button Grid.Column="1" Command="{Binding RefreshCommand}" ToolTip.Tip="刷新列表 (F5)">
+                <Button Grid.Column="1" Command="{Binding RefreshCommand}" ToolTip.Tip="{l:Loc tunnels.refreshTip}">
                     <StackPanel Orientation="Horizontal" Spacing="6">
                         <fa:FASymbolIcon Symbol="Refresh" FontSize="14" />
-                        <TextBlock Text="刷新" />
+                        <TextBlock Text="{l:Loc common.refresh}" />
                     </StackPanel>
                 </Button>
-                <Button Grid.Column="2" Command="{Binding NodePingCommand}" IsVisible="{Binding CanPingNodes}" ToolTip.Tip="测试各节点的延迟">
+                <Button Grid.Column="2" Command="{Binding NodePingCommand}" IsVisible="{Binding CanPingNodes}" ToolTip.Tip="{l:Loc tunnels.pingTip}">
                     <StackPanel Orientation="Horizontal" Spacing="6">
                         <fa:FASymbolIcon Symbol="Clock" FontSize="14" />
-                        <TextBlock Text="节点延迟" />
+                        <TextBlock Text="{l:Loc tunnels.ping}" />
                     </StackPanel>
                 </Button>
                 <TextBlock Grid.Column="3" VerticalAlignment="Center" HorizontalAlignment="Right" TextTrimming="CharacterEllipsis"
-                           Text="PS: 双击卡片启动/停止, 右键打开更多菜单喵~"
+                           Text="{l:Loc tunnels.footerHint}"
                            Foreground="{DynamicResource TextFillColorTertiaryBrush}" />
             </Grid>
         </Border>

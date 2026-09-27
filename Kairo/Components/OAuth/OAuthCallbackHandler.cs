@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Kairo.Core.Localization;
 
 namespace Kairo.Components.OAuth
 {
@@ -36,7 +37,7 @@ namespace Kairo.Components.OAuth
                     while (port <= 65535 && IsPortInUse(port))
                         port++;
                     if (port > 65535)
-                        throw new Exception("无可用高位端口, 请检查您的网络情况");
+                        throw new Exception(L.T("network.noHighPort"));
                     Global.OAuthPort = port;
                     Global.Config.OAuthPort = port;
                     ConfigManager.Save();
@@ -62,7 +63,9 @@ namespace Kairo.Components.OAuth
                             else if (!string.IsNullOrWhiteSpace(code))
                                 await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(async () => await mw.AcceptOAuthCode(code));
                         }
-                        const string html = "<html><head><title>OAuth Complete</title></head><body><h3>授权完成，可以返回 Kairo 应用。</h3><script>setTimeout(()=>window.close(),1500);</script></body></html>";
+                        var html = "<html><head><meta charset=\"utf-8\"><title>OAuth Complete</title></head><body><h3>" +
+                                   System.Net.WebUtility.HtmlEncode(L.T("oauth.completePage")) +
+                                   "</h3><script>setTimeout(()=>window.close(),1500);</script></body></html>";
                         ctx.Response.ContentType = "text/html; charset=utf-8";
                         await ctx.Response.WriteAsync(html);
                     });

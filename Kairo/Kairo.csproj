@@ -58,6 +58,11 @@
     </ItemGroup>
 
     <ItemGroup>
+        <!-- 界面文本：Localization/Languages/<语言代码>.json -->
+        <EmbeddedResource Include="Localization/Languages/*.json" LogicalName="Kairo.Lang.%(Filename).json" />
+    </ItemGroup>
+
+    <ItemGroup>
         <EmbeddedResource Update="Properties\Resources.resx">
             <Generator>ResXFileCodeGenerator</Generator>
             <LastGenOutput>Resources.Designer.cs</LastGenOutput>

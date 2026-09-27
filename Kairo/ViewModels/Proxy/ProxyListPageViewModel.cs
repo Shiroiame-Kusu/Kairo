@@ -8,6 +8,7 @@ using Avalonia.Threading;
 using Avalonia.Controls;
 using Avalonia.Input.Platform;
 using Kairo.Components.DashBoard;
+using Kairo.Core.Localization;
 using Kairo.Core.Models;
 using Kairo.Core.Providers;
 using Kairo.Utils;
@@ -71,12 +72,12 @@ namespace Kairo.ViewModels
         {
             get
             {
-                if (IsLoading && Proxies.Count == 0) return "正在加载隧道…";
-                if (Proxies.Count == 0) return "暂无隧道";
+                if (IsLoading && Proxies.Count == 0) return L.T("tunnels.loading");
+                if (Proxies.Count == 0) return L.T("tunnels.none");
                 var running = Proxies.Count(p => p.IsRunning);
                 return running > 0
-                    ? $"共 {Proxies.Count} 个隧道 · {running} 个运行中"
-                    : $"共 {Proxies.Count} 个隧道";
+                    ? L.Plural("tunnels.summaryRunning", Proxies.Count, Proxies.Count, running)
+                    : L.Plural("tunnels.summary", Proxies.Count);
             }
         }
 
@@ -170,8 +171,8 @@ namespace Kairo.ViewModels
                 var result = await _api.GetTunnelsAsync();
                 if (!result.Success)
                 {
-                    LoadError = string.IsNullOrWhiteSpace(result.Message) ? "获取隧道失败" : result.Message;
-                    AccessSnackbar("获取隧道失败", result.Message, FAInfoBarSeverity.Error);
+                    LoadError = string.IsNullOrWhiteSpace(result.Message) ? L.T("tunnels.fetchFailed") : result.Message;
+                    AccessSnackbar(L.T("tunnels.fetchFailed"), result.Message, FAInfoBarSeverity.Error);
                     return;
                 }
 
@@ -191,7 +192,7 @@ namespace Kairo.ViewModels
             {
                 AppLogger.Exception("Unhandled exception in Kairo/ViewModels/Proxy/ProxyListPageViewModel.cs:107", ex);
                 LoadError = ex.Message;
-                AccessSnackbar("异常", ex.Message, FAInfoBarSeverity.Error);
+                AccessSnackbar(L.T("common.error"), ex.Message, FAInfoBarSeverity.Error);
             }
             finally
             {
@@ -203,9 +204,9 @@ namespace Kairo.ViewModels
         public async Task DeleteProxyAsync(ProxyCardViewModel vm)
         {
             var message = vm.IsRunning
-                ? $"隧道「{vm.Name}」正在运行，删除前会先停止它。删除后无法恢复，确定继续吗？"
-                : $"确定要删除隧道「{vm.Name}」吗？删除后无法恢复。";
-            if (!await DialogHelper.ConfirmAsync(Access.DashBoard, "删除隧道", message, "删除", destructive: true))
+                ? L.T("tunnels.deleteRunningConfirm", vm.Name)
+                : L.T("tunnels.deleteConfirm", vm.Name);
+            if (!await DialogHelper.ConfirmAsync(Access.DashBoard, L.T("tunnels.deleteTitle"), message, L.T("common.delete"), destructive: true))
                 return;
 
             try
@@ -217,18 +218,18 @@ namespace Kairo.ViewModels
                 var result = await _api.DeleteTunnelAsync(tunnel);
                 if (result.Success)
                 {
-                    AccessSnackbar("已删除", vm.Proxy.ProxyName, FAInfoBarSeverity.Success);
+                    AccessSnackbar(L.T("tunnels.deleted"), vm.Proxy.ProxyName, FAInfoBarSeverity.Success);
                     await RefreshAsync();
                 }
                 else
                 {
-                    AccessSnackbar("删除失败", result.Message, FAInfoBarSeverity.Error);
+                    AccessSnackbar(L.T("tunnels.deleteFailed"), result.Message, FAInfoBarSeverity.Error);
                 }
             }
             catch (Exception ex)
             {
                 AppLogger.Exception("Unhandled exception in Kairo/ViewModels/Proxy/ProxyListPageViewModel.cs:129", ex);
-                AccessSnackbar("异常", ex.Message, FAInfoBarSeverity.Error);
+                AccessSnackbar(L.T("common.error"), ex.Message, FAInfoBarSeverity.Error);
             }
         }
 
@@ -238,7 +239,7 @@ namespace Kairo.ViewModels
             var frpcPath = ProviderFrpcPath.Get(Global.CurrentProvider);
             if (string.IsNullOrWhiteSpace(frpcPath) || !File.Exists(frpcPath))
             {
-                AccessSnackbar("未找到 frpc", $"请在「设置」中下载或选择 {Global.CurrentProvider.DisplayName} frpc", FAInfoBarSeverity.Warning);
+                AccessSnackbar(L.T("tunnels.frpcMissing"), L.T("tunnels.frpcMissingHint", Global.CurrentProvider.DisplayName), FAInfoBarSeverity.Warning);
                 return;
             }
             if (FrpcProcessManager.IsRunning(vm.Proxy.Id))
@@ -256,7 +257,7 @@ namespace Kairo.ViewModels
                     var config = await api.GetFrpcConfigAsync(new FrpTunnel { Id = vm.Proxy.Id, Name = vm.Proxy.ProxyName, Token = vm.Proxy.Token });
                     if (!config.Success || string.IsNullOrWhiteSpace(config.Data?.Token))
                     {
-                        AccessSnackbar("启动失败", config.Message, FAInfoBarSeverity.Error);
+                        AccessSnackbar(L.T("tunnels.startFailed"), config.Message, FAInfoBarSeverity.Error);
                         return;
                     }
                     frpToken = config.Data.Token;
@@ -273,19 +274,19 @@ namespace Kairo.ViewModels
                         if (!string.IsNullOrEmpty(connAddr))
                         {
                             CopyToClipboardAsync(connAddr);
-                            AccessSnackbar("启动成功", $"{vm.Proxy.ProxyName} - 已复制 {connAddr}", FAInfoBarSeverity.Success);
+                            AccessSnackbar(L.T("tunnels.started"), L.T("tunnels.startedCopied", vm.Proxy.ProxyName, connAddr), FAInfoBarSeverity.Success);
                         }
                         else
                         {
-                            AccessSnackbar("启动成功", vm.Proxy.ProxyName, FAInfoBarSeverity.Success);
+                            AccessSnackbar(L.T("tunnels.started"), vm.Proxy.ProxyName, FAInfoBarSeverity.Success);
                         }
                     },
-                    err => { AccessSnackbar("启动失败", err, FAInfoBarSeverity.Error); });
+                    err => { AccessSnackbar(L.T("tunnels.startFailed"), err, FAInfoBarSeverity.Error); });
             }
             catch (Exception ex)
             {
                 AppLogger.Exception("启动隧道失败", ex);
-                AccessSnackbar("启动失败", ex.Message, FAInfoBarSeverity.Error);
+                AccessSnackbar(L.T("tunnels.startFailed"), ex.Message, FAInfoBarSeverity.Error);
             }
             finally
             {
@@ -298,7 +299,7 @@ namespace Kairo.ViewModels
             var address = vm.PublicAddress;
             if (string.IsNullOrEmpty(address)) return;
             CopyToClipboardAsync(address);
-            AccessSnackbar("已复制", address, FAInfoBarSeverity.Success);
+            AccessSnackbar(L.T("tunnels.copied"), address, FAInfoBarSeverity.Success);
         }
 
         private static async void CopyToClipboardAsync(string text)
@@ -327,13 +328,13 @@ namespace Kairo.ViewModels
             {
                 vm.IsRunning = false;
                 NotifyListState();
-                AccessSnackbar("已停止", vm.Proxy.ProxyName, FAInfoBarSeverity.Informational);
+                AccessSnackbar(L.T("tunnels.stopped"), vm.Proxy.ProxyName, FAInfoBarSeverity.Informational);
             }
             else
             {
                 vm.IsRunning = false;
                 NotifyListState();
-                AccessSnackbar("未在运行", vm.Proxy.ProxyName, FAInfoBarSeverity.Warning);
+                AccessSnackbar(L.T("tunnels.notRunning"), vm.Proxy.ProxyName, FAInfoBarSeverity.Warning);
             }
         }
 

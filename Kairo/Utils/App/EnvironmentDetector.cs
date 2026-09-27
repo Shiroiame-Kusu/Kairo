@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
+using Kairo.Core.Localization;
 
 namespace Kairo.Utils;
 
@@ -80,8 +81,7 @@ public static class EnvironmentDetector
             if (appData.StartsWith("/var/root", StringComparison.OrdinalIgnoreCase))
             {
                 throw new InvalidOperationException(
-                    "无法确定用户的主目录。HOME 环境变量和 UserProfile 都指向 /var/root。" +
-                    "请检查应用程序权限或尝试使用 KAIRO_CONFIG_DIR 环境变量指定配置目录。");
+                    L.T("core.environment.noHomeDirectory"));
             }
             return appData;
         }

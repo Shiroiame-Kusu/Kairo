@@ -9,6 +9,7 @@ using Kairo.Core.Logging;
 using Kairo.Core.Models;
 using Kairo.Core.Providers;
 using Kairo.Utils.Logger;
+using Kairo.Core.Localization;
 
 namespace Kairo.Utils;
 
@@ -54,7 +55,7 @@ internal static class FrpcProcessManager
     {
         if (string.IsNullOrWhiteSpace(frpcPath) || !File.Exists(frpcPath))
         {
-            onFailed?.Invoke("frpc 路径无效");
+            onFailed?.Invoke(L.T("frpc.invalidPath"));
             return false;
         }
         
@@ -91,7 +92,7 @@ internal static class FrpcProcessManager
                         
                         if (chmodProc?.ExitCode != 0)
                         {
-                            onFailed?.Invoke("无法设置 frpc 执行权限");
+                            onFailed?.Invoke(L.T("frpc.chmodFailed"));
                             return false;
                         }
                     }
@@ -106,7 +107,7 @@ internal static class FrpcProcessManager
         
         if (IsRunning(proxyId))
         {
-            onFailed?.Invoke("该隧道已在运行中");
+            onFailed?.Invoke(L.T("frpc.alreadyRunning"));
             return false;
         }
         try
@@ -158,7 +159,7 @@ internal static class FrpcProcessManager
             };
             if (!proc.Start())
             {
-                onFailed?.Invoke("frpc 启动失败");
+                onFailed?.Invoke(L.T("frpc.startFailed"));
                 return false;
             }
             proc.BeginOutputReadLine();
@@ -168,7 +169,7 @@ internal static class FrpcProcessManager
                 _processes[proxyId] = new ProcInfo { ProxyId = proxyId, Process = proc };
             }
             AppLogger.Output(LogType.Info, FrpcLogDestinations, $"[FRPC] 已启动隧道 {proxyId}, PID={proc.Id}");
-            onStarted?.Invoke("已启动");
+            onStarted?.Invoke(L.T("frpc.started"));
             RaiseRunningChanged();
             return true;
         }

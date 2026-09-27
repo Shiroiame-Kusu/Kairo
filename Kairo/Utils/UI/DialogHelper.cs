@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia.Media;
 using FluentAvalonia.UI.Controls;
+using Kairo.Core.Localization;
 
 namespace Kairo.Utils
 {
@@ -29,7 +30,7 @@ namespace Kairo.Utils
                     MaxWidth = 420
                 },
                 PrimaryButtonText = primaryText,
-                CloseButtonText = "取消",
+                CloseButtonText = L.T("common.cancel"),
                 DefaultButton = destructive ? FAContentDialogButton.Close : FAContentDialogButton.Primary
             };
 

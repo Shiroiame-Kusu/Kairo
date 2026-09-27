@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Kairo.Core;
+using Kairo.Core.Localization;
 using Kairo.Core.Providers;
+using Kairo.Localization;
 using Kairo.Utils;
 using Kairo.Utils.Configuration;
 
@@ -50,7 +52,12 @@ namespace Kairo.ViewModels
             }
         }
 
-        public IReadOnlyList<string> ThemeOptions { get; } = new[] { "跟随系统", "浅色", "深色" };
+        public IReadOnlyList<LocalizedOption> ThemeOptions { get; } = new[]
+        {
+            new LocalizedOption("settings.theme.system"),
+            new LocalizedOption("settings.theme.light"),
+            new LocalizedOption("settings.theme.dark")
+        };
 
         public bool UseMirror
         {
@@ -78,13 +85,13 @@ namespace Kairo.ViewModels
         }
 
         public bool FrpcInstalled => !string.IsNullOrWhiteSpace(FrpcPath) && File.Exists(FrpcPath);
-        public string FrpcDownloadButtonText => FrpcInstalled ? "更新 FRPC" : "下载 FRPC";
+        public string FrpcDownloadButtonText => L.T(FrpcInstalled ? "settings.frpc.update" : "settings.frpc.download");
         public string FrpcStatusText => FrpcInstalled
-            ? $"{Global.CurrentProvider.DisplayName} 使用的 frpc 可执行文件"
-            : $"尚未安装 {Global.CurrentProvider.DisplayName} frpc，点击「下载 FRPC」自动安装";
+            ? L.T("settings.frpc.installed", Global.CurrentProvider.DisplayName)
+            : L.T("settings.frpc.missing", Global.CurrentProvider.DisplayName);
 
         public string AccountText => string.IsNullOrWhiteSpace(Global.Config.Username)
-            ? $"{Global.CurrentProvider.DisplayName} · 未登录"
+            ? L.T("settings.provider.notSignedIn", Global.CurrentProvider.DisplayName)
             : $"{Global.Config.Username} · {Global.CurrentProvider.DisplayName}";
 
         public bool CanCopyToken => !string.IsNullOrWhiteSpace(Global.Config.FrpToken);
@@ -99,8 +106,8 @@ namespace Kairo.ViewModels
         public string ConfigDirectory => Kairo.Core.Configuration.ConfigHelper.GetConfigDirectory();
 
         public string BuildInfoText => Global.BuildInfo?.ToString() ?? string.Empty;
-        public string VersionText => $"版本: {Global.Version} \"{Global.VersionName}\" {Global.Branch.ToDisplayName()} {Global.Revision}";
-        public string DeveloperText => $"开发者: {Global.Developer}";
+        public string VersionText => L.T("settings.about.version", Global.Version, Global.VersionName, Global.Branch.ToDisplayName(), Global.Revision);
+        public string DeveloperText => L.T("settings.about.developer", Global.Developer);
         public string CopyrightText => Global.Copyright;
 
         public int UpdateBranchIndex
