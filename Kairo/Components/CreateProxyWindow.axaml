@@ -1,85 +1,133 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:fa="using:FluentAvalonia.UI.Controls"
         xmlns:vm="clr-namespace:Kairo.ViewModels"
         x:Class="Kairo.Components.CreateProxyWindow"
         x:CompileBindings="True"
         x:DataType="vm:CreateProxyWindowViewModel"
-        Title="创建隧道" Width="520" Height="750" WindowStartupLocation="CenterOwner">
-  <Grid RowDefinitions="Auto,* ,Auto" Margin="16" RowSpacing="12">
-    <TextBlock Text="填写信息以创建新隧道"/>
-    <ScrollViewer Grid.Row="1">
-      <StackPanel Spacing="10">
-        <TextBlock Text="隧道名称"/>
-        <TextBox Text="{Binding Name, Mode=TwoWay}"/>
+        Title="创建隧道" Width="540" Height="660" MinWidth="460" MinHeight="480"
+        WindowStartupLocation="CenterOwner">
+  <Window.Styles>
+    <Style Selector="TextBlock.group-title">
+      <Setter Property="FontSize" Value="15" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Margin" Value="0,6,0,0" />
+    </Style>
+    <Style Selector="TextBlock.field-label">
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="Margin" Value="0,0,0,4" />
+      <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
+    </Style>
+    <Style Selector="TextBlock.status.error">
+      <Setter Property="Foreground" Value="{DynamicResource SystemFillColorCriticalBrush}" />
+    </Style>
+  </Window.Styles>
 
-        <TextBlock Text="协议类型"/>
-        <ComboBox ItemsSource="{Binding Types}" SelectedItem="{Binding SelectedType, Mode=TwoWay}" SelectedIndex="0"/>
+  <Grid RowDefinitions="Auto,*,Auto" Margin="20,16" RowSpacing="12">
+    <StackPanel Spacing="2">
+      <TextBlock Text="创建新隧道" FontSize="20" FontWeight="SemiBold" />
+      <TextBlock Text="把本地服务通过节点映射到公网" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+    </StackPanel>
 
-        <TextBlock Text="本地服务 IP"/>
-        <TextBox Text="{Binding LocalIp, Mode=TwoWay}"/>
+    <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled">
+      <StackPanel Spacing="10" Margin="0,0,12,0">
+        <TextBlock Classes="group-title" Text="基本信息" />
+        <Grid ColumnDefinitions="*,140" ColumnSpacing="12">
+          <StackPanel>
+            <TextBlock Classes="field-label" Text="隧道名称" />
+            <TextBox Text="{Binding Name, Mode=TwoWay}" PlaceholderText="例如 minecraft" />
+          </StackPanel>
+          <StackPanel Grid.Column="1">
+            <TextBlock Classes="field-label" Text="协议类型" />
+            <ComboBox HorizontalAlignment="Stretch" ItemsSource="{Binding Types}" SelectedItem="{Binding SelectedType, Mode=TwoWay}" />
+          </StackPanel>
+        </Grid>
 
-        <TextBlock Text="本地服务端口"/>
-        <TextBox Text="{Binding LocalPort, Mode=TwoWay}"/>
+        <TextBlock Classes="group-title" Text="本地服务" />
+        <Grid ColumnDefinitions="*,140" ColumnSpacing="12">
+          <StackPanel>
+            <TextBlock Classes="field-label" Text="本地 IP" />
+            <TextBox Text="{Binding LocalIp, Mode=TwoWay}" PlaceholderText="127.0.0.1" />
+          </StackPanel>
+          <StackPanel Grid.Column="1">
+            <TextBlock Classes="field-label" Text="本地端口" />
+            <TextBox Text="{Binding LocalPort, Mode=TwoWay}" PlaceholderText="例如 25565" />
+          </StackPanel>
+        </Grid>
+
+        <TextBlock Classes="group-title" Text="节点与访问方式" />
+        <StackPanel>
+          <TextBlock Classes="field-label" Text="节点" />
+          <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+            <ComboBox HorizontalAlignment="Stretch" ItemsSource="{Binding Nodes}" SelectedItem="{Binding SelectedNode, Mode=TwoWay}"
+                      PlaceholderText="{Binding NodePlaceholder}">
+              <ComboBox.ItemTemplate>
+                <DataTemplate x:DataType="vm:CreateProxyWindowViewModel+NodeItem">
+                  <TextBlock Text="{Binding DisplayLabel}"/>
+                </DataTemplate>
+              </ComboBox.ItemTemplate>
+            </ComboBox>
+            <fa:FAProgressRing Grid.Column="1" Width="20" Height="20" IsActive="{Binding IsLoadingNodes}" IsVisible="{Binding IsLoadingNodes}" />
+            <Button Grid.Column="2" Command="{Binding PingCommand}" IsEnabled="{Binding CanPing}" IsVisible="{Binding CanPing}">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <fa:FASymbolIcon Symbol="Clock" FontSize="14" />
+                <TextBlock Text="测试延迟" />
+              </StackPanel>
+            </Button>
+          </Grid>
+        </StackPanel>
+
+        <Border Padding="10" CornerRadius="6" Background="{DynamicResource LayerFillColorAltBrush}"
+                DataContext="{Binding SelectedNode}" IsVisible="{Binding $self.DataContext, Converter={x:Static ObjectConverters.IsNotNull}}">
+          <StackPanel Spacing="4" x:DataType="vm:CreateProxyWindowViewModel+NodeItem">
+            <TextBlock TextWrapping="Wrap">
+              <Run Text="名称：" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+              <Run Text="{Binding DisplayName, TargetNullValue=—}"/>
+            </TextBlock>
+            <TextBlock TextWrapping="Wrap">
+              <Run Text="端口范围：" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+              <Run Text="{Binding PortRangeDisplay, TargetNullValue=—}"/>
+            </TextBlock>
+            <TextBlock TextWrapping="Wrap">
+              <Run Text="描述：" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+              <Run Text="{Binding DescriptionDisplay, TargetNullValue=暂无}"/>
+            </TextBlock>
+          </StackPanel>
+        </Border>
 
         <StackPanel IsVisible="{Binding NeedRemotePort}">
-          <TextBlock Text="远端服务端口 (tcp/udp 需要)"/>
-          <TextBox Text="{Binding RemotePort, Mode=TwoWay}"/>
-        </StackPanel>
-
-        <TextBlock Text="节点"/>
-        <StackPanel Orientation="Horizontal" Spacing="8">
-          <ComboBox ItemsSource="{Binding Nodes}" SelectedItem="{Binding SelectedNode, Mode=TwoWay}" MinWidth="260">
-            <ComboBox.ItemTemplate>
-              <DataTemplate x:DataType="vm:CreateProxyWindowViewModel+NodeItem">
-                <TextBlock Text="{Binding DisplayLabel}"/>
-              </DataTemplate>
-            </ComboBox.ItemTemplate>
-          </ComboBox>
-          <Button Content="测试延迟" Command="{Binding PingCommand}" IsEnabled="{Binding CanPing}" IsVisible="{Binding CanPing}"/>
-        </StackPanel>
-
-        <StackPanel Spacing="4" DataContext="{Binding SelectedNode}">
-          <TextBlock Text="节点信息"/>
-          <Border Padding="10" CornerRadius="6" Background="#0F000000">
-            <StackPanel Spacing="4" x:DataType="vm:CreateProxyWindowViewModel+NodeItem">
-              <TextBlock TextWrapping="Wrap">
-                <Run Text="名称："/>
-                <Run Text="{Binding DisplayName, TargetNullValue=—}"/>
-              </TextBlock>
-              <TextBlock TextWrapping="Wrap">
-                <Run Text="端口范围："/>
-                <Run Text="{Binding PortRangeDisplay, TargetNullValue=—}"/>
-              </TextBlock>
-              <TextBlock TextWrapping="Wrap">
-                <Run Text="描述："/>
-                <Run Text="{Binding DescriptionDisplay, TargetNullValue=暂无}"/>
-              </TextBlock>
-            </StackPanel>
-          </Border>
-        </StackPanel>
-
-        <StackPanel Orientation="Horizontal" Spacing="20">
-          <CheckBox Content="启用加密" IsChecked="{Binding UseEncryption}"/>
-          <CheckBox Content="启用压缩" IsChecked="{Binding UseCompression}"/>
-        </StackPanel>
-
-        <StackPanel IsVisible="{Binding NeedSecretKey}">
-          <TextBlock Text="访问密钥 (xtcp/stcp 需要)"/>
-          <TextBox Text="{Binding SecretKey, Mode=TwoWay}"/>
+          <TextBlock Classes="field-label" Text="远端端口" />
+          <TextBox Text="{Binding RemotePort, Mode=TwoWay}" PlaceholderText="{Binding RemotePortPlaceholder}" />
         </StackPanel>
 
         <StackPanel IsVisible="{Binding NeedDomain}">
-          <TextBlock Text="域名 (http/https 需要)"/>
-          <TextBox Text="{Binding Domain, Mode=TwoWay}"/>
+          <TextBlock Classes="field-label" Text="绑定域名" />
+          <TextBox Text="{Binding Domain, Mode=TwoWay}" PlaceholderText="example.com" />
         </StackPanel>
 
-        <TextBlock Foreground="Gray" Text="{Binding StatusText}"/>
+        <StackPanel IsVisible="{Binding NeedSecretKey}">
+          <TextBlock Classes="field-label" Text="访问密钥" />
+          <TextBox Text="{Binding SecretKey, Mode=TwoWay}" PlaceholderText="访问端需要填写相同的密钥" />
+        </StackPanel>
+
+        <TextBlock Classes="group-title" Text="高级选项" />
+        <StackPanel Orientation="Horizontal" Spacing="20">
+          <CheckBox Content="启用加密" IsChecked="{Binding UseEncryption}" ToolTip.Tip="加密客户端与节点之间的数据" />
+          <CheckBox Content="启用压缩" IsChecked="{Binding UseCompression}" ToolTip.Tip="压缩传输数据，节省流量但会增加 CPU 占用" />
+        </StackPanel>
       </StackPanel>
     </ScrollViewer>
 
-    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
-      <Button Content="创建" Command="{Binding CreateCommand}"/>
-      <Button Content="取消" Command="{Binding CancelCommand}"/>
-    </StackPanel>
+    <Grid Grid.Row="2" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+      <TextBlock Classes="status" Classes.error="{Binding IsStatusError}" VerticalAlignment="Center"
+                 TextWrapping="Wrap" Text="{Binding StatusText}" IsVisible="{Binding HasStatus}" />
+      <Button Grid.Column="1" Classes="accent" MinWidth="88" IsDefault="True" Command="{Binding CreateCommand}">
+        <StackPanel Orientation="Horizontal" Spacing="6">
+          <fa:FASymbolIcon Symbol="Add" FontSize="14" />
+          <TextBlock Text="创建" />
+        </StackPanel>
+      </Button>
+      <Button Grid.Column="2" MinWidth="88" IsCancel="True" Content="取消" Command="{Binding CancelCommand}" />
+    </Grid>
   </Grid>
 </Window>

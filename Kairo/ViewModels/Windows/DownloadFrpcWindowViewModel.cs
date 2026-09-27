@@ -19,6 +19,9 @@ namespace Kairo.ViewModels
         private CancellationTokenSource _cts = new();
         private readonly RelayCommand _cancelCommand;
         private readonly RelayCommand _closeCommand;
+        private readonly RelayCommand _retryCommand;
+        private bool _isFailed;
+        private bool _isCompleted;
 
         private string _statusText = "正在获取最新版本信息...";
         private double _progressValue;
@@ -91,6 +94,29 @@ namespace Kairo.ViewModels
 
         public RelayCommand CancelCommand => _cancelCommand;
         public RelayCommand CloseCommand => _closeCommand;
+        public RelayCommand RetryCommand => _retryCommand;
+
+        public string HeaderText => $"下载 {Global.CurrentProvider.DisplayName} frpc";
+
+        /// <summary>下载失败或被取消，可以重试</summary>
+        public bool IsFailed
+        {
+            get => _isFailed;
+            private set
+            {
+                if (!SetProperty(ref _isFailed, value)) return;
+                OnPropertyChanged(nameof(ShowProgress));
+                _retryCommand.RaiseCanExecuteChanged();
+            }
+        }
+
+        public bool IsCompleted
+        {
+            get => _isCompleted;
+            private set => SetProperty(ref _isCompleted, value);
+        }
+
+        public bool ShowProgress => !IsFailed;
 
         public event Action? CloseRequested;
 
@@ -100,6 +126,7 @@ namespace Kairo.ViewModels
             _downloadService = new FrpcDownloadService(_http);
             _cancelCommand = new RelayCommand(Cancel, () => CanCancel);
             _closeCommand = new RelayCommand(() => CloseRequested?.Invoke(), () => CanClose);
+            _retryCommand = new RelayCommand(() => _ = StartAsync(), () => IsFailed);
             if (Global.Tips != null && Global.Tips.Count > 0)
                 TipText = Global.Tips[Random.Shared.Next(0, Global.Tips.Count)];
         }
@@ -123,6 +150,8 @@ namespace Kairo.ViewModels
 
             try
             {
+                IsFailed = false;
+                IsCompleted = false;
                 CanCancel = true;
                 CanClose = false;
                 ResetProgressUI();
@@ -136,9 +165,10 @@ namespace Kairo.ViewModels
 
                 if (!result.Success)
                 {
-                    SetStatus($"失败: {result.Message}");
+                    SetStatus($"下载失败: {result.Message}");
                     CanClose = true;
                     CanCancel = false;
+                    IsFailed = true;
                     return;
                 }
 
@@ -155,6 +185,7 @@ namespace Kairo.ViewModels
                     SpeedText = string.Empty;
                     CanClose = true;
                     CanCancel = false;
+                    IsCompleted = true;
                     (Access.DashBoard as DashBoard)?.OpenSnackbar(
                         "下载完成",
                         result.FrpcPath,
@@ -169,16 +200,18 @@ namespace Kairo.ViewModels
                 {
                     CanClose = true;
                     CanCancel = false;
+                    IsFailed = true;
                 });
             }
             catch (Exception ex)
             {
                 AppLogger.Exception("Unhandled exception in Kairo/ViewModels/Windows/DownloadFrpcWindowViewModel.cs:168", ex);
-                SetStatus("失败: " + ex.Message);
+                SetStatus("下载失败: " + ex.Message);
                 Dispatcher.UIThread.Post(() =>
                 {
                     CanClose = true;
                     CanCancel = false;
+                    IsFailed = true;
                 });
             }
         }
@@ -190,6 +223,7 @@ namespace Kairo.ViewModels
             _cts.Cancel();
             SetStatus("已取消");
             CanClose = true;
+            IsFailed = true;
         }
 
         private void ResetProgressUI()

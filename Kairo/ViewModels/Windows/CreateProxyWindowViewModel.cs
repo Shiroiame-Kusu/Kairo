@@ -27,6 +27,8 @@ namespace Kairo.ViewModels
         private string _secretKey = string.Empty;
         private string _domain = string.Empty;
         private string _statusText = string.Empty;
+        private bool _isStatusError;
+        private bool _isLoadingNodes;
 
         public IReadOnlyList<string> Types { get; } = new[] { "tcp", "udp", "xtcp", "stcp", "http", "https" };
         public ObservableCollection<NodeItem> Nodes => _nodes;
@@ -102,7 +104,48 @@ namespace Kairo.ViewModels
         public string StatusText
         {
             get => _statusText;
-            set => SetProperty(ref _statusText, value);
+            set
+            {
+                if (SetProperty(ref _statusText, value))
+                    OnPropertyChanged(nameof(HasStatus));
+            }
+        }
+
+        public bool HasStatus => !string.IsNullOrWhiteSpace(StatusText);
+
+        /// <summary>状态文本是否为错误（错误显示为红色，进度提示为普通颜色）</summary>
+        public bool IsStatusError
+        {
+            get => _isStatusError;
+            private set => SetProperty(ref _isStatusError, value);
+        }
+
+        public bool IsLoadingNodes
+        {
+            get => _isLoadingNodes;
+            private set
+            {
+                if (SetProperty(ref _isLoadingNodes, value))
+                    OnPropertyChanged(nameof(NodePlaceholder));
+            }
+        }
+
+        public string NodePlaceholder => IsLoadingNodes ? "正在加载节点…" : _nodes.Count == 0 ? "没有可用的节点" : "选择节点";
+
+        public string RemotePortPlaceholder => Global.CurrentProvider.Type == FrpProviderType.Lolia
+            ? "请输入远端端口"
+            : "留空则随机分配";
+
+        public void SetError(string message)
+        {
+            IsStatusError = true;
+            StatusText = message;
+        }
+
+        private void SetProgress(string message)
+        {
+            IsStatusError = false;
+            StatusText = message;
         }
 
         public bool NeedRemotePort => TypeNormalized is "tcp" or "udp";
@@ -152,6 +195,7 @@ namespace Kairo.ViewModels
 
         private async Task LoadNodesAsync()
         {
+            IsLoadingNodes = true;
             try
             {
                 if (Design.IsDesignMode)
@@ -176,7 +220,7 @@ namespace Kairo.ViewModels
 
                 if (!ApiClient.TryEnsureLoggedIn(out var error))
                 {
-                    StatusText = error!;
+                    SetError(error!);
                     return;
                 }
 
@@ -184,7 +228,7 @@ namespace Kairo.ViewModels
                 var result = await api.GetNodesAsync();
                 if (!result.Success)
                 {
-                    StatusText = $"获取节点失败: {result.Message}";
+                    SetError($"获取节点失败: {result.Message}");
                     return;
                 }
 
@@ -210,8 +254,12 @@ namespace Kairo.ViewModels
             catch (Exception ex)
             {
                 AppLogger.Exception("Unhandled exception in Kairo/ViewModels/Windows/CreateProxyWindowViewModel.cs:209", ex);
-                StatusText = $"获取节点失败: {ex.Message}";
+                SetError($"获取节点失败: {ex.Message}");
                 CanPing = false;
+            }
+            finally
+            {
+                IsLoadingNodes = false;
             }
         }
 
@@ -230,12 +278,12 @@ namespace Kairo.ViewModels
                 var secret = SecretKey?.Trim();
                 var domain = Domain?.Trim();
 
-                if (string.IsNullOrWhiteSpace(name)) { StatusText = "请输入隧道名称"; return; }
-                if (string.IsNullOrWhiteSpace(type)) { StatusText = "请选择协议类型"; return; }
-                if (string.IsNullOrWhiteSpace(localIp)) { StatusText = "请输入本地 IP"; return; }
+                if (string.IsNullOrWhiteSpace(name)) { SetError("请输入隧道名称"); return; }
+                if (string.IsNullOrWhiteSpace(type)) { SetError("请选择协议类型"); return; }
+                if (string.IsNullOrWhiteSpace(localIp)) { SetError("请输入本地 IP"); return; }
                 if (!int.TryParse(localPortStr, out var localPort) || localPort <= 0 || localPort > 65535)
-                { StatusText = "本地端口非法"; return; }
-                if (nodeItem == null) { StatusText = "请选择节点"; return; }
+                { SetError("本地端口应为 1-65535 之间的数字"); return; }
+                if (nodeItem == null) { SetError("请选择节点"); return; }
 
                 bool needRemote = NeedRemotePort;
                 bool needSecret = NeedSecretKey;
@@ -247,31 +295,32 @@ namespace Kairo.ViewModels
                     {
                         if (Global.CurrentProvider.Type == FrpProviderType.Lolia)
                         {
-                            StatusText = "LoliaFRP 暂不支持随机端口，请手动输入远端端口";
+                            SetError("LoliaFRP 暂不支持随机端口，请手动输入远端端口");
                             return;
                         }
-                        StatusText = "正在请求随机远端端口…";
+                        SetProgress("正在请求随机远端端口…");
                         var port = await TryGetRandomPortAsync(nodeItem.Id);
                         if (port <= 0)
                         {
-                            StatusText = "获取随机端口失败，请手动输入远端端口";
+                            SetError("获取随机端口失败，请手动输入远端端口");
                             return;
                         }
                         remotePort = port;
                         RemotePort = port.ToString();
                     }
                     else if (!int.TryParse(remotePortStr, out remotePort) || remotePort <= 0 || remotePort > 65535)
-                    { StatusText = "远端端口非法"; return; }
+                    { SetError("远端端口应为 1-65535 之间的数字"); return; }
                 }
-                if (needSecret && string.IsNullOrWhiteSpace(secret)) { StatusText = "请输入访问密钥"; return; }
-                if (needDomain && string.IsNullOrWhiteSpace(domain)) { StatusText = "请输入域名"; return; }
+                if (needSecret && string.IsNullOrWhiteSpace(secret)) { SetError("请输入访问密钥"); return; }
+                if (needDomain && string.IsNullOrWhiteSpace(domain)) { SetError("请输入域名"); return; }
 
                 if (!ApiClient.TryEnsureLoggedIn(out var err))
                 {
-                    StatusText = err!;
+                    SetError(err!);
                     return;
                 }
 
+                SetProgress("正在创建隧道…");
                 using var api = new ApiClient();
                 var result = await api.CreateTunnelAsync(new CreateFrpTunnelRequest
                 {
@@ -292,13 +341,13 @@ namespace Kairo.ViewModels
                 }
                 else
                 {
-                    StatusText = result.Message;
+                    SetError(result.Message);
                 }
             }
             catch (Exception ex)
             {
                 AppLogger.Exception("Unhandled exception in Kairo/ViewModels/Windows/CreateProxyWindowViewModel.cs:296", ex);
-                StatusText = $"创建失败: {ex.Message}";
+                SetError($"创建失败: {ex.Message}");
             }
         }
 
