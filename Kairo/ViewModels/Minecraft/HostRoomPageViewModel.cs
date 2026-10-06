@@ -7,6 +7,7 @@ using Avalonia.Controls;
 using Avalonia.Input.Platform;
 using Avalonia.Threading;
 using FluentAvalonia.UI.Controls;
+using Kairo.Core.Localization;
 using Kairo.Core.Models;
 using Kairo.Core.Providers;
 using HakuuLib.MultiplayerLAN.Minecraft.Java.Discovery;
@@ -90,7 +91,7 @@ namespace Kairo.ViewModels
         }
 
         // Status
-        private string _statusText = "准备就绪";
+        private string _statusText = L.T("lan.status.ready");
         public string StatusText
         {
             get => _statusText;
@@ -120,7 +121,7 @@ namespace Kairo.ViewModels
         {
             if (!Global.CurrentProvider.SupportsMinecraftRooms)
             {
-                StatusText = $"{Global.CurrentProvider.DisplayName} 暂不支持 Minecraft 联机房间";
+                StatusText = L.T("lan.status.unsupported", Global.CurrentProvider.DisplayName);
                 return;
             }
 
@@ -157,7 +158,7 @@ namespace Kairo.ViewModels
 
             _discovery.Stop();
             IsDetecting = false;
-            StatusText = "探测已暂停";
+            StatusText = L.T("lan.status.detectionPaused");
         }
 
         public void SelectServer(DetectedServerViewModel server)
@@ -194,17 +195,17 @@ namespace Kairo.ViewModels
                 IsDetecting = true;
                 OnPropertyChanged(nameof(NoServersDetected));
                 StatusText = DetectedServers.Count > 0
-                    ? $"继续探测服务器... (已发现 {DetectedServers.Count} 个)"
-                    : "正在探测本地 Minecraft 服务器...";
+                    ? L.T("lan.status.continueDetecting", DetectedServers.Count)
+                    : L.T("lan.status.detecting");
 
                 await _discovery.StartAsync();
-                StatusText = "探测中... 请在 Minecraft 中对局域网开放";
+                StatusText = L.T("lan.status.detectingHint");
             }
             catch (Exception ex)
             {
                 AppLogger.Exception("Unhandled exception in Kairo/ViewModels/Minecraft/HostRoomPageViewModel.cs:200", ex);
-                StatusText = $"探测失败: {ex.Message}";
-                ShowSnackbar("探测失败", ex.Message, FAInfoBarSeverity.Error);
+                StatusText = L.T("lan.status.detectionFailed", ex.Message);
+                ShowSnackbar(L.T("lan.detectionFailed"), ex.Message, FAInfoBarSeverity.Error);
                 IsDetecting = false;
             }
         }
@@ -225,7 +226,7 @@ namespace Kairo.ViewModels
                 var vm = new DetectedServerViewModel(announcement);
                 DetectedServers.Add(vm);
                 OnPropertyChanged(nameof(NoServersDetected));
-                StatusText = $"探测到 Java 服务器: {announcement.Motd}";
+                StatusText = L.T("lan.status.foundJava", announcement.Motd);
             });
         }
 
@@ -245,7 +246,7 @@ namespace Kairo.ViewModels
                 var vm = new DetectedServerViewModel(announcement);
                 DetectedServers.Add(vm);
                 OnPropertyChanged(nameof(NoServersDetected));
-                StatusText = $"探测到基岩版服务器: {announcement.MotdLine1}";
+                StatusText = L.T("lan.status.foundBedrock", announcement.MotdLine1);
             });
         }
 
@@ -255,7 +256,7 @@ namespace Kairo.ViewModels
 
             _discovery.Stop();
             IsDetecting = false;
-            StatusText = "探测已停止";
+            StatusText = L.T("lan.status.detectionStopped");
         }
 
         #endregion
@@ -275,7 +276,7 @@ namespace Kairo.ViewModels
                 var result = await _api.GetNodesAsync();
                 if (!result.Success)
                 {
-                    StatusText = $"获取节点失败: {result.Message}";
+                    StatusText = L.T("lan.status.nodesFailed", result.Message);
                     return;
                 }
 
@@ -305,12 +306,12 @@ namespace Kairo.ViewModels
                 
                 CanPing = Global.CurrentProvider.Type != FrpProviderType.Lolia && Nodes.Count > 0;
 
-                StatusText = $"已加载 {Nodes.Count} 个节点";
+                StatusText = L.Plural("lan.status.nodesLoaded", Nodes.Count);
             }
             catch (Exception ex)
             {
                 AppLogger.Exception("Unhandled exception in Kairo/ViewModels/Minecraft/HostRoomPageViewModel.cs:306", ex);
-                StatusText = $"获取节点失败: {ex.Message}";
+                StatusText = L.T("lan.status.nodesFailed", ex.Message);
             }
         }
 
@@ -329,15 +330,15 @@ namespace Kairo.ViewModels
         private static string GetNodeDescription(FrpNode node)
         {
             var parts = new List<string>();
-            if (!string.IsNullOrWhiteSpace(node.RegionCode)) parts.Add($"地区: {node.RegionCode}");
-            if (!string.IsNullOrWhiteSpace(node.Status)) parts.Add($"状态: {node.Status}");
-            if (node.Bandwidth > 0) parts.Add($"带宽: {node.Bandwidth}Mbps");
-            if (node.Load > 0) parts.Add($"负载: {node.Load:0.##}%");
-            if (!string.IsNullOrWhiteSpace(node.Sponsor)) parts.Add($"赞助: {node.Sponsor}");
-            if (node.NeedKyc) parts.Add("需要实名");
-            if (node.BeianRequired) parts.Add("需要备案");
+            if (!string.IsNullOrWhiteSpace(node.RegionCode)) parts.Add(L.T("create.nodeInfo.region", node.RegionCode));
+            if (!string.IsNullOrWhiteSpace(node.Status)) parts.Add(L.T("create.nodeInfo.status", node.Status));
+            if (node.Bandwidth > 0) parts.Add(L.T("create.nodeInfo.bandwidth", node.Bandwidth));
+            if (node.Load > 0) parts.Add(L.T("create.nodeInfo.load", node.Load));
+            if (!string.IsNullOrWhiteSpace(node.Sponsor)) parts.Add(L.T("create.nodeInfo.sponsor", node.Sponsor));
+            if (node.NeedKyc) parts.Add(L.T("create.nodeInfo.kyc"));
+            if (node.BeianRequired) parts.Add(L.T("create.nodeInfo.beian"));
             if (!string.IsNullOrWhiteSpace(node.Description)) parts.Add(node.Description);
-            return parts.Count == 0 ? "暂无描述" : string.Join(" · ", parts);
+            return parts.Count == 0 ? L.T("lan.noDescription") : string.Join(" · ", parts);
         }
 
         #endregion
@@ -348,36 +349,36 @@ namespace Kairo.ViewModels
         {
             if (!Global.CurrentProvider.SupportsMinecraftRooms)
             {
-                ShowSnackbar("功能不可用", $"{Global.CurrentProvider.DisplayName} 暂不支持 Minecraft 联机房间", FAInfoBarSeverity.Warning);
+                ShowSnackbar(L.T("lan.unavailable"), L.T("lan.status.unsupported", Global.CurrentProvider.DisplayName), FAInfoBarSeverity.Warning);
                 return;
             }
 
             if (SelectedServer == null)
             {
-                ShowSnackbar("请选择服务器", "请先选择一个探测到的本地服务器", FAInfoBarSeverity.Warning);
+                ShowSnackbar(L.T("lan.chooseServer"), L.T("lan.chooseServerHint"), FAInfoBarSeverity.Warning);
                 return;
             }
 
             if (SelectedNode == null)
             {
-                ShowSnackbar("请选择节点", "请先选择用于映射的节点", FAInfoBarSeverity.Warning);
+                ShowSnackbar(L.T("lan.chooseNode"), L.T("lan.chooseNodeHint"), FAInfoBarSeverity.Warning);
                 return;
             }
 
             try
             {
-                StatusText = "正在创建隧道...";
+                StatusText = L.T("lan.status.creatingTunnel");
 
                 // Step 1: Get random port for the node
                 int remotePort = await TryGetRandomPortAsync(SelectedNode.Id);
                 if (remotePort <= 0)
                 {
-                    ShowSnackbar("获取端口失败", "无法获取节点随机端口", FAInfoBarSeverity.Error);
+                    ShowSnackbar(L.T("lan.portFailed"), L.T("lan.portFailedHint"), FAInfoBarSeverity.Error);
                     return;
                 }
 
                 // Step 2: Create tunnel automatically
-                string tunnelName = $"MC联机_{DateTime.Now:yyyyMMdd_HHmmss}";
+                string tunnelName = $"{L.T("lan.tunnelNamePrefix")}_{DateTime.Now:yyyyMMdd_HHmmss}";
                 string localIp = SelectedServer.Sender.Address.ToString();
                 int localPort = SelectedServer.Port;
 
@@ -387,33 +388,33 @@ namespace Kairo.ViewModels
                     return; // Error already shown
                 }
 
-                StatusText = $"隧道创建成功 (ID: {tunnelId})，正在创建房间...";
+                StatusText = L.T("lan.status.tunnelCreated", tunnelId);
 
                 var room = await _rooms.CreateRoomAsync(tunnelId);
                 if (room?.Status == 200)
                 {
                     var code = room.Data?.Code ?? string.Empty;
-                    ShowSnackbar("房间创建成功", $"房间代码: {code}", FAInfoBarSeverity.Success);
-                    StatusText = $"房间已创建，代码: {code}";
+                    ShowSnackbar(L.T("lan.roomCreated"), L.T("lan.roomCode", code), FAInfoBarSeverity.Success);
+                    StatusText = L.T("lan.status.roomCreated", code);
 
                     if (!string.IsNullOrEmpty(code))
                     {
                         await CopyToClipboardAsync(code);
-                        ShowSnackbar("已复制", "房间代码已复制到剪贴板", FAInfoBarSeverity.Informational);
+                        ShowSnackbar(L.T("lan.copied"), L.T("lan.codeCopied"), FAInfoBarSeverity.Informational);
                     }
                 }
                 else
                 {
-                    var msg = room?.Message ?? "未知错误";
-                    ShowSnackbar("创建房间失败", msg, FAInfoBarSeverity.Error);
-                    StatusText = $"创建失败: {msg}";
+                    var msg = room?.Message ?? L.T("core.api.unknownError");
+                    ShowSnackbar(L.T("lan.createRoomFailed"), msg, FAInfoBarSeverity.Error);
+                    StatusText = L.T("lan.status.createFailed", msg);
                 }
             }
             catch (Exception ex)
             {
                 AppLogger.Exception("Unhandled exception in Kairo/ViewModels/Minecraft/HostRoomPageViewModel.cs:407", ex);
-                ShowSnackbar("创建房间异常", ex.Message, FAInfoBarSeverity.Error);
-                StatusText = $"创建异常: {ex.Message}";
+                ShowSnackbar(L.T("lan.createRoomError"), ex.Message, FAInfoBarSeverity.Error);
+                StatusText = L.T("lan.status.createError", ex.Message);
             }
         }
 
@@ -458,14 +459,14 @@ namespace Kairo.ViewModels
                     return result.Data.TunnelId;
                 }
 
-                ShowSnackbar("创建隧道失败", result.Message, FAInfoBarSeverity.Error);
+                ShowSnackbar(L.T("lan.createTunnelFailed"), result.Message, FAInfoBarSeverity.Error);
                 StatusText = result.Message;
                 return 0;
             }
             catch (Exception ex)
             {
                 AppLogger.Exception("Unhandled exception in Kairo/ViewModels/Minecraft/HostRoomPageViewModel.cs:458", ex);
-                ShowSnackbar("创建隧道异常", ex.Message, FAInfoBarSeverity.Error);
+                ShowSnackbar(L.T("lan.createTunnelError"), ex.Message, FAInfoBarSeverity.Error);
                 return 0;
             }
         }

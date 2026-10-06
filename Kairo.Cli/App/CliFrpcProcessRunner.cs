@@ -1,4 +1,7 @@
 using System.Diagnostics;
+using System.Runtime.InteropServices;
+using Kairo.Core.Localization;
+using Kairo.Core.Logging;
 using Kairo.Core.Models;
 using Kairo.Core.Providers;
 using Kairo.Cli.Services;
@@ -8,10 +11,19 @@ namespace Kairo.Cli;
 
 internal sealed class CliFrpcProcessRunner : IDisposable
 {
+    private static readonly ConsoleColor[] PrefixColors =
+    {
+        ConsoleColor.Cyan, ConsoleColor.Magenta, ConsoleColor.Blue, ConsoleColor.Green, ConsoleColor.Yellow, ConsoleColor.DarkCyan
+    };
+
     private readonly Func<IFrpProvider> _providerFactory;
     private readonly CancellationTokenSource _cts;
     private readonly List<Process> _processes = new();
+    private readonly object _outputLock = new();
     private bool _cancelKeyRegistered;
+    private PosixSignalRegistration? _sigTermRegistration;
+    private int _stopRequested;
+    private volatile bool _stopping;
 
     public CliFrpcProcessRunner(Func<IFrpProvider> providerFactory, CancellationTokenSource cts)
     {
@@ -20,50 +32,73 @@ internal sealed class CliFrpcProcessRunner : IDisposable
         AppDomain.CurrentDomain.ProcessExit += (_, _) => KillAll();
     }
 
-    public void Dispose() => KillAll();
+    public void Dispose()
+    {
+        _sigTermRegistration?.Dispose();
+        _sigTermRegistration = null;
+        KillAll();
+    }
 
     public async Task<int> StartAsync(string frpcPath, string frpToken, List<int> proxyIds, List<Tunnel>? tunnels, ApiClient apiClient)
     {
-        Console.WriteLine();
-        Console.WriteLine($"[信息] 正在启动 {proxyIds.Count} 个隧道...");
-        Console.WriteLine("[信息] 按 Ctrl+C 停止所有隧道");
-        Console.WriteLine();
-
+        ConsoleUi.Section(L.Plural("cli.run.title", proxyIds.Count));
         RegisterCancelHandler();
-        foreach (var proxyId in proxyIds)
-            await StartOneAsync(frpcPath, frpToken, proxyId, tunnels, apiClient);
 
-        Logger.Info($"成功启动 {_processes.Count}/{proxyIds.Count} 个隧道");
-        if (_processes.Count == 0)
+        for (var i = 0; i < proxyIds.Count; i++)
+            await StartOneAsync(frpcPath, frpToken, proxyIds[i], tunnels, apiClient, PrefixColors[i % PrefixColors.Length]);
+
+        int running;
+        lock (_processes) running = _processes.Count;
+        Logger.Info($"成功启动 {running}/{proxyIds.Count} 个隧道");
+        if (running == 0)
         {
-            Console.WriteLine("[错误] 没有成功启动的隧道");
+            ConsoleUi.Error(L.T("cli.run.noneStarted"));
             return 1;
         }
 
+        Console.WriteLine();
+        if (running < proxyIds.Count)
+            ConsoleUi.Warn(L.T("cli.run.partlyStarted", running, proxyIds.Count));
+        else
+            ConsoleUi.Success(L.Plural("cli.run.allStarted", running));
+        ConsoleUi.Dim(L.T("cli.run.stopHint"));
+        Console.WriteLine();
+
+        var allExitedOnTheirOwn = false;
         try
         {
             while (!_cts.IsCancellationRequested)
             {
-                if (_processes.All(p => p.HasExited))
+                bool allExited;
+                lock (_processes) allExited = _processes.All(p => p.HasExited);
+                if (allExited)
                 {
-                    Console.WriteLine("[信息] 所有隧道进程已退出");
+                    allExitedOnTheirOwn = true;
                     break;
                 }
                 await Task.Delay(1000, _cts.Token);
             }
         }
-        catch (OperationCanceledException ex)
+        catch (OperationCanceledException)
         {
-            Kairo.Cli.Utils.Logger.Exception(ex, "Unhandled exception in Kairo.Cli/App/CliFrpcProcessRunner.cs:55");
+            Logger.Debug("收到停止信号");
         }
 
+        _stopping = true;
         KillAll();
-        Console.WriteLine("[信息] 所有隧道已停止");
+        if (allExitedOnTheirOwn)
+        {
+            ConsoleUi.Error(L.T("cli.run.allExited"));
+            return 1;
+        }
+
+        ConsoleUi.Success(L.T("cli.run.allStopped"));
         return 0;
     }
 
     public void KillAll()
     {
+        _stopping = true;
         List<Process> snapshot;
         lock (_processes)
         {
@@ -96,41 +131,54 @@ internal sealed class CliFrpcProcessRunner : IDisposable
         }
     }
 
-    private async Task StartOneAsync(string frpcPath, string frpToken, int proxyId, List<Tunnel>? tunnels, ApiClient apiClient)
+    private async Task StartOneAsync(string frpcPath, string frpToken, int proxyId, List<Tunnel>? tunnels, ApiClient apiClient, ConsoleColor color)
     {
         var provider = _providerFactory();
         var tunnel = tunnels?.FirstOrDefault(t => t.Id == proxyId);
+        var label = tunnel == null ? $"#{proxyId}" : $"{tunnel.ProxyName} (#{proxyId})";
+
+        if (tunnels != null && tunnel == null)
+        {
+            ConsoleUi.Error(L.T("cli.run.notOnAccount", label));
+            return;
+        }
+
         var token = frpToken;
         if (provider.Type == FrpProviderType.Lolia)
         {
             if (tunnel == null)
             {
-                Console.WriteLine($"[错误] 隧道 {proxyId} 启动失败: 未找到隧道信息");
+                ConsoleUi.Error(L.T("cli.run.noTunnelInfo", label));
                 return;
             }
 
             var config = await apiClient.GetFrpcConfigAsync(tunnel);
             if (!config.Success || string.IsNullOrWhiteSpace(config.Data?.Token))
             {
-                Console.WriteLine($"[错误] 隧道 {proxyId} 启动失败: {config.Message}");
+                ConsoleUi.Error(L.T("cli.run.failedWithReason", label, config.Message));
                 return;
             }
             token = config.Data.Token;
         }
 
-        var process = StartProcess(provider, frpcPath, token, proxyId, tunnel?.ProxyName ?? string.Empty);
+        var prefix = BuildPrefix(proxyId, tunnel?.ProxyName);
+        var process = StartProcess(provider, frpcPath, token, proxyId, tunnel?.ProxyName ?? string.Empty, prefix, color);
         if (process == null)
         {
-            Console.WriteLine($"[错误] 隧道 {proxyId} 启动失败");
+            ConsoleUi.Error(L.T("cli.run.failed", label));
             return;
         }
 
         lock (_processes)
             _processes.Add(process);
-        Console.WriteLine($"[成功] 隧道 {proxyId} 已启动 (PID: {process.Id})");
+
+        var address = tunnel == null ? null : TunnelAddress.GetPublicAddress(tunnel);
+        ConsoleUi.Success(string.IsNullOrEmpty(address) || address == "-"
+            ? L.T("cli.run.started", label, process.Id)
+            : L.T("cli.run.startedWithAddress", label, process.Id, address));
     }
 
-    private static Process? StartProcess(IFrpProvider provider, string frpcPath, string frpToken, int proxyId, string proxyName)
+    private Process? StartProcess(IFrpProvider provider, string frpcPath, string frpToken, int proxyId, string proxyName, string prefix, ConsoleColor color)
     {
         try
         {
@@ -141,8 +189,9 @@ internal sealed class CliFrpcProcessRunner : IDisposable
                 FrpToken = frpToken,
                 ApiBaseUrl = provider.ApiBaseUrl
             });
-            Logger.Info($"[FRPC] 启动参数: provider={provider.Id}, path=\"{frpcPath}\", args={arguments}");
-            Logger.ProcessStart(frpcPath, arguments);
+            var maskedArguments = SecretMasker.Redact(arguments, frpToken);
+            Logger.Debug($"[FRPC] 启动参数: provider={provider.Id}, path=\"{frpcPath}\", args={maskedArguments}");
+            Logger.ProcessStart(frpcPath, maskedArguments);
 
             var process = new Process
             {
@@ -154,10 +203,12 @@ internal sealed class CliFrpcProcessRunner : IDisposable
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
                     CreateNoWindow = true
-                }
+                },
+                EnableRaisingEvents = true
             };
-            process.OutputDataReceived += (_, e) => WriteProcessLine(proxyId, e.Data, error: false);
-            process.ErrorDataReceived += (_, e) => WriteProcessLine(proxyId, e.Data, error: true);
+            process.OutputDataReceived += (_, e) => WriteProcessLine(prefix, color, proxyId, e.Data, error: false);
+            process.ErrorDataReceived += (_, e) => WriteProcessLine(prefix, color, proxyId, e.Data, error: true);
+            process.Exited += (_, _) => OnProcessExited(process, prefix, proxyId);
             if (!process.Start()) return null;
             process.BeginOutputReadLine();
             process.BeginErrorReadLine();
@@ -166,25 +217,50 @@ internal sealed class CliFrpcProcessRunner : IDisposable
         catch (Exception ex)
         {
             Logger.Exception(ex, $"启动 frpc 失败 (proxyId={proxyId})");
-            Console.WriteLine($"[错误] 启动 frpc 失败: {ex.Message}");
+            ConsoleUi.Error(L.T("cli.run.frpcFailed", ex.Message));
             return null;
         }
     }
 
-    private static void WriteProcessLine(int proxyId, string? line, bool error)
+    private void OnProcessExited(Process process, string prefix, int proxyId)
+    {
+        if (_stopping) return;
+        int? exitCode = null;
+        try
+        {
+            // Exited 可能早于重定向输出读取完毕触发，等待输出读完，保证退出提示出现在最后
+            process.WaitForExit();
+            exitCode = process.ExitCode;
+        }
+        catch (InvalidOperationException)
+        {
+            // 进程对象已释放
+        }
+        if (_stopping) return;
+        Logger.Info($"隧道 {proxyId} 的 frpc 进程已退出，退出码 {exitCode?.ToString() ?? "未知"}");
+        lock (_outputLock)
+            ConsoleUi.Warn(exitCode.HasValue
+                ? L.T("cli.run.exitedWithCode", prefix.Trim('[', ']'), exitCode)
+                : L.T("cli.run.exited", prefix.Trim('[', ']')));
+    }
+
+    private void WriteProcessLine(string prefix, ConsoleColor color, int proxyId, string? line, bool error)
     {
         if (string.IsNullOrEmpty(line)) return;
         if (error)
-        {
-            Logger.Warning($"[隧道 {proxyId} stderr] {line}");
-            Console.WriteLine($"[隧道 {proxyId} 错误] {line}");
-        }
+            Logger.Debug($"[隧道 {proxyId} stderr] {line}");
         else
-        {
             Logger.Debug($"[隧道 {proxyId} stdout] {line}");
-            Console.WriteLine($"[隧道 {proxyId}] {line}");
+
+        lock (_outputLock)
+        {
+            ConsoleUi.Write(prefix, error ? ConsoleColor.Red : color);
+            Console.WriteLine(" " + line);
         }
     }
+
+    private static string BuildPrefix(int proxyId, string? name) =>
+        string.IsNullOrWhiteSpace(name) ? $"[#{proxyId}]" : $"[{ConsoleUi.Truncate(name, 16)}#{proxyId}]";
 
     private void RegisterCancelHandler()
     {
@@ -193,9 +269,35 @@ internal sealed class CliFrpcProcessRunner : IDisposable
         Console.CancelKeyPress += (_, e) =>
         {
             e.Cancel = true;
-            Console.WriteLine();
-            Console.WriteLine("[信息] 正在停止所有隧道...");
-            _cts.Cancel();
+            RequestStop();
         };
+
+        // SIGTERM（kill、systemd、docker stop、启动器转发）默认会直接结束进程且不触发 ProcessExit，
+        // frpc 会变成孤儿进程继续运行，因此与 Ctrl+C 走同样的停止流程
+        try
+        {
+            _sigTermRegistration = PosixSignalRegistration.Create(PosixSignal.SIGTERM, context =>
+            {
+                context.Cancel = true;
+                RequestStop();
+            });
+        }
+        catch (Exception ex)
+        {
+            Logger.Debug($"无法注册 SIGTERM 处理: {ex.Message}");
+        }
+    }
+
+    private void RequestStop()
+    {
+        if (Interlocked.Exchange(ref _stopRequested, 1) == 1) return;
+        _stopping = true;
+        Console.WriteLine();
+        ConsoleUi.Info(L.T("cli.run.stopping"));
+        try { _cts.Cancel(); }
+        catch (ObjectDisposedException)
+        {
+            // 已在退出流程中
+        }
     }
 }

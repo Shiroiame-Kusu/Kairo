@@ -12,6 +12,7 @@ using FluentAvalonia.UI.Controls; // for FAInfoBarSeverity
 using Kairo.Components.DashBoard; // for DashBoard cast
 using Avalonia.Layout;
 using Avalonia.Media;
+using Kairo.Core.Localization;
 
 namespace Kairo.Utils.Logger
 {
@@ -198,7 +199,7 @@ namespace Kairo.Utils.Logger
                     }
                     else
                     {
-                        title = "执行失败";
+                        title = L.T("common.failed");
                         body = text;
                     }
                     var severity = icon == 48 ? FAInfoBarSeverity.Warning : FAInfoBarSeverity.Error;
@@ -261,8 +262,8 @@ namespace Kairo.Utils.Logger
                 HorizontalAlignment = HorizontalAlignment.Right,
                 Spacing = 8
             };
-            var okContent = buttons <= 1 ? "确定" : "是";
-            var cancelContent = buttons <= 1 ? "取消" : "否";
+            var okContent = L.T(buttons <= 1 ? "common.ok" : "common.yes");
+            var cancelContent = L.T(buttons <= 1 ? "common.cancel" : "common.no");
             var btnOk = new Button { Content = okContent, Width = 80 };
             btnOk.Click += (_, _) => { confirm(); CloseOwner(btnOk); tcs.TrySetResult(); };
             panel.Children.Add(btnOk);

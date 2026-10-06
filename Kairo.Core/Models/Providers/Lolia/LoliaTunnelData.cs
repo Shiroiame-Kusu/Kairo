@@ -14,6 +14,8 @@ public sealed class LoliaCreateTunnelRequest
 public sealed class LoliaTunnelListData
 {
     public List<LoliaTunnelData> List { get; init; } = new();
+    public int Total { get; init; }
+    public int TotalPage { get; init; }
 }
 
 public sealed class LoliaTunnelData

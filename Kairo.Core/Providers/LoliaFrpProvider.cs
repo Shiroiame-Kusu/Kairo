@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Kairo.Core.Logging;
 using Kairo.Core.Models;
+using Kairo.Core.Localization;
 
 namespace Kairo.Core.Providers;
 
@@ -54,7 +55,7 @@ public sealed class LoliaFrpProvider : IFrpProvider
         if (!token.Success || token.Data == null)
             return FrpApiResult<string>.Fail(token.Code, token.Message);
         return string.IsNullOrWhiteSpace(token.Data.RefreshToken)
-            ? FrpApiResult<string>.Fail(0, "OAuth 响应缺失 Refresh Token")
+            ? FrpApiResult<string>.Fail(0, L.T("core.api.oauthMissingRefreshToken"))
             : FrpApiResult<string>.Ok(token.Data.RefreshToken, token.Code, token.Message);
     }
 
@@ -72,7 +73,7 @@ public sealed class LoliaFrpProvider : IFrpProvider
 
         var accessToken = token.Data.AccessToken;
         if (string.IsNullOrWhiteSpace(accessToken))
-            return FrpApiResult<FrpLoginResult>.Fail(0, "OAuth 响应缺失 Access Token");
+            return FrpApiResult<FrpLoginResult>.Fail(0, L.T("core.api.oauthMissingAccessToken"));
 
         http.DefaultRequestHeaders.Remove("Authorization");
         http.DefaultRequestHeaders.Add("Authorization", $"Bearer {accessToken}");
@@ -101,7 +102,7 @@ public sealed class LoliaFrpProvider : IFrpProvider
     }
 
     public Task<FrpApiResult<string>> GetFrpTokenAsync(HttpClient http, int userId, CancellationToken ct = default) =>
-        Task.FromResult(FrpApiResult<string>.Fail(0, "LoliaFRP 使用隧道 token 启动，文档未公开全局 FRP Token 接口"));
+        Task.FromResult(FrpApiResult<string>.Fail(0, L.T("core.api.loliaNoFrpToken")));
 
     public Task<FrpApiResult<string>> GetAnnouncementAsync(HttpClient http, CancellationToken ct = default) =>
         Task.FromResult(FrpApiResult<string>.Ok(string.Empty));
@@ -124,12 +125,32 @@ public sealed class LoliaFrpProvider : IFrpProvider
 
     public async Task<FrpApiResult<IReadOnlyList<FrpTunnel>>> GetTunnelsAsync(HttpClient http, int userId, CancellationToken ct = default)
     {
-        var url = FrpProviderHelpers.AppendQuery($"{ApiBaseUrl}/user/tunnel", ("page", "1"), ("limit", "1000"));
-        using var response = await http.GetAsyncLogged(url, ct);
-        var apiResponse = await FrpProviderHelpers.ReadJsonAsync(response, FrpModelsJsonContext.Default.LoliaApiResponseLoliaTunnelListData, ct);
-        var parsed = FrpProviderHelpers.ParseLoliaResponse(apiResponse);
-        if (!parsed.Success) return FrpApiResult<IReadOnlyList<FrpTunnel>>.Fail(parsed.Code, parsed.Message);
-        return FrpApiResult<IReadOnlyList<FrpTunnel>>.Ok((parsed.Data?.List ?? new()).Select(ParseTunnel).ToList(), parsed.Code, parsed.Message);
+        // 接口分页返回，limit 取值 1-100，超出范围会按默认的 10 条处理，因此逐页获取全部隧道
+        const int pageSize = 100;
+        const int maxPages = 50;
+        var tunnels = new List<FrpTunnel>();
+        var seenIds = new HashSet<int>();
+        FrpApiResult<LoliaTunnelListData> parsed;
+        var page = 1;
+        while (true)
+        {
+            var url = FrpProviderHelpers.AppendQuery($"{ApiBaseUrl}/user/tunnel", ("page", page.ToString()), ("limit", pageSize.ToString()));
+            using var response = await http.GetAsyncLogged(url, ct);
+            var apiResponse = await FrpProviderHelpers.ReadJsonAsync(response, FrpModelsJsonContext.Default.LoliaApiResponseLoliaTunnelListData, ct);
+            parsed = FrpProviderHelpers.ParseLoliaResponse(apiResponse);
+            if (!parsed.Success) return FrpApiResult<IReadOnlyList<FrpTunnel>>.Fail(parsed.Code, parsed.Message);
+
+            var list = parsed.Data?.List ?? new();
+            // 翻页期间有隧道增删时，同一隧道可能出现在相邻两页
+            tunnels.AddRange(list.Where(t => seenIds.Add(t.Id)).Select(ParseTunnel));
+
+            var totalPages = parsed.Data?.TotalPage ?? 0;
+            var hasMore = totalPages > 0 ? page < totalPages : list.Count >= pageSize;
+            if (list.Count == 0 || !hasMore || page >= maxPages) break;
+            page++;
+        }
+
+        return FrpApiResult<IReadOnlyList<FrpTunnel>>.Ok(tunnels, parsed.Code, parsed.Message);
     }
 
     public async Task<FrpApiResult<IReadOnlyList<FrpNode>>> GetNodesAsync(HttpClient http, int userId, CancellationToken ct = default)
@@ -145,7 +166,7 @@ public sealed class LoliaFrpProvider : IFrpProvider
     }
 
     public Task<FrpApiResult<int>> GetRandomPortAsync(HttpClient http, int userId, int nodeId, CancellationToken ct = default) =>
-        Task.FromResult(FrpApiResult<int>.Fail(0, "LoliaFRP 文档未提供随机端口接口"));
+        Task.FromResult(FrpApiResult<int>.Fail(0, L.T("core.api.loliaNoRandomPort")));
 
     public async Task<FrpApiResult<CreateFrpTunnelResult>> CreateTunnelAsync(HttpClient http, int userId, CreateFrpTunnelRequest request, CancellationToken ct = default)
     {
@@ -196,7 +217,7 @@ public sealed class LoliaFrpProvider : IFrpProvider
 
         var token = parsed.Data?.TunnelToken ?? string.Empty;
         return string.IsNullOrWhiteSpace(token)
-            ? FrpApiResult<FrpcConfigResult>.Fail(0, "API 返回的 tunnel_token 为空")
+            ? FrpApiResult<FrpcConfigResult>.Fail(0, L.T("core.api.emptyTunnelToken"))
             : FrpApiResult<FrpcConfigResult>.Ok(new FrpcConfigResult { Token = token }, parsed.Code, parsed.Message);
     }
 
@@ -231,7 +252,7 @@ public sealed class LoliaFrpProvider : IFrpProvider
         using var response = await http.PostAsyncLogged($"{ApiRoot}/oauth2/token", new FormUrlEncodedContent(form), ct);
         var text = await response.Content.ReadAsStringAsync(ct);
         if (string.IsNullOrWhiteSpace(text))
-            return FrpApiResult<LoliaOAuthTokenData>.Fail((int)response.StatusCode, "OAuth 响应格式错误");
+            return FrpApiResult<LoliaOAuthTokenData>.Fail((int)response.StatusCode, L.T("core.api.oauthBadResponse"));
 
         try
         {
@@ -246,13 +267,13 @@ public sealed class LoliaFrpProvider : IFrpProvider
 
             var token = JsonSerializer.Deserialize(text, FrpModelsJsonContext.Default.LoliaOAuthTokenData);
             return token == null
-                ? FrpApiResult<LoliaOAuthTokenData>.Fail((int)response.StatusCode, "OAuth 响应格式错误")
+                ? FrpApiResult<LoliaOAuthTokenData>.Fail((int)response.StatusCode, L.T("core.api.oauthBadResponse"))
                 : FrpApiResult<LoliaOAuthTokenData>.Ok(token, response.IsSuccessStatusCode ? 200 : (int)response.StatusCode, response.ReasonPhrase ?? string.Empty);
         }
         catch (JsonException ex)
         {
             Kairo.Core.Logging.CoreLogger.Output(Kairo.Core.Logging.CoreLogLevel.Error, "Unhandled exception in Kairo.Core/Providers/LoliaFrpProvider.cs:252", ex);
-            return FrpApiResult<LoliaOAuthTokenData>.Fail((int)response.StatusCode, "OAuth 响应格式错误");
+            return FrpApiResult<LoliaOAuthTokenData>.Fail((int)response.StatusCode, L.T("core.api.oauthBadResponse"));
         }
     }
 

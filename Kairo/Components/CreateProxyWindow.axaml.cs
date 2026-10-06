@@ -1,6 +1,7 @@
 using System;
 using Avalonia.Controls;
 using Avalonia.Markup.Xaml;
+using Kairo.Core.Localization;
 using Kairo.ViewModels;
 
 namespace Kairo.Components;
@@ -43,7 +44,7 @@ public partial class CreateProxyWindow : Window
         catch (Exception ex)
         {
             AppLogger.Exception("Unhandled exception in Kairo/Components/CreateProxyWindow.axaml.cs:43", ex);
-            _viewModel.StatusText = "打开 Ping 窗口失败: " + ex.Message;
+            _viewModel.SetError(L.T("create.pingFailed", ex.Message));
         }
     }
 

@@ -4,6 +4,7 @@ using System.Windows.Input;
 using Avalonia.Controls;
 using Avalonia.Input.Platform;
 using Kairo.Utils;
+using Kairo.Core.Localization;
 
 namespace Kairo.ViewModels;
 
@@ -17,8 +18,8 @@ public class RoomViewModel : ViewModelBase
     public string Name { get; }
     public string Type { get; }
     public bool IsUdp => Type.Equals("UDP", StringComparison.OrdinalIgnoreCase);
-    public string EditionDisplay => IsUdp ? "基岩" : "Java";
-    public string CodeDisplay => $"房间代码: {Code}";
+    public string EditionDisplay => IsUdp ? L.T("lan.edition.bedrock") : "Java";
+    public string CodeDisplay => L.T("lan.roomCode", Code);
 
     public ICommand CopyCodeCommand { get; }
     public ICommand DeleteCommand { get; }
@@ -38,7 +39,7 @@ public class RoomViewModel : ViewModelBase
     private void CopyCode()
     {
         _ = CopyToClipboardAsync(Code);
-        _showStatus("房间代码已复制到剪贴板");
+        _showStatus(L.T("lan.codeCopied"));
     }
 
     private static async Task CopyToClipboardAsync(string text)

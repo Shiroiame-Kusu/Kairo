@@ -10,4 +10,9 @@
     <PropertyGroup>
         <IsAotCompatible>true</IsAotCompatible>
     </PropertyGroup>
+
+    <!-- 界面文本：Localization/Languages/<语言代码>.json -->
+    <ItemGroup>
+        <EmbeddedResource Include="Localization/Languages/*.json" LogicalName="Kairo.Core.Lang.%(Filename).json" />
+    </ItemGroup>
 </Project>

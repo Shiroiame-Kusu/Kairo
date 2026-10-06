@@ -17,6 +17,7 @@ class Program
         => AppBuilder.Configure<App>()
             .UsePlatformDetect()
             .WithInterFont()
+            .With(Utils.FontSetup.CreateOptions())
             .LogToTrace();
 }
 

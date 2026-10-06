@@ -1,0 +1,54 @@
+{
+  "core": {
+    "api": {
+      "badResponse": "Unexpected response format",
+      "unknownError": "Unknown error",
+      "emptyRefreshToken": "The API returned an empty refresh token",
+      "accessTokenMissingFields": "The access token response is missing required fields",
+      "oauthMissingRefreshToken": "The OAuth response has no refresh token",
+      "oauthMissingAccessToken": "The OAuth response has no access token",
+      "oauthBadResponse": "Unexpected OAuth response format",
+      "emptyTunnelToken": "The API returned an empty tunnel_token",
+      "loliaNoFrpToken": "LoliaFRP starts tunnels with per-tunnel tokens and has no account-wide FRP token",
+      "loliaNoRandomPort": "LoliaFRP has no random-port API; leave the remote port empty and the server will assign one"
+    },
+    "download": {
+      "fetchingRelease": "Fetching release info...",
+      "mirrorFailed": "Mirror failed, switching to GitHub...",
+      "downloading": "Downloading...",
+      "downloadingRetry": "Downloading... (retry {0}/{1})",
+      "verifying": "Verifying...",
+      "extracting": "Extracting...",
+      "completed": "Done",
+      "failed": "Download failed",
+      "noRelease": "Could not get release info",
+      "noDownloadUrl": "The download URL is missing",
+      "noAsset": "No downloadable file was found",
+      "unsupportedArchive": "Unsupported archive format",
+      "frpcNotFound": "The frpc executable was not found",
+      "hashMismatch": "File hash mismatch"
+    },
+    "tunnel": {
+      "peerToPeer": "Peer-to-peer"
+    },
+    "environment": {
+      "noHomeDirectory": "Could not determine your home directory: both HOME and UserProfile point to /var/root. Check the app's permissions, or set the KAIRO_CONFIG_DIR environment variable to a config directory."
+    },
+    "tips": [
+      "Tip: They say shaking your computer during a download makes it faster",
+      "Tip: LocyanFrp will never shut down, just like the \"closing down sale\" shop downstairs",
+      "Tip: Sometimes it's not a bug, it's a feature we wrote on purpose (trust us",
+      "Tip: You're right, but LocyanFrp is a brand-new ... led by Ms. Daiyangcheng",
+      "Tip: Can't reach the API? We suggest getting a new computer first, dear",
+      "Tip: Customer support? You mean the grumpy devs behind LCF?",
+      "Tip: Hooked on LCF? Be honest with me, are you really hooked on LCF?",
+      "Tip: LocyanFrp, for the rest of our lives!",
+      "Tip: Wait, bro, are you sure you really want to start this?",
+      "Tip: Keep rushing and I'll crash on you",
+      "Tip: Let me ask you something. Let me ask you something",
+      "Saying: If it's something I can do, I'll do anything!",
+      "Saying: How much resolve did it take to say that?",
+      "Saying: All you ever think about is yourself, isn't it."
+    ]
+  }
+}

@@ -1,3 +1,4 @@
+using Kairo.Core.Localization;
 using Kairo.Core.Logging;
 using Kairo.Cli.Configuration;
 using Kairo.Cli.Services;
@@ -9,10 +10,11 @@ class Program
 {
     public static async Task<int> Main(string[] args)
     {
-        // 解析日志相关参数（在正式解析前）
+        // 解析日志与输出相关参数（在正式解析前）
         var logLevel = LogLevel.Info;
         var logToFile = true;
-        
+        var noColor = false;
+
         foreach (var arg in args)
         {
             switch (arg.ToLowerInvariant())
@@ -25,20 +27,29 @@ class Program
                     break;
                 case "--quiet" or "-q":
                     logLevel = LogLevel.Warning;
+                    ConsoleUi.Quiet = true;
+                    break;
+                case "--no-color":
+                    noColor = true;
                     break;
             }
         }
-        
+
+        ConsoleUi.Configure(noColor);
+
         // 初始化配置
         CliConfigManager.Init();
         ProviderAuth.ApplyCurrent();
+        var invalidLanguage = CliLanguage.Apply(CliLanguage.FindArgument(args), CliConfigManager.Config.Language);
 
         // 如果配置中启用了调试模式，覆盖日志级别
         if (CliConfigManager.Config.DebugMode && logLevel > LogLevel.Debug)
             logLevel = LogLevel.Debug;
         if (CliConfigManager.Config.LogToFile)
             logToFile = true;
-        
+        if (logLevel == LogLevel.Debug)
+            ConsoleUi.Quiet = false;
+
         // 初始化日志系统
         Logger.Initialize(logLevel, logToFile);
         CoreLogger.Sink = (level, message) =>
@@ -50,6 +61,9 @@ class Program
             else
                 Logger.Debug(message);
         };
+
+        if (invalidLanguage != null)
+            ConsoleUi.Warn(L.T("cli.language.unsupported", invalidLanguage, string.Join(", ", Localizer.Languages.Select(l => l.Code))));
 
         Logger.Debug($"命令行参数: {string.Join(" ", args)}");
         Logger.Debug($"配置目录: {Kairo.Core.Configuration.ConfigHelper.GetConfigDirectory()}");
@@ -67,6 +81,8 @@ class Program
         catch (Exception ex)
         {
             Logger.Exception(ex, "程序运行时发生未处理异常");
+            ConsoleUi.Error(L.T("cli.unhandledError", ex.Message));
+            ConsoleUi.Hint(L.T("cli.rerunWithDebug"));
             return 1;
         }
     }

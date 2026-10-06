@@ -2,6 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="clr-namespace:Kairo.ViewModels"
              xmlns:fa="using:FluentAvalonia.UI.Controls"
+             xmlns:l="using:Kairo.Localization"
              x:Class="Kairo.Components.DashBoard.LanPartyLobbyPage"
              x:DataType="vm:LanPartyLobbyPageViewModel"
              VerticalAlignment="Stretch">
@@ -10,8 +11,8 @@
                     IsOpen="True"
                     IsClosable="False"
                     Severity="Error"
-                    Title="联机房间功能尚未完全实现"
-                    Message="此页面目前仅作为界面展示，相关功能暂不可用。"
+                    Title="{l:Loc lan.notReadyTitle}"
+                    Message="{l:Loc lan.notReadyMessage}"
                     Margin="0,0,0,8" />
         <fa:FANavigationView Grid.Row="1" x:Name="LobbyNavView"
                            PaneDisplayMode="Top"
@@ -20,12 +21,12 @@
                            IsBackButtonVisible="False"
                            SelectionChanged="LobbyNavView_OnSelectionChanged">
             <fa:FANavigationView.MenuItems>
-                <fa:FANavigationViewItem x:Name="HostNavItem" Content="创建房间" Tag="host">
+                <fa:FANavigationViewItem x:Name="HostNavItem" Content="{l:Loc lan.nav.host}" Tag="host">
                     <fa:FANavigationViewItem.IconSource>
                         <fa:FASymbolIconSource Symbol="Add" />
                     </fa:FANavigationViewItem.IconSource>
                 </fa:FANavigationViewItem>
-                <fa:FANavigationViewItem Content="加入房间" Tag="join">
+                <fa:FANavigationViewItem Content="{l:Loc lan.nav.join}" Tag="join">
                     <fa:FANavigationViewItem.IconSource>
                         <fa:FASymbolIconSource Symbol="People" />
                     </fa:FANavigationViewItem.IconSource>

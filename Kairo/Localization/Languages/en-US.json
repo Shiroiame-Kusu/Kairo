@@ -1,0 +1,541 @@
+{
+  "tunnels": {
+    "title": "Tunnels",
+    "subtitle": "Manage your tunnels and act on them quickly",
+    "loading": "Loading tunnels…",
+    "emptyTitle": "No tunnels yet",
+    "emptyHint": "Create a tunnel to share a local service on the internet",
+    "create": "New tunnel",
+    "createTip": "New tunnel (Ctrl+N)",
+    "refreshTip": "Refresh the list (F5)",
+    "ping": "Node latency",
+    "pingTip": "Test the latency of each node",
+    "footerHint": "Tip: double-click a card to start or stop it, right-click for more~",
+    "loadFailed": "Couldn't load tunnels",
+    "none": "No tunnels",
+    "summary": {
+      "one": "{0} tunnel",
+      "other": "{0} tunnels"
+    },
+    "summaryRunning": {
+      "one": "{0} tunnel · {1} running",
+      "other": "{0} tunnels · {1} running"
+    },
+    "fetchFailed": "Couldn't get tunnels",
+    "deleteTitle": "Delete tunnel",
+    "deleteConfirm": "Delete tunnel \"{0}\"? This can't be undone.",
+    "deleteRunningConfirm": "Tunnel \"{0}\" is running and will be stopped first. Deleting can't be undone. Continue?",
+    "deleted": "Deleted",
+    "deleteFailed": "Couldn't delete",
+    "frpcMissing": "frpc not found",
+    "frpcMissingHint": "Download or choose the {0} frpc in Settings",
+    "started": "Started",
+    "startedCopied": "{0} · copied {1}",
+    "startFailed": "Couldn't start",
+    "copied": "Copied",
+    "stopped": "Stopped",
+    "notRunning": "Not running",
+    "created": "Tunnel created"
+  },
+  "common": {
+    "ok": "OK",
+    "cancel": "Cancel",
+    "close": "Close",
+    "error": "Error",
+    "copy": "Copy",
+    "refresh": "Refresh",
+    "retry": "Retry",
+    "delete": "Delete",
+    "unknown": "Unknown",
+    "openFailed": "Couldn't open",
+    "yes": "Yes",
+    "no": "No",
+    "failed": "Something went wrong"
+  },
+  "language": {
+    "label": "Language",
+    "system": "System default"
+  },
+  "login": {
+    "provider": "Provider",
+    "signIn": "Sign in",
+    "continueAs": "Continue as {0}",
+    "savedSession": "Signed in to {0} previously",
+    "oauthHint": "You'll authorize Kairo in your browser",
+    "useOtherAccount": "Use a different account",
+    "waitingForBrowser": "Waiting for browser authorization…",
+    "signingIn": "Signing in…",
+    "browserHint": "Finish authorizing in your browser. Kairo continues automatically when you're done.",
+    "cancelWaitTip": "Stop waiting (Esc)",
+    "cancelled": "Cancelled",
+    "cancelledHint": "You can sign in again at any time",
+    "unsupported": "Sign-in not supported",
+    "unsupportedMessage": "{0} doesn't offer OAuth sign-in",
+    "browserFailed": "Couldn't open the browser",
+    "invalidToken": "Invalid token",
+    "emptyRefreshToken": "The refresh token is empty",
+    "invalidCode": "Invalid authorization code",
+    "emptyCode": "The authorization code is empty",
+    "failed": "Sign-in failed",
+    "apiStatus": "API status: {0} {1}",
+    "succeeded": "Signed in",
+    "welcome": "Welcome, {0}",
+    "timeout": "Sign-in timed out",
+    "timeoutMessage": "OAuth authorization wasn't completed. Please try again."
+  },
+  "tray": {
+    "showWindow": "Show window",
+    "hideWindow": "Hide window",
+    "showDashboard": "Show dashboard",
+    "hideDashboard": "Hide dashboard",
+    "exit": "Quit"
+  },
+  "nav": {
+    "home": "Home",
+    "tunnels": "Tunnels",
+    "lanParty": "LAN Party",
+    "status": "Status",
+    "settings": "Settings"
+  },
+  "dashboard": {
+    "notice": "Notice",
+    "frpcMissing": "frpc isn't installed yet. Opening the download window…",
+    "checkFailed": "Check failed",
+    "frpcUpdateFound": "frpc update available",
+    "frpcUpdateVersions": "Installed {0}, latest {1}",
+    "frpcUpdating": "Updating frpc",
+    "downloadWindowOpened": "Opened the download window"
+  },
+  "home": {
+    "subtitle": "Overview and announcements",
+    "welcome": "Welcome back, {0}",
+    "welcomeAnonymous": "Welcome back",
+    "bandwidth": "Bandwidth (up / down)",
+    "traffic": "Remaining traffic",
+    "dailyCheckIn": "Daily check-in",
+    "checkIn": "Check in for traffic",
+    "checkedIn": "Checked in today",
+    "unavailable": "Not available",
+    "status": "Status",
+    "email": "Email",
+    "signedIn": "Signed in",
+    "notSignedIn": "Not signed in",
+    "announcement": "Announcements",
+    "refreshAnnouncement": "Refresh announcements",
+    "announcementLoading": "Loading announcements...",
+    "noAnnouncement": "No announcements",
+    "announcementError": "Couldn't load announcements: {0}",
+    "checkInSucceeded": "Checked in",
+    "checkInGained": "You got {0:0.00} GB of traffic",
+    "alreadyCheckedIn": "You've already checked in today",
+    "checkInFailed": "Check-in failed",
+    "checkInError": "Check-in error"
+  },
+  "tunnel": {
+    "start": "Start tunnel",
+    "stop": "Stop tunnel",
+    "copyAddress": "Copy address",
+    "new": "New tunnel",
+    "refreshList": "Refresh list",
+    "delete": "Delete tunnel",
+    "more": "More actions",
+    "peerToPeer": "Peer-to-peer",
+    "nodeNumber": "Node {0}",
+    "unknownNode": "Unknown node",
+    "starting": "Starting…",
+    "running": "Running",
+    "idle": "Stopped"
+  },
+  "status": {
+    "title": "Status",
+    "subtitle": "Logs and process status",
+    "noLogs": "No logs yet",
+    "noLogsHint": "frpc output appears here once a tunnel starts",
+    "jumpToBottom": "Jump to latest",
+    "jumpToBottomTip": "Go to the newest log line and resume auto-scroll",
+    "stopAll": "Force-stop all tunnels",
+    "copyLogs": "Copy logs",
+    "copyLogsTip": "Copy all logs, handy for bug reports",
+    "clear": "Clear",
+    "running": {
+      "one": "{0} tunnel running",
+      "other": "{0} tunnels running"
+    },
+    "noneRunning": "No tunnels are running",
+    "stopAllTitle": "Stop all tunnels",
+    "stopAllConfirm": {
+      "one": "Force-stop the {0} running tunnel?",
+      "other": "Force-stop all {0} running tunnels?"
+    },
+    "stopAllButton": "Stop all",
+    "stopped": "Stopped",
+    "stoppedCount": {
+      "one": "Stopped {0} tunnel",
+      "other": "Stopped {0} tunnels"
+    },
+    "copied": "Copied",
+    "copiedLines": {
+      "one": "Copied {0} log line",
+      "other": "Copied {0} log lines"
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "subtitle": "Manage the client, appearance and account",
+    "section": {
+      "general": "General",
+      "appearance": "Appearance",
+      "update": "Downloads & updates",
+      "account": "Account",
+      "about": "About"
+    },
+    "frpc": {
+      "path": "frpc path",
+      "choose": "Choose file",
+      "chooseTip": "Use an frpc executable you already have",
+      "notSet": "Not set",
+      "download": "Download frpc",
+      "update": "Update frpc",
+      "installed": "The frpc executable used for {0}",
+      "missing": "The {0} frpc isn't installed yet. Click \"Download frpc\" to install it.",
+      "pickerTitle": "Choose the frpc executable",
+      "selected": "Selected"
+    },
+    "mirror": {
+      "title": "China mirror",
+      "description": "Prefer the China mirror when downloading frpc"
+    },
+    "dataDir": {
+      "title": "Data folder",
+      "tip": "Settings and downloaded frpc files are stored here",
+      "open": "Open folder",
+      "openFailed": "Couldn't open the folder"
+    },
+    "theme": {
+      "title": "Theme",
+      "description": "Light, dark, or match your system",
+      "system": "System default",
+      "light": "Light",
+      "dark": "Dark"
+    },
+    "language": {
+      "description": "Applies immediately. \"System default\" follows your OS language."
+    },
+    "appUpdate": {
+      "title": "App updates",
+      "description": "Check for a newer version on your current channel",
+      "check": "Check for updates",
+      "checking": "Getting the latest version from GitHub...",
+      "notFound": "No release found",
+      "channel": "Channel {0}",
+      "upToDate": "You're up to date",
+      "current": "Current version {0}",
+      "failed": "Update failed",
+      "noUpdater": "The updater component is missing",
+      "found": "New version available",
+      "willUpdate": "Kairo will quit and update to {0}",
+      "prepareFailed": "Couldn't prepare the updater",
+      "updating": "Updating",
+      "quitting": "Kairo will quit and update now",
+      "launchFailed": "Couldn't start the update",
+      "checkFailed": "Check failed"
+    },
+    "branch": {
+      "title": "Update channel",
+      "description": "Alpha builds can switch to any channel"
+    },
+    "provider": {
+      "title": "Provider",
+      "notSignedIn": "{0} · Not signed in",
+      "switch": "Switch provider",
+      "switchTip": "You'll stay signed in to this account and can switch back at any time",
+      "switchTo": "Switch to {0}",
+      "switchButton": "Switch",
+      "switchConfirm": "Switching to {0} takes you back to the sign-in screen.\nYou'll stay signed in to {1}, so you can switch back at any time.",
+      "switchConfirmRunning": {
+        "one": "Switching to {0} takes you back to the sign-in screen and stops the {2} running tunnel.\nYou'll stay signed in to {1}, so you can switch back at any time.",
+        "other": "Switching to {0} takes you back to the sign-in screen and stops the {2} running tunnels.\nYou'll stay signed in to {1}, so you can switch back at any time."
+      }
+    },
+    "security": {
+      "title": "Security",
+      "description": "Copy your FRP token or sign out",
+      "copyToken": "Copy token",
+      "copied": "Copied",
+      "tokenCopied": "FRP token copied. Don't share it with anyone.",
+      "signOut": "Sign out"
+    },
+    "signOut": {
+      "confirm": "Sign out of {1} on {0}?",
+      "confirmRunning": {
+        "one": "Sign out of {1} on {0}?\nThe {2} running tunnel will be stopped too.",
+        "other": "Sign out of {1} on {0}?\nThe {2} running tunnels will be stopped too."
+      },
+      "done": "Signed out",
+      "doneHint": "Please sign in again"
+    },
+    "debug": {
+      "title": "Debug mode",
+      "description": "More logging and debugging features"
+    },
+    "easterEgg": {
+      "button": "Don't click this button",
+      "hint": "There will be unexpected consequences",
+      "stop": "Stop clicking!"
+    },
+    "about": {
+      "version": "Version: {0} \"{1}\" {2} {3}",
+      "developer": "Developer: {0}",
+      "repository": "GitHub repository",
+      "issues": "Report an issue"
+    }
+  },
+  "create": {
+    "windowTitle": "Create tunnel",
+    "title": "Create a new tunnel",
+    "subtitle": "Expose a local service to the internet through a node",
+    "basicInfo": "Basics",
+    "name": "Tunnel name",
+    "namePlaceholder": "e.g. minecraft",
+    "type": "Protocol",
+    "localService": "Local service",
+    "localIp": "Local IP",
+    "localPort": "Local port",
+    "localPortPlaceholder": "e.g. 25565",
+    "nodeSection": "Node and access",
+    "node": "Node",
+    "ping": "Test latency",
+    "nodeName": "Name: ",
+    "nodePorts": "Port range: ",
+    "nodeDescription": "Description: ",
+    "remotePort": "Remote port",
+    "remotePortPlaceholder": "Leave empty for a random port",
+    "domain": "Domain",
+    "secretKey": "Secret key",
+    "secretKeyPlaceholder": "Visitors must enter the same key",
+    "advanced": "Advanced",
+    "encryption": "Encryption",
+    "encryptionTip": "Encrypt traffic between the client and the node",
+    "compression": "Compression",
+    "compressionTip": "Compress traffic to save bandwidth at the cost of some CPU",
+    "create": "Create",
+    "loadingNodes": "Loading nodes…",
+    "noNodes": "No nodes available",
+    "chooseNode": "Choose a node",
+    "nodesFailed": "Couldn't get nodes: {0}",
+    "requestingPort": "Requesting a random remote port…",
+    "creating": "Creating tunnel…",
+    "pingFailed": "Couldn't open the ping window: {0}",
+    "errors": {
+      "name": "Enter a tunnel name",
+      "type": "Choose a protocol",
+      "localIp": "Enter the local IP",
+      "loliaLocalIp": "LoliaFRP needs an IP address as the local IP, e.g. 127.0.0.1",
+      "localPort": "The local port must be a number from 1 to 65535",
+      "node": "Choose a node",
+      "remotePort": "The remote port must be a number from 1 to 65535",
+      "randomPort": "Couldn't get a random port. Enter a remote port manually.",
+      "secretKey": "Enter a secret key",
+      "domain": "Enter a domain",
+      "failed": "Couldn't create the tunnel: {0}"
+    },
+    "nodeInfo": {
+      "region": "Region: {0}",
+      "status": "Status: {0}",
+      "bandwidth": "Bandwidth: {0} Mbps",
+      "load": "Load: {0:0.##}%",
+      "sponsor": "Sponsor: {0}",
+      "kyc": "ID verification required",
+      "beian": "ICP filing required",
+      "none": "None"
+    },
+    "demo": {
+      "node1": "Sample node 1",
+      "node1Description": "Local demo node",
+      "node2": "Sample node 2",
+      "node2Description": "Backup demo node"
+    }
+  },
+  "download": {
+    "windowTitle": "Download frpc",
+    "header": "Download the {0} frpc",
+    "fetchingLatest": "Fetching the latest version...",
+    "retryHint": "Try again later, or switch the download source in Settings → China mirror",
+    "failed": "Download failed: {0}",
+    "completed": "Download complete",
+    "cancelled": "Cancelled",
+    "speed": "Speed: {0}"
+  },
+  "ping": {
+    "windowTitle": "Node latency",
+    "subtitle": "Latency to each node, refreshed every second",
+    "column": {
+      "node": "Node",
+      "host": "Host",
+      "latency": "Latency (ms)",
+      "status": "Status"
+    },
+    "status": {
+      "waiting": "Waiting",
+      "ok": "OK",
+      "timeout": "Timed out",
+      "denied": "No permission",
+      "failed": "Failed",
+      "error": "Error"
+    },
+    "nodesFailed": "Couldn't get nodes: {0}",
+    "noNodes": "No nodes available",
+    "failed": "Couldn't load: {0}",
+    "icmpDenied": "Not allowed to send ICMP pings. On Linux, run as root or grant the process CAP_NET_RAW.",
+    "online": "Online: {0}/{1}"
+  },
+  "frpc": {
+    "invalidPath": "The frpc path is invalid",
+    "chmodFailed": "Couldn't make frpc executable",
+    "alreadyRunning": "This tunnel is already running",
+    "startFailed": "frpc failed to start",
+    "started": "Started"
+  },
+  "buildInfo": {
+    "type": "Build type: {0}",
+    "time": "Build time: {0}",
+    "detail": "Details: {0}",
+    "branch": "Channel: {0}"
+  },
+  "api": {
+    "notSignedIn": "Not signed in, or the token is missing"
+  },
+  "oauth": {
+    "completePage": "Authorization complete. You can go back to Kairo."
+  },
+  "lan": {
+    "edition": {
+      "bedrock": "Bedrock"
+    },
+    "notReadyTitle": "LAN Party isn't finished yet",
+    "notReadyMessage": "This page is only a preview for now; its features don't work yet.",
+    "nav": {
+      "host": "Host a room",
+      "join": "Join a room"
+    },
+    "host": {
+      "instructions": "Once you open your Minecraft world to LAN, it's detected here automatically. Pick a server and a node, then click \"Create room\".",
+      "detectedServers": "Detected local servers:",
+      "openToLanHint": "In Minecraft, choose Esc → Open to LAN",
+      "noServers": "No local servers detected yet. In Minecraft, choose Esc → Open to LAN.",
+      "node": "Node",
+      "ping": "Test latency",
+      "refreshNodes": "Refresh nodes",
+      "startDetection": "Start detecting",
+      "stopDetection": "Stop detecting",
+      "createRoom": "Create room"
+    },
+    "join": {
+      "instructions": "Enter a room code to join a friend's game, or see the rooms you've created.",
+      "codePlaceholder": "Room code",
+      "join": "Join room",
+      "refreshMine": "Refresh my rooms",
+      "myRooms": "My rooms:",
+      "copyCodeTip": "Copy the room code",
+      "noRooms": "No rooms",
+      "forwarding": "Currently forwarding:",
+      "stopForwarding": "Stop forwarding"
+    },
+    "status": {
+      "ready": "Ready",
+      "unsupported": "{0} doesn't support Minecraft LAN rooms yet",
+      "detectionPaused": "Detection paused",
+      "continueDetecting": "Still detecting servers... ({0} found)",
+      "detecting": "Detecting local Minecraft servers...",
+      "detectingHint": "Detecting... Open your world to LAN in Minecraft",
+      "detectionFailed": "Detection failed: {0}",
+      "foundJava": "Found a Java server: {0}",
+      "foundBedrock": "Found a Bedrock server: {0}",
+      "detectionStopped": "Detection stopped",
+      "nodesFailed": "Couldn't get nodes: {0}",
+      "nodesLoaded": {
+        "one": "Loaded {0} node",
+        "other": "Loaded {0} nodes"
+      },
+      "creatingTunnel": "Creating tunnel...",
+      "tunnelCreated": "Tunnel created (ID: {0}). Creating the room...",
+      "roomCreated": "Room created. Code: {0}",
+      "createFailed": "Creation failed: {0}",
+      "createError": "Creation error: {0}",
+      "roomsLoaded": {
+        "one": "Loaded {0} room",
+        "other": "Loaded {0} rooms"
+      },
+      "fetchingRoom": "Getting room info...",
+      "connecting": "Connecting to {0}:{1}...",
+      "joinError": "Join error: {0}",
+      "forwardingStopped": "Forwarding stopped"
+    },
+    "detectionFailed": "Detection failed",
+    "noDescription": "No description",
+    "unavailable": "Not available",
+    "chooseServer": "Choose a server",
+    "chooseServerHint": "Choose one of the detected local servers first",
+    "chooseNode": "Choose a node",
+    "chooseNodeHint": "Choose the node to use first",
+    "portFailed": "Couldn't get a port",
+    "portFailedHint": "Couldn't get a random port from the node",
+    "tunnelNamePrefix": "MC-LAN",
+    "roomCreated": "Room created",
+    "roomCode": "Room code: {0}",
+    "copied": "Copied",
+    "codeCopied": "Room code copied to the clipboard",
+    "createRoomFailed": "Couldn't create the room",
+    "createRoomError": "Room creation error",
+    "createTunnelFailed": "Couldn't create the tunnel",
+    "createTunnelError": "Tunnel creation error",
+    "unnamedRoom": "Unnamed room",
+    "refreshRoomsFailed": "Couldn't refresh rooms",
+    "deleted": "Deleted",
+    "deletedMessage": "Room {0} and its tunnel were deleted",
+    "deleteFailed": "Couldn't delete",
+    "deleteError": "Delete error",
+    "enterCode": "Enter a room code",
+    "roomNotFound": "The room doesn't exist",
+    "joinFailed": "Couldn't join",
+    "remoteServer": "Remote server",
+    "invalidRoom": "Invalid room info",
+    "noServerAddress": "Couldn't get the server address",
+    "joined": "Joined",
+    "joinError": "Error joining the room",
+    "forward": {
+      "bedrockStatus": "Bedrock forwarding localhost:{0} → {1}:{2}\nOpen the Friends tab in Minecraft Bedrock to see \"{3}\"",
+      "bedrockConnected": "Connected! The room appears in the Friends list in Minecraft Bedrock",
+      "bedrockSuccess": "The room appears in the Friends list in Minecraft Bedrock",
+      "javaStatus": "Java forwarding localhost:{0} → {1}:{2}\nOpen Multiplayer in Minecraft to see \"{3}\"",
+      "javaConnected": "Connected! The room appears in Multiplayer in Minecraft",
+      "javaSuccess": "The room appears in Multiplayer in Minecraft"
+    }
+  },
+  "crash": {
+    "tab": {
+      "overview": "Overview",
+      "exception": "Exception",
+      "log": "Log"
+    },
+    "openFolder": "Open folder",
+    "windowTitle": "Kairo - Crash report ({0})",
+    "summary": "An unhandled exception occurred and a crash report was created.",
+    "time": "Time: {0}",
+    "version": "Version: {0} - {1}.{2}",
+    "runtime": "Runtime: .NET {0}",
+    "framework": "Framework: {0}",
+    "os": "OS: {0}",
+    "arch": "Process architecture: {0}",
+    "exception": "Exception: {0}",
+    "message": "Message: {0}",
+    "savedTo": "◦ Crash files are saved in {0}",
+    "copyHint": "◦ Click Copy to copy the full report, then paste it into an issue",
+    "folderHint": "◦ Click Open folder to go straight to the log folder",
+    "reportIssue": "Report an issue: {0}"
+  },
+  "network": {
+    "noHighPort": "No free high port is available. Check your network.",
+    "noPort": "No free port is available"
+  }
+}

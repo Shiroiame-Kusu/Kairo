@@ -1,0 +1,273 @@
+{
+  "cli": {
+    "tag": {
+      "success": "OK",
+      "info": "INFO",
+      "warn": "WARN",
+      "error": "ERROR",
+      "hint": "HINT"
+    },
+    "prompt": {
+      "chooseNumber": "Enter a number",
+      "invalidNumber": "Enter a number from 1 to {0}, or q to cancel"
+    },
+    "language": {
+      "unsupported": "Unsupported language: {0} (available: {1}, or system)"
+    },
+    "unhandledError": "Unexpected error: {0}",
+    "rerunWithDebug": "Run again with --debug for details",
+    "cancelled": "Cancelled",
+    "args": {
+      "value": {
+        "code": "authorization code",
+        "refreshToken": "refresh token",
+        "frpToken": "FRP token",
+        "frpcPath": "frpc path",
+        "tunnelIds": "tunnel IDs",
+        "language": "language"
+      },
+      "missingValue": "{0} needs a value ({1})",
+      "missingValueExample": "{0} needs a value ({1}), e.g. {0} <{1}>",
+      "unknownCommandSuggest": "Unknown command: {0}. Did you mean \"{1}\"?",
+      "unknownCommand": "Unknown command: {0}",
+      "extraArgument": "Unexpected argument: {0}",
+      "invalidTunnelId": "Invalid tunnel ID: {0} (use positive integers, separated by commas)",
+      "unknownOptionSuggest": "Unknown option: {0}. Did you mean \"{1}\"?",
+      "unknownOption": "Unknown option: {0}"
+    },
+    "provider": {
+      "unknown": "Unknown provider: {0}",
+      "available": "Available providers: {0}",
+      "alreadyUsing": "Already using {0}",
+      "switchedSignedIn": "Switched to {0} (signed in as {1})",
+      "switchedSignedOut": "Switched to {0} (not signed in)",
+      "title": "Providers",
+      "signedInAs": "Signed in: {0}",
+      "notSignedIn": "Not signed in",
+      "current": "(current)",
+      "optionSignedIn": "{0}  (signed in: {1})"
+    },
+    "tunnels": {
+      "header": {
+        "number": "#",
+        "id": "ID",
+        "name": "Name",
+        "type": "Type",
+        "local": "Local",
+        "address": "Address",
+        "node": "Node"
+      },
+      "title": {
+        "one": "{0} · {1} tunnel",
+        "other": "{0} · {1} tunnels"
+      },
+      "selectHint": "  Enter row numbers or tunnel IDs, separated by commas or spaces; ranges like 1-3 work too",
+      "selectHint2": "  Press Enter or type all to start everything, q to quit",
+      "selectPrompt": "Tunnels to start",
+      "selectedAll": {
+        "one": "Selected the only tunnel",
+        "other": "Selected all {0} tunnels"
+      },
+      "notFound": "Not found: {0}",
+      "selected": {
+        "one": "Selected {0} tunnel: {1}",
+        "other": "Selected {0} tunnels: {1}"
+      },
+      "noneSelected": "Nothing selected. Try again.",
+      "startingAll": "No tunnel IDs given; starting all tunnels",
+      "fetchFailed": "Couldn't get the tunnel list: {0}",
+      "signInFirst": "Run kairo-cli login to sign in first",
+      "checkNetwork": "Check your network connection. If your sign-in expired, run kairo-cli login again.",
+      "none": "Your {0} account has no tunnels yet",
+      "createHint": "Create one at {0}, then try again"
+    },
+    "help": {
+      "usage": "Usage",
+      "usageLine": "kairo-cli [command] [options]",
+      "commands": "Commands",
+      "cmd": {
+        "none": "(none)",
+        "noneDescription": "Interactive wizard: sign in and pick tunnels to start",
+        "start": "Start tunnels, e.g. start 1,2,3; without IDs you pick interactively",
+        "list": "List all tunnels on the current account",
+        "login": "Sign in (again) to the current provider",
+        "logout": "Sign out of the current provider",
+        "status": "Show the provider, sign-in state and frpc info",
+        "providerSyntax": "provider [name]",
+        "provider": "Show or switch the provider ({0})",
+        "help": "Show help / version info"
+      },
+      "options": "Options",
+      "opt": {
+        "providerSyntax": "--provider [name]",
+        "provider": "Switch provider and remember it; pick interactively if no name is given",
+        "proxy": "Tunnel IDs to start",
+        "list": "List tunnels (same as list)",
+        "oauth": "Only print the OAuth authorization link",
+        "codeSyntax": "--code <code>",
+        "code": "Sign in with an OAuth authorization code",
+        "refreshTokenSyntax": "-r, --refresh-token <token>",
+        "refreshToken": "Sign in with a refresh token (advanced)",
+        "frpTokenSyntax": "-t, --frp-token <token>",
+        "frpToken": "Use this FRP token",
+        "frpcPathSyntax": "-f, --frpc-path <path>",
+        "frpcPath": "Path to the frpc executable",
+        "github": "Always download frpc from GitHub",
+        "noInteractive": "Never prompt (for scripts and services)",
+        "langSyntax": "--lang <language>",
+        "lang": "Output language: zh-CN, en-US or system",
+        "noColor": "Disable colors (or set the NO_COLOR environment variable)",
+        "debug": "Print debug logs",
+        "logFile": "Write logs to a file",
+        "quiet": "Quiet mode (only warnings and errors)",
+        "version": "Show version info",
+        "help": "Show this help"
+      },
+      "examples": "Examples",
+      "example": {
+        "firstRun": "# First run: pick a provider and sign in",
+        "switchLolia": "# Switch to LoliaFRP",
+        "switchAndList": "# Switch to LoCyanFrp and list tunnels",
+        "startIds": "# Start tunnels 1 and 2",
+        "startAll": "# Start every tunnel without asking",
+        "lang": "# Show the status in English"
+      },
+      "environment": "Environment variables",
+      "env": {
+        "configDir": "Custom config directory",
+        "lang": "Output language (--lang wins, then the language setting)",
+        "noColor": "Disable colors"
+      }
+    },
+    "app": {
+      "seeHelp": "Run kairo-cli --help to see all commands and options",
+      "chooseProvider": "Choose a provider:",
+      "usingProvider": "Using {0}",
+      "noFrpToken": "No FRP token available",
+      "noFrpTokenHint": "Run kairo-cli login to sign in again, or pass --frp-token",
+      "switchTo": "Switch to:",
+      "providerCommand": "kairo-cli provider <name>",
+      "comment": {
+        "switchProvider": "# Switch provider",
+        "list": "# List tunnels",
+        "start": "# Pick and start tunnels",
+        "login": "# Sign in to {0}",
+        "getAuthLink": "# Get the authorization link",
+        "startIds": "# Start specific tunnels"
+      },
+      "notSignedIn": "Not signed in to {0}",
+      "signInHint": "Sign in by running this in an interactive terminal:",
+      "orUseCode": "       Or get an authorization link first, then sign in with the code:",
+      "loginWithCodeCommand": "kairo-cli login --code <code>",
+      "reauthorizing": "Signed in as {0}; authorizing again",
+      "loginNeedsTerminal": "Signing in needs an interactive terminal, or credentials via --code / --refresh-token",
+      "pkceOnly": "{0} uses PKCE, so you can't sign in with only an authorization code",
+      "pkceHint": "Run kairo-cli login in an interactive terminal",
+      "alreadySignedOut": "Not signed in to {0}",
+      "logoutConfirm": "Sign out of {1} on {0}?",
+      "loggedOut": "Signed out of {1} on {0}"
+    },
+    "status": {
+      "title": "Status",
+      "provider": "Provider",
+      "account": "Account",
+      "notSignedIn": "Not signed in",
+      "frpToken": "FRP token",
+      "perTunnelToken": "Fetched per tunnel at start",
+      "none": "None",
+      "frpcMissing": "Not installed (downloaded automatically when a tunnel starts)",
+      "source": "Download source",
+      "mirrorFirst": "China mirror first",
+      "language": "Language",
+      "configFile": "Config file",
+      "logDir": "Log folder"
+    },
+    "frpc": {
+      "pathMissing": "The specified frpc doesn't exist: {0}",
+      "downloadingAuto": "No {0} frpc found; downloading it now...",
+      "downloadFailed": "Couldn't download frpc: {0}",
+      "useLocalHint": "Use --frpc-path to point to an frpc you already have",
+      "useGithubHint": "Retry with --github to download from GitHub, or use --frpc-path to point to an frpc you already have",
+      "location": "       frpc location: {0}"
+    },
+    "oauth": {
+      "signInTitle": "Sign in to {0}",
+      "unsupported": "{0} doesn't offer OAuth sign-in",
+      "step1": "1. Open this link in a browser and authorize Kairo:",
+      "headless": "   No desktop session detected. Open the link above in a browser on any device.",
+      "askOpenBrowser": "   Open it in your browser now?",
+      "step2Loopback": "2. Kairo continues automatically once you've authorized it.",
+      "pasteHint": "   If the browser is on another device, copy the full address from its address bar and paste it below",
+      "codeOrUrl": "Code or callback URL",
+      "loopbackFailed": "Couldn't listen on local callback port {0}. After authorizing, paste the address from your browser's address bar.",
+      "step2Code": "2. After authorizing, paste the code shown on the page below (the full callback URL works too)",
+      "code": "Code",
+      "callbackReceived": "Got the browser callback",
+      "denied": "Authorization failed: {0}",
+      "emptyCode": "The code can't be empty",
+      "verifying": "Verifying the code...",
+      "failed": "Sign-in failed: {0}",
+      "networkRetryLogin": "Couldn't reach {0}. Check your network, then run kairo-cli login again.",
+      "codeExpired": "Codes work only once and expire quickly. Run kairo-cli login to authorize again.",
+      "usingRefreshToken": "Signing in with the refresh token...",
+      "networkRetry": "Couldn't reach {0}. Check your network and try again.",
+      "refreshExpired": "The refresh token may have expired. Run kairo-cli login to authorize again.",
+      "pkceInteractive": "{0} must be authorized interactively (PKCE needs the same session)",
+      "followPrompts": "# Follow the prompts to authorize",
+      "authorizeTitle": "Authorize {0}",
+      "openLink": "Open this link in a browser to authorize:",
+      "thenRun": "The page then shows a code. Copy it and run:",
+      "codeCommand": "kairo-cli --code <code>",
+      "signedIn": "Signed in to {0} as {1}",
+      "savedTo": "       Credentials saved to {0}",
+      "browserOpened": "   Opening your browser...",
+      "browserFailed": "Couldn't open a browser automatically. Copy the link manually."
+    },
+    "api": {
+      "status": "API status: {0} {1}",
+      "notSignedIn": "Not signed in",
+      "refreshing": "Your sign-in expired; refreshing it automatically..."
+    },
+    "run": {
+      "title": {
+        "one": "Starting {0} tunnel",
+        "other": "Starting {0} tunnels"
+      },
+      "noneStarted": "No tunnel started",
+      "partlyStarted": "Started {0}/{1} tunnels; see the errors above for the rest",
+      "allStarted": {
+        "one": "Started the tunnel",
+        "other": "Started all {0} tunnels"
+      },
+      "stopHint": "       Press Ctrl+C to stop all tunnels",
+      "allExited": "All tunnel processes have exited",
+      "allStopped": "All tunnels stopped",
+      "notOnAccount": "{0} failed to start: this account has no such tunnel",
+      "noTunnelInfo": "{0} failed to start: no tunnel info found",
+      "failedWithReason": "{0} failed to start: {1}",
+      "failed": "{0} failed to start",
+      "started": "{0} started (PID {1})",
+      "startedWithAddress": "{0} started (PID {1}) → {2}",
+      "frpcFailed": "Couldn't start frpc: {0}",
+      "exited": "{0} exited",
+      "exitedWithCode": "{0} exited with code {1}",
+      "stopping": "Stopping all tunnels..."
+    },
+    "download": {
+      "tag": "Download",
+      "githubForced": "Using GitHub (as requested)",
+      "cancelled": "Download cancelled",
+      "completed": "frpc downloaded"
+    },
+    "log": {
+      "createFailed": "Couldn't create the log file: {0}"
+    },
+    "callback": {
+      "successTitle": "Authorized",
+      "failureTitle": "Not authorized",
+      "success": "Kairo CLI got the authorization. You can close this page and go back to the terminal.",
+      "failure": "Authorization failed: {0}. Go back to the terminal and try again.",
+      "noCode": "No authorization code was received"
+    }
+  }
+}

@@ -7,6 +7,7 @@ using Kairo.Core;
 using Kairo.Core.Logging;
 using Kairo.Core.Models;
 using Kairo.Core.Providers;
+using Kairo.Core.Localization;
 
 namespace Kairo.Utils
 {
@@ -55,7 +56,7 @@ namespace Kairo.Utils
         public static void EnsureLoggedIn()
         {
             if (!IsLoggedIn)
-                throw new InvalidOperationException("未登录或令牌缺失");
+                throw new InvalidOperationException(L.T("api.notSignedIn"));
         }
 
         /// <summary>
@@ -69,7 +70,7 @@ namespace Kairo.Utils
                 errorMessage = null;
                 return true;
             }
-            errorMessage = "未登录或令牌缺失";
+            errorMessage = L.T("api.notSignedIn");
             return false;
         }
 

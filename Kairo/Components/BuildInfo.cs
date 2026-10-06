@@ -6,6 +6,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Kairo.Core;
+using Kairo.Core.Localization;
 
 namespace Kairo.Components
 {
@@ -41,17 +42,21 @@ namespace Kairo.Components
 
         public override string ToString()
         {
-            return "" +
-                   $"编译类型：{Type}\r\n" +
-                   $"编译时间：{Time}\r\n" +
-                   $"详细信息：{Detail}\r\n" +
-                   $"当前分支：{Global.Branch.ToDisplayName()}";
+            return L.T("buildInfo.type", Type) + "\r\n" +
+                   L.T("buildInfo.time", Time) + "\r\n" +
+                   L.T("buildInfo.detail", Detail) + "\r\n" +
+                   L.T("buildInfo.branch", Global.Branch.ToDisplayName());
         }
 
         /// <summary>
         /// 编译类型
         /// </summary>
-        public string Type { get; private set; } = "未知";
+        public string Type
+        {
+            get => string.IsNullOrEmpty(_type) ? L.T("common.unknown") : _type!;
+            private set => _type = value;
+        }
+        private string? _type;
 
         /// <summary>
         /// 编译时间

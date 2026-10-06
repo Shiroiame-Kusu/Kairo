@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Text.Json;
 using Kairo.Models;
 using Kairo.Utils.Serialization;
@@ -8,8 +9,10 @@ using Avalonia.Input;
 using Avalonia.Input.Platform;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
+using Avalonia.Controls.Primitives;
 using Avalonia.Platform.Storage;
 using Kairo.Core;
+using Kairo.Core.Localization;
 using Kairo.Utils;
 using Kairo.Utils.Configuration;
 using Kairo.ViewModels;
@@ -29,6 +32,7 @@ namespace Kairo.Components.DashBoard
         private Border? _sectionAppearance;
         private Border? _sectionUpdate;
         private Border? _sectionAccount;
+        private Border? _sectionAbout;
         private bool _isProgrammaticScrolling;
 
         public SettingsPage()
@@ -51,6 +55,7 @@ namespace Kairo.Components.DashBoard
             _sectionAppearance = this.FindControl<Border>("SectionAppearance");
             _sectionUpdate = this.FindControl<Border>("SectionUpdate");
             _sectionAccount = this.FindControl<Border>("SectionAccount");
+            _sectionAbout = this.FindControl<Border>("SectionAbout");
 
             if (_contentScrollViewer != null)
             {
@@ -64,12 +69,7 @@ namespace Kairo.Components.DashBoard
 
             if (Design.IsDesignMode)
             {
-                vm.FrpcPath = "/usr/bin/frpc";
-                vm.UseMirror = true;
-                vm.FollowSystem = true;
-                vm.DarkTheme = false;
-                vm.DebugMode = false;
-                vm.UpdateBranchIndex = 0;
+                vm.LoadDesignData();
                 return;
             }
 
@@ -102,7 +102,7 @@ namespace Kairo.Components.DashBoard
                     ScrollToSection(_sectionAccount);
                     break;
                 case "about":
-                    ScrollToBottom();
+                    ScrollToSection(_sectionAbout);
                     break;
             }
 
@@ -125,18 +125,7 @@ namespace Kairo.Components.DashBoard
             UpdateActiveNavByScrollPosition();
         }
 
-        private void ScrollToBottom()
-        {
-            if (_contentScrollViewer == null) return;
-
-            var maxOffset = Math.Max(0, _contentScrollViewer.Extent.Height - _contentScrollViewer.Viewport.Height);
-            _isProgrammaticScrolling = true;
-            _contentScrollViewer.Offset = new Vector(_contentScrollViewer.Offset.X, maxOffset);
-            _isProgrammaticScrolling = false;
-            UpdateActiveNavByScrollPosition(forceAboutWhenBottom: true);
-        }
-
-        private void UpdateActiveNavByScrollPosition(bool forceAboutWhenBottom = false)
+        private void UpdateActiveNavByScrollPosition()
         {
             if (_contentScrollViewer == null)
             {
@@ -148,7 +137,7 @@ namespace Kairo.Components.DashBoard
             var currentY = _contentScrollViewer.Offset.Y;
             var isBottom = maxOffset > 0 && currentY >= maxOffset - 6;
 
-            if (forceAboutWhenBottom || isBottom)
+            if (isBottom)
             {
                 SetActiveNav("about");
                 return;
@@ -170,6 +159,7 @@ namespace Kairo.Components.DashBoard
             TryPickNearest(_sectionAppearance, "appearance", anchorY, ref bestTag, ref bestDistance);
             TryPickNearest(_sectionUpdate, "update", anchorY, ref bestTag, ref bestDistance);
             TryPickNearest(_sectionAccount, "account", anchorY, ref bestTag, ref bestDistance);
+            TryPickNearest(_sectionAbout, "about", anchorY, ref bestTag, ref bestDistance);
 
             return bestTag;
         }
@@ -219,24 +209,83 @@ namespace Kairo.Components.DashBoard
             var files = await top.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
             {
                 AllowMultiple = false,
-                Title = "选择 frpc 可执行文件"
+                Title = L.T("settings.frpc.pickerTitle")
             });
             var file = files.Count > 0 ? files[0] : null;
             if (file == null) return;
 
             vm.FrpcPath = file.Path.LocalPath;
             ConfigManager.Save();
-            (Access.DashBoard as DashBoard)?.OpenSnackbar("已选择", vm.FrpcPath);
+            (Access.DashBoard as DashBoard)?.OpenSnackbar(L.T("settings.frpc.selected"), vm.FrpcPath);
         }
 
-        private void CopyTokenBtn_OnClick(object? sender, RoutedEventArgs e)
+        private async void CopyTokenBtn_OnClick(object? sender, RoutedEventArgs e)
         {
-            TopLevel.GetTopLevel(this)?.Clipboard?.SetTextAsync(Global.Config.FrpToken ?? string.Empty);
-            (Access.DashBoard as DashBoard)?.OpenSnackbar("已复制", "Frp Token 已复制");
+            if (string.IsNullOrWhiteSpace(Global.Config.FrpToken)) return;
+            var clipboard = TopLevel.GetTopLevel(this)?.Clipboard;
+            if (clipboard == null) return;
+            await clipboard.SetTextAsync(Global.Config.FrpToken);
+            (Access.DashBoard as DashBoard)?.OpenSnackbar(L.T("settings.security.copied"), L.T("settings.security.tokenCopied"));
         }
 
-        private void SignOutBtn_OnClick(object? sender, RoutedEventArgs e)
+        private async void OpenConfigDir_OnClick(object? sender, RoutedEventArgs e)
         {
+            if (DataContext is not SettingsPageViewModel vm) return;
+            try
+            {
+                var launcher = TopLevel.GetTopLevel(this)?.Launcher;
+                if (launcher == null || !Directory.Exists(vm.ConfigDirectory) ||
+                    !await launcher.LaunchDirectoryInfoAsync(new DirectoryInfo(vm.ConfigDirectory)))
+                {
+                    (Access.DashBoard as DashBoard)?.OpenSnackbar(L.T("settings.dataDir.openFailed"), vm.ConfigDirectory, FluentAvalonia.UI.Controls.FAInfoBarSeverity.Warning);
+                }
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Exception("打开配置目录失败", ex);
+                (Access.DashBoard as DashBoard)?.OpenSnackbar(L.T("settings.dataDir.openFailed"), ex.Message, FluentAvalonia.UI.Controls.FAInfoBarSeverity.Warning);
+            }
+        }
+
+        private void SwitchProviderBtn_OnClick(object? sender, RoutedEventArgs e)
+        {
+            if (DataContext is not SettingsPageViewModel vm || sender is not Control anchor) return;
+
+            var flyout = new MenuFlyout { Placement = PlacementMode.BottomEdgeAlignedRight };
+            foreach (var provider in vm.OtherProviders)
+            {
+                var item = new MenuItem { Header = L.T("settings.provider.switchTo", provider.DisplayName) };
+                item.Click += async (_, _) => await SwitchProviderAsync(provider);
+                flyout.Items.Add(item);
+            }
+            flyout.ShowAt(anchor);
+        }
+
+        private static async System.Threading.Tasks.Task SwitchProviderAsync(Kairo.Core.Providers.IFrpProvider provider)
+        {
+            var running = FrpcProcessManager.RunningCount;
+            var message = running > 0
+                ? L.Plural("settings.provider.switchConfirmRunning", running, provider.DisplayName, Global.CurrentProvider.DisplayName, running)
+                : L.T("settings.provider.switchConfirm", provider.DisplayName, Global.CurrentProvider.DisplayName);
+            if (!await DialogHelper.ConfirmAsync(Access.DashBoard, L.T("settings.provider.switch"), message, L.T("settings.provider.switchButton")))
+                return;
+
+            FrpcProcessManager.StopAll();
+            if (Access.MainWindow is MainWindow mw)
+                await mw.SwitchProviderAsync(provider.Id);
+        }
+
+        private async void SignOutBtn_OnClick(object? sender, RoutedEventArgs e)
+        {
+            var running = FrpcProcessManager.RunningCount;
+            var message = running > 0
+                ? L.Plural("settings.signOut.confirmRunning", running, Global.CurrentProvider.DisplayName, Global.Config.Username, running)
+                : L.T("settings.signOut.confirm", Global.CurrentProvider.DisplayName, Global.Config.Username);
+            var signOut = L.T("settings.security.signOut");
+            if (!await DialogHelper.ConfirmAsync(Access.DashBoard, signOut, message, signOut, destructive: true))
+                return;
+
+            FrpcProcessManager.StopAll();
             ProviderAuth.ClearCurrent(save: false);
             Global.Config.AccessToken = string.Empty;
             Global.Config.RefreshToken = string.Empty;
@@ -245,7 +294,7 @@ namespace Kairo.Components.DashBoard
             Global.Config.FrpToken = string.Empty;
             ConfigManager.Save();
             AppLogger.ClearCache();
-            (Access.DashBoard as DashBoard)?.OpenSnackbar("已退出", "请重新登录");
+            (Access.DashBoard as DashBoard)?.OpenSnackbar(L.T("settings.signOut.done"), L.T("settings.signOut.doneHint"));
 
             if (Access.MainWindow is MainWindow mw)
             {
@@ -264,7 +313,7 @@ namespace Kairo.Components.DashBoard
             else
                 win.Show();
 
-            vm.FrpcPath = ProviderFrpcPath.Get(Global.CurrentProvider);
+            vm.RefreshFrpcPath();
         }
 
         private void EasterEggBtn_OnClick(object? sender, RoutedEventArgs e)
@@ -272,7 +321,7 @@ namespace Kairo.Components.DashBoard
             _easterCount++;
             if (_easterCount >= 3)
             {
-                (Access.DashBoard as DashBoard)?.OpenSnackbar("???", "别点啦");
+                (Access.DashBoard as DashBoard)?.OpenSnackbar("???", L.T("settings.easterEgg.stop"));
             }
         }
 
@@ -282,7 +331,7 @@ namespace Kairo.Components.DashBoard
             if (btn != null) btn.IsEnabled = false;
             try
             {
-                (Access.DashBoard as DashBoard)?.OpenSnackbar("检查更新", "正在从 GitHub 获取最新版本...");
+                (Access.DashBoard as DashBoard)?.OpenSnackbar(L.T("settings.appUpdate.check"), L.T("settings.appUpdate.checking"));
                 using var api = new ApiClient();
 
                 // Parse current version using AppVersion
@@ -308,7 +357,7 @@ namespace Kairo.Components.DashBoard
 
                 if (remoteVersion == null)
                 {
-                    (Access.DashBoard as DashBoard)?.OpenSnackbar("未找到版本", $"分支 {currentVersion.ChannelName}");
+                    (Access.DashBoard as DashBoard)?.OpenSnackbar(L.T("settings.appUpdate.notFound"), L.T("settings.appUpdate.channel", currentVersion.ChannelName));
                     return;
                 }
 
@@ -317,41 +366,41 @@ namespace Kairo.Components.DashBoard
 
                 if (!updateAvailable)
                 {
-                    (Access.DashBoard as DashBoard)?.OpenSnackbar("已是最新", $"当前 {currentVersion}");
+                    (Access.DashBoard as DashBoard)?.OpenSnackbar(L.T("settings.appUpdate.upToDate"), L.T("settings.appUpdate.current", currentVersion));
                     return;
                 }
 
                 // Check if updater is available
                 if (!UpdaterHelper.IsUpdaterAvailable())
                 {
-                    (Access.DashBoard as DashBoard)?.OpenSnackbar("更新失败", "未找到 Updater 组件");
+                    (Access.DashBoard as DashBoard)?.OpenSnackbar(L.T("settings.appUpdate.failed"), L.T("settings.appUpdate.noUpdater"));
                     return;
                 }
 
-                (Access.DashBoard as DashBoard)?.OpenSnackbar("发现新版本", $"将退出并更新到 {remoteVersion.Value}");
+                (Access.DashBoard as DashBoard)?.OpenSnackbar(L.T("settings.appUpdate.found"), L.T("settings.appUpdate.willUpdate", remoteVersion.Value));
 
                 // Prepare and launch updater
                 if (!UpdaterHelper.PrepareUpdate(remoteVersion.Value))
                 {
-                    (Access.DashBoard as DashBoard)?.OpenSnackbar("更新失败", "准备更新器失败");
+                    (Access.DashBoard as DashBoard)?.OpenSnackbar(L.T("settings.appUpdate.failed"), L.T("settings.appUpdate.prepareFailed"));
                     return;
                 }
 
                 try
                 {
-                    (Access.DashBoard as DashBoard)?.OpenSnackbar("正在更新", "程序即将退出并更新");
+                    (Access.DashBoard as DashBoard)?.OpenSnackbar(L.T("settings.appUpdate.updating"), L.T("settings.appUpdate.quitting"));
                     UpdaterHelper.LaunchUpdaterAndExit();
                 }
                 catch (Exception exLaunch)
                 {
                     AppLogger.Exception("Unhandled exception in Kairo/Components/DashBoard/SettingsPage.axaml.cs:343", exLaunch);
-                    (Access.DashBoard as DashBoard)?.OpenSnackbar("启动更新失败", exLaunch.Message);
+                    (Access.DashBoard as DashBoard)?.OpenSnackbar(L.T("settings.appUpdate.launchFailed"), exLaunch.Message);
                 }
             }
             catch (Exception ex)
             {
                 AppLogger.Exception("Unhandled exception in Kairo/Components/DashBoard/SettingsPage.axaml.cs:348", ex);
-                (Access.DashBoard as DashBoard)?.OpenSnackbar("检查失败", ex.Message);
+                (Access.DashBoard as DashBoard)?.OpenSnackbar(L.T("settings.appUpdate.checkFailed"), ex.Message);
             }
             finally
             {

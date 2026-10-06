@@ -4,6 +4,7 @@ using System.Net.NetworkInformation;
 using System.Threading.Tasks;
 using HakuuLib.MultiplayerLAN.Minecraft.Bedrock.Forwarding;
 using HakuuLib.MultiplayerLAN.Minecraft.Java.Forwarding;
+using Kairo.Core.Localization;
 
 namespace Kairo.Utils;
 
@@ -38,9 +39,9 @@ internal sealed class MinecraftLanForwardingService : IDisposable
 
                 return new MinecraftLanForwardingResult
                 {
-                    ForwarderStatus = $"基岩版转发 localhost:{listenPort} → {host}:{port}\n在 Minecraft 基岩版中打开好友页面即可看到 \"{name}\"",
-                    StatusText = "已连接！在 Minecraft 基岩版的好友游戏列表中可以看到房间",
-                    SuccessMessage = "在 Minecraft 基岩版好友列表中可以看到房间"
+                    ForwarderStatus = L.T("lan.forward.bedrockStatus", listenPort, host, port, name),
+                    StatusText = L.T("lan.forward.bedrockConnected"),
+                    SuccessMessage = L.T("lan.forward.bedrockSuccess")
                 };
             }
 
@@ -59,9 +60,9 @@ internal sealed class MinecraftLanForwardingService : IDisposable
 
             return new MinecraftLanForwardingResult
             {
-                ForwarderStatus = $"Java 版转发 localhost:{javaListenPort} → {host}:{port}\n在 Minecraft 中打开多人游戏即可看到 \"{name}\"",
-                StatusText = "已连接！在 Minecraft 多人游戏中可以看到房间",
-                SuccessMessage = "在 Minecraft 多人游戏中可以看到房间"
+                ForwarderStatus = L.T("lan.forward.javaStatus", javaListenPort, host, port, name),
+                StatusText = L.T("lan.forward.javaConnected"),
+                SuccessMessage = L.T("lan.forward.javaSuccess")
             };
         }
         catch (Exception ex)

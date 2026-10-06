@@ -5,9 +5,11 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
+using Kairo.Core.Logging;
 using Kairo.Core.Models;
 using Kairo.Core.Providers;
 using Kairo.Utils.Logger;
+using Kairo.Core.Localization;
 
 namespace Kairo.Utils;
 
@@ -27,13 +29,33 @@ internal static class FrpcProcessManager
 
     public static event Action<int>? ProxyExited; // new event
 
-    public static bool IsRunning(int proxyId) => _processes.ContainsKey(proxyId);
+    /// <summary>运行中的隧道数量发生变化（启动、停止或进程退出）</summary>
+    public static event Action? RunningChanged;
+
+    private static void RaiseRunningChanged()
+    {
+        try { RunningChanged?.Invoke(); }
+        catch (Exception ex)
+        {
+            AppLogger.Exception("RunningChanged handler failed", ex);
+        }
+    }
+
+    public static bool IsRunning(int proxyId)
+    {
+        lock (_processes) return _processes.ContainsKey(proxyId);
+    }
+
+    public static int RunningCount
+    {
+        get { lock (_processes) return _processes.Count; }
+    }
 
     public static bool StartProxy(int proxyId, string proxyName, string frpcPath, string frpToken, IFrpProvider provider, Action<string>? onStarted = null, Action<string>? onFailed = null)
     {
         if (string.IsNullOrWhiteSpace(frpcPath) || !File.Exists(frpcPath))
         {
-            onFailed?.Invoke("frpc 路径无效");
+            onFailed?.Invoke(L.T("frpc.invalidPath"));
             return false;
         }
         
@@ -70,7 +92,7 @@ internal static class FrpcProcessManager
                         
                         if (chmodProc?.ExitCode != 0)
                         {
-                            onFailed?.Invoke("无法设置 frpc 执行权限");
+                            onFailed?.Invoke(L.T("frpc.chmodFailed"));
                             return false;
                         }
                     }
@@ -85,7 +107,7 @@ internal static class FrpcProcessManager
         
         if (IsRunning(proxyId))
         {
-            onFailed?.Invoke("该隧道已在运行中");
+            onFailed?.Invoke(L.T("frpc.alreadyRunning"));
             return false;
         }
         try
@@ -97,7 +119,7 @@ internal static class FrpcProcessManager
                 FrpToken = frpToken,
                 ApiBaseUrl = provider.ApiBaseUrl
             });
-            AppLogger.Output(LogType.Info, FrpcStartArgumentLogDestinations, $"[FRPC] 启动参数: provider={provider.Id}, path=\"{frpcPath}\", args={arguments}");
+            AppLogger.Output(LogType.Info, FrpcStartArgumentLogDestinations, $"[FRPC] 启动参数: provider={provider.Id}, path=\"{frpcPath}\", args={SecretMasker.Redact(arguments, frpToken)}");
             var psi = new ProcessStartInfo
             {
                 FileName = frpcPath,
@@ -133,10 +155,11 @@ internal static class FrpcProcessManager
                 {
                     AppLogger.Exception("Unhandled exception in Kairo/Utils/Frp/FrpcProcessManager.cs:132", ex);
                 }
+                RaiseRunningChanged();
             };
             if (!proc.Start())
             {
-                onFailed?.Invoke("frpc 启动失败");
+                onFailed?.Invoke(L.T("frpc.startFailed"));
                 return false;
             }
             proc.BeginOutputReadLine();
@@ -146,7 +169,8 @@ internal static class FrpcProcessManager
                 _processes[proxyId] = new ProcInfo { ProxyId = proxyId, Process = proc };
             }
             AppLogger.Output(LogType.Info, FrpcLogDestinations, $"[FRPC] 已启动隧道 {proxyId}, PID={proc.Id}");
-            onStarted?.Invoke("已启动");
+            onStarted?.Invoke(L.T("frpc.started"));
+            RaiseRunningChanged();
             return true;
         }
         catch (Exception ex)
@@ -178,10 +202,14 @@ internal static class FrpcProcessManager
                 }
                 _processes.Remove(proxyId);
                 AppLogger.Output(LogType.Info, FrpcLogDestinations, $"[FRPC] 已结束隧道 {proxyId}");
-                return true;
+            }
+            else
+            {
+                return false;
             }
         }
-        return false;
+        RaiseRunningChanged();
+        return true;
     }
 
     public static int StopAll()

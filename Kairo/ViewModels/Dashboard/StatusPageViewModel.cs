@@ -1,8 +1,12 @@
 using System;
 using System.Collections.ObjectModel;
+using System.Linq;
+using Avalonia.Controls;
+using Avalonia.Input.Platform;
 using Avalonia.Threading;
 using FluentAvalonia.UI.Controls;
 using Kairo.Components.DashBoard;
+using Kairo.Core.Localization;
 using Kairo.Utils;
 using Kairo.Utils.Logger;
 
@@ -13,15 +17,41 @@ namespace Kairo.ViewModels
         private const int MaxVisualLines = 800;
         private bool _subscribed;
         private int _lastGlobalIndex;
+        private bool? _darkThemeWhenDetached;
 
         public ObservableCollection<LogEntry> Lines { get; } = new();
 
         public RelayCommand StopAllCommand { get; }
+        public RelayCommand ClearCommand { get; }
+        public RelayCommand CopyCommand { get; }
+
+        public int RunningCount => DesignModeHelper.IsDesign ? 2 : FrpcProcessManager.RunningCount;
+        public bool HasRunning => RunningCount > 0;
+        public string RunningText => HasRunning ? L.Plural("status.running", RunningCount) : L.T("status.noneRunning");
+        public bool HasLines => Lines.Count > 0;
 
         public StatusPageViewModel()
         {
-            StopAllCommand = new RelayCommand(StopAllTunnels);
-            ThemeManager.ThemeChanged += OnThemeChanged;
+            StopAllCommand = new RelayCommand(StopAllTunnels, () => HasRunning);
+            ClearCommand = new RelayCommand(ClearLogs, () => HasLines);
+            CopyCommand = new RelayCommand(CopyLogs, () => HasLines);
+            Lines.CollectionChanged += (_, _) =>
+            {
+                OnPropertyChanged(nameof(HasLines));
+                ClearCommand.RaiseCanExecuteChanged();
+                CopyCommand.RaiseCanExecuteChanged();
+            };
+        }
+
+        private void OnRunningChanged()
+        {
+            Dispatcher.UIThread.Post(() =>
+            {
+                OnPropertyChanged(nameof(RunningCount));
+                OnPropertyChanged(nameof(HasRunning));
+                OnPropertyChanged(nameof(RunningText));
+                StopAllCommand.RaiseCanExecuteChanged();
+            });
         }
 
         public void Attach()
@@ -39,20 +69,31 @@ namespace Kairo.ViewModels
             PopulateFromCacheIncremental();
             if (!_subscribed)
             {
+                // 页面会被缓存复用，订阅需要随 Attach/Detach 成对进行
                 Logger.LineWritten += OnLineWritten;
                 Logger.Cleared += OnLogsCleared;
+                ThemeManager.ThemeChanged += OnThemeChanged;
+                FrpcProcessManager.RunningChanged += OnRunningChanged;
                 _subscribed = true;
             }
+            // 离开页面期间切换过主题时，已有日志需要按新主题重新着色
+            if (_darkThemeWhenDetached.HasValue && _darkThemeWhenDetached != Global.isDarkThemeEnabled)
+                OnThemeChanged();
+            _darkThemeWhenDetached = null;
+            OnRunningChanged();
         }
 
         public void Detach()
         {
+            _darkThemeWhenDetached ??= Global.isDarkThemeEnabled;
             if (_subscribed)
             {
                 try
                 {
                     Logger.LineWritten -= OnLineWritten;
                     Logger.Cleared -= OnLogsCleared;
+                    ThemeManager.ThemeChanged -= OnThemeChanged;
+                    FrpcProcessManager.RunningChanged -= OnRunningChanged;
                 }
                 catch (Exception ex)
                 {
@@ -120,16 +161,43 @@ namespace Kairo.ViewModels
             }
         }
 
-        private void StopAllTunnels()
+        private async void StopAllTunnels()
         {
+            var running = FrpcProcessManager.RunningCount;
+            if (running == 0) return;
+            if (!await DialogHelper.ConfirmAsync(Access.DashBoard, L.T("status.stopAllTitle"), L.Plural("status.stopAllConfirm", running), L.T("status.stopAllButton"), destructive: true))
+                return;
+
             int stopped = FrpcProcessManager.StopAll();
-            (Access.DashBoard as DashBoard)?.OpenSnackbar("已停止", $"结束 {stopped} 个隧道", FAInfoBarSeverity.Informational);
+            (Access.DashBoard as DashBoard)?.OpenSnackbar(L.T("status.stopped"), L.Plural("status.stoppedCount", stopped), FAInfoBarSeverity.Informational);
+        }
+
+        private void ClearLogs()
+        {
+            // 清空日志缓存，Cleared 事件会同步清空界面
+            Logger.ClearCache();
+            Lines.Clear();
+        }
+
+        private async void CopyLogs()
+        {
+            try
+            {
+                var text = string.Join(Environment.NewLine, Lines.Select(l => l.Line));
+                var clipboard = TopLevel.GetTopLevel(Access.DashBoard)?.Clipboard;
+                if (clipboard == null) return;
+                await clipboard.SetTextAsync(text);
+                (Access.DashBoard as DashBoard)?.OpenSnackbar(L.T("status.copied"), L.Plural("status.copiedLines", Lines.Count), FAInfoBarSeverity.Success);
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Exception("复制日志失败", ex);
+            }
         }
 
         public void Dispose()
         {
             Detach();
-            ThemeManager.ThemeChanged -= OnThemeChanged;
         }
     }
 

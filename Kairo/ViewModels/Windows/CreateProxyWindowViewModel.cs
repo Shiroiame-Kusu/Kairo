@@ -2,9 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Net;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
+using Kairo.Core.Localization;
 using Kairo.Core.Models;
 using Kairo.Core.Providers;
 using Kairo.Utils;
@@ -27,9 +29,16 @@ namespace Kairo.ViewModels
         private string _secretKey = string.Empty;
         private string _domain = string.Empty;
         private string _statusText = string.Empty;
+        private bool _isStatusError;
+        private bool _isLoadingNodes;
 
-        public IReadOnlyList<string> Types { get; } = new[] { "tcp", "udp", "xtcp", "stcp", "http", "https" };
+        public IReadOnlyList<string> Types { get; }
         public ObservableCollection<NodeItem> Nodes => _nodes;
+
+        /// <summary>LoliaFRP 创建隧道时不接受加密、压缩等高级配置</summary>
+        public bool ShowAdvancedOptions => !IsLolia;
+
+        private static bool IsLolia => Global.CurrentProvider.Type == FrpProviderType.Lolia;
 
         public string Name
         {
@@ -102,7 +111,44 @@ namespace Kairo.ViewModels
         public string StatusText
         {
             get => _statusText;
-            set => SetProperty(ref _statusText, value);
+            set
+            {
+                if (SetProperty(ref _statusText, value))
+                    OnPropertyChanged(nameof(HasStatus));
+            }
+        }
+
+        public bool HasStatus => !string.IsNullOrWhiteSpace(StatusText);
+
+        /// <summary>状态文本是否为错误（错误显示为红色，进度提示为普通颜色）</summary>
+        public bool IsStatusError
+        {
+            get => _isStatusError;
+            private set => SetProperty(ref _isStatusError, value);
+        }
+
+        public bool IsLoadingNodes
+        {
+            get => _isLoadingNodes;
+            private set
+            {
+                if (SetProperty(ref _isLoadingNodes, value))
+                    OnPropertyChanged(nameof(NodePlaceholder));
+            }
+        }
+
+        public string NodePlaceholder => L.T(IsLoadingNodes ? "create.loadingNodes" : _nodes.Count == 0 ? "create.noNodes" : "create.chooseNode");
+
+        public void SetError(string message)
+        {
+            IsStatusError = true;
+            StatusText = message;
+        }
+
+        private void SetProgress(string message)
+        {
+            IsStatusError = false;
+            StatusText = message;
         }
 
         public bool NeedRemotePort => TypeNormalized is "tcp" or "udp";
@@ -131,7 +177,10 @@ namespace Kairo.ViewModels
 
         public CreateProxyWindowViewModel()
         {
-            _useEncryption = Global.CurrentProvider.Type == FrpProviderType.Lolia;
+            // LoliaFRP 只支持 tcp/udp/http/https
+            Types = IsLolia
+                ? new[] { "tcp", "udp", "http", "https" }
+                : new[] { "tcp", "udp", "xtcp", "stcp", "http", "https" };
             CreateCommand = new AsyncRelayCommand(CreateAsync);
             CancelCommand = new RelayCommand(() => RequestClose?.Invoke());
             _pingCommand = new RelayCommand(() => RequestPingWindow?.Invoke(), () => CanPing);
@@ -152,6 +201,7 @@ namespace Kairo.ViewModels
 
         private async Task LoadNodesAsync()
         {
+            IsLoadingNodes = true;
             try
             {
                 if (Design.IsDesignMode)
@@ -159,15 +209,15 @@ namespace Kairo.ViewModels
                     _nodes.Clear();
                     _nodes.Add(new NodeItem(1, "node1.locyanfrp.cn")
                     {
-                        DisplayName = "示例节点 1",
+                        DisplayName = L.T("create.demo.node1"),
                         PortRangeDisplay = "10000-10100",
-                        DescriptionDisplay = "本地演示节点",
+                        DescriptionDisplay = L.T("create.demo.node1Description"),
                     });
                     _nodes.Add(new NodeItem(2, "node2.locyanfrp.cn")
                     {
-                        DisplayName = "示例节点 2",
+                        DisplayName = L.T("create.demo.node2"),
                         PortRangeDisplay = "20000-20100",
-                        DescriptionDisplay = "备用演示节点",
+                        DescriptionDisplay = L.T("create.demo.node2Description"),
                     });
                     SelectedNode = _nodes.FirstOrDefault();
                     CanPing = true;
@@ -176,7 +226,7 @@ namespace Kairo.ViewModels
 
                 if (!ApiClient.TryEnsureLoggedIn(out var error))
                 {
-                    StatusText = error!;
+                    SetError(error!);
                     return;
                 }
 
@@ -184,7 +234,7 @@ namespace Kairo.ViewModels
                 var result = await api.GetNodesAsync();
                 if (!result.Success)
                 {
-                    StatusText = $"获取节点失败: {result.Message}";
+                    SetError(L.T("create.nodesFailed", result.Message));
                     return;
                 }
 
@@ -210,8 +260,12 @@ namespace Kairo.ViewModels
             catch (Exception ex)
             {
                 AppLogger.Exception("Unhandled exception in Kairo/ViewModels/Windows/CreateProxyWindowViewModel.cs:209", ex);
-                StatusText = $"获取节点失败: {ex.Message}";
+                SetError(L.T("create.nodesFailed", ex.Message));
                 CanPing = false;
+            }
+            finally
+            {
+                IsLoadingNodes = false;
             }
         }
 
@@ -230,48 +284,50 @@ namespace Kairo.ViewModels
                 var secret = SecretKey?.Trim();
                 var domain = Domain?.Trim();
 
-                if (string.IsNullOrWhiteSpace(name)) { StatusText = "请输入隧道名称"; return; }
-                if (string.IsNullOrWhiteSpace(type)) { StatusText = "请选择协议类型"; return; }
-                if (string.IsNullOrWhiteSpace(localIp)) { StatusText = "请输入本地 IP"; return; }
+                if (string.IsNullOrWhiteSpace(name)) { SetError(L.T("create.errors.name")); return; }
+                if (string.IsNullOrWhiteSpace(type)) { SetError(L.T("create.errors.type")); return; }
+                if (string.IsNullOrWhiteSpace(localIp)) { SetError(L.T("create.errors.localIp")); return; }
+                if (IsLolia && !IPAddress.TryParse(localIp, out _)) { SetError(L.T("create.errors.loliaLocalIp")); return; }
                 if (!int.TryParse(localPortStr, out var localPort) || localPort <= 0 || localPort > 65535)
-                { StatusText = "本地端口非法"; return; }
-                if (nodeItem == null) { StatusText = "请选择节点"; return; }
+                { SetError(L.T("create.errors.localPort")); return; }
+                if (nodeItem == null) { SetError(L.T("create.errors.node")); return; }
 
                 bool needRemote = NeedRemotePort;
                 bool needSecret = NeedSecretKey;
                 bool needDomain = NeedDomain;
-                int remotePort = 0;
+                int? remotePort = null;
                 if (needRemote)
                 {
-                    if (string.IsNullOrWhiteSpace(remotePortStr))
+                    if (!string.IsNullOrWhiteSpace(remotePortStr))
                     {
-                        if (Global.CurrentProvider.Type == FrpProviderType.Lolia)
-                        {
-                            StatusText = "LoliaFRP 暂不支持随机端口，请手动输入远端端口";
-                            return;
-                        }
-                        StatusText = "正在请求随机远端端口…";
+                        if (!int.TryParse(remotePortStr, out var port) || port <= 0 || port > 65535)
+                        { SetError(L.T("create.errors.remotePort")); return; }
+                        remotePort = port;
+                    }
+                    else if (!IsLolia)
+                    {
+                        // LoliaFRP 不传远端端口时由服务端自动分配，LocyanFRP 需要先申请随机端口
+                        SetProgress(L.T("create.requestingPort"));
                         var port = await TryGetRandomPortAsync(nodeItem.Id);
                         if (port <= 0)
                         {
-                            StatusText = "获取随机端口失败，请手动输入远端端口";
+                            SetError(L.T("create.errors.randomPort"));
                             return;
                         }
                         remotePort = port;
                         RemotePort = port.ToString();
                     }
-                    else if (!int.TryParse(remotePortStr, out remotePort) || remotePort <= 0 || remotePort > 65535)
-                    { StatusText = "远端端口非法"; return; }
                 }
-                if (needSecret && string.IsNullOrWhiteSpace(secret)) { StatusText = "请输入访问密钥"; return; }
-                if (needDomain && string.IsNullOrWhiteSpace(domain)) { StatusText = "请输入域名"; return; }
+                if (needSecret && string.IsNullOrWhiteSpace(secret)) { SetError(L.T("create.errors.secretKey")); return; }
+                if (needDomain && string.IsNullOrWhiteSpace(domain)) { SetError(L.T("create.errors.domain")); return; }
 
                 if (!ApiClient.TryEnsureLoggedIn(out var err))
                 {
-                    StatusText = err!;
+                    SetError(err!);
                     return;
                 }
 
+                SetProgress(L.T("create.creating"));
                 using var api = new ApiClient();
                 var result = await api.CreateTunnelAsync(new CreateFrpTunnelRequest
                 {
@@ -288,17 +344,18 @@ namespace Kairo.ViewModels
                 });
                 if (result.Success && result.Data != null)
                 {
-                    ProxyCreated?.Invoke(result.Data.TunnelId, string.IsNullOrWhiteSpace(result.Data.TunnelName) ? name! : result.Data.TunnelName);
+                    // 提示使用用户填写的名称（LoliaFRP 的隧道名称是服务端生成的随机字符串）
+                    ProxyCreated?.Invoke(result.Data.TunnelId, name!);
                 }
                 else
                 {
-                    StatusText = result.Message;
+                    SetError(result.Message);
                 }
             }
             catch (Exception ex)
             {
                 AppLogger.Exception("Unhandled exception in Kairo/ViewModels/Windows/CreateProxyWindowViewModel.cs:296", ex);
-                StatusText = $"创建失败: {ex.Message}";
+                SetError(L.T("create.errors.failed", ex.Message));
             }
         }
 
@@ -317,15 +374,15 @@ namespace Kairo.ViewModels
         private static string GetNodeDescription(FrpNode node)
         {
             var parts = new List<string>();
-            if (!string.IsNullOrWhiteSpace(node.RegionCode)) parts.Add($"地区: {node.RegionCode}");
-            if (!string.IsNullOrWhiteSpace(node.Status)) parts.Add($"状态: {node.Status}");
-            if (node.Bandwidth > 0) parts.Add($"带宽: {node.Bandwidth}Mbps");
-            if (node.Load > 0) parts.Add($"负载: {node.Load:0.##}%");
-            if (!string.IsNullOrWhiteSpace(node.Sponsor)) parts.Add($"赞助: {node.Sponsor}");
-            if (node.NeedKyc) parts.Add("需要实名");
-            if (node.BeianRequired) parts.Add("需要备案");
+            if (!string.IsNullOrWhiteSpace(node.RegionCode)) parts.Add(L.T("create.nodeInfo.region", node.RegionCode));
+            if (!string.IsNullOrWhiteSpace(node.Status)) parts.Add(L.T("create.nodeInfo.status", node.Status));
+            if (node.Bandwidth > 0) parts.Add(L.T("create.nodeInfo.bandwidth", node.Bandwidth));
+            if (node.Load > 0) parts.Add(L.T("create.nodeInfo.load", node.Load));
+            if (!string.IsNullOrWhiteSpace(node.Sponsor)) parts.Add(L.T("create.nodeInfo.sponsor", node.Sponsor));
+            if (node.NeedKyc) parts.Add(L.T("create.nodeInfo.kyc"));
+            if (node.BeianRequired) parts.Add(L.T("create.nodeInfo.beian"));
             if (!string.IsNullOrWhiteSpace(node.Description)) parts.Add(node.Description);
-            return parts.Count == 0 ? "暂无" : string.Join(" · ", parts);
+            return parts.Count == 0 ? L.T("create.nodeInfo.none") : string.Join(" · ", parts);
         }
 
         private async Task<int> TryGetRandomPortAsync(int nodeId)

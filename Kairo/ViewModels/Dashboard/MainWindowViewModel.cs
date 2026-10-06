@@ -9,6 +9,8 @@ using System.Security.Cryptography;
 using Avalonia.Media;
 using Avalonia.Threading;
 using FluentAvalonia.UI.Controls;
+using Kairo.Core;
+using Kairo.Core.Localization;
 using Kairo.Core.Providers;
 using Kairo.Models;
 using Kairo.Utils;
@@ -23,6 +25,7 @@ namespace Kairo.ViewModels
         private readonly ApiClient _api = new();
         private CancellationTokenSource? _loginTimeoutCts;
         private bool _isLoggingIn;
+        private bool _isWaitingForBrowser;
         private bool _isLoggedIn;
         private string _tipText = string.Empty;
         private string _snackbarTitle = string.Empty;
@@ -50,6 +53,7 @@ namespace Kairo.ViewModels
                 OnPropertyChanged(nameof(BannerSource));
                 OnPropertyChanged(nameof(IconSource));
                 OnPropertyChanged(nameof(IsLoginEnabled));
+                NotifySavedSessionChanged();
                 StartOAuthCommand.RaiseCanExecuteChanged();
                 ProviderChanged?.Invoke(this, EventArgs.Empty);
             }
@@ -59,6 +63,38 @@ namespace Kairo.ViewModels
         public IImage IconSource => ProviderBranding.GetIconImage(Global.CurrentProvider);
 
         public RelayCommand StartOAuthCommand { get; }
+        public RelayCommand UseOtherAccountCommand { get; }
+        public RelayCommand CancelLoginCommand { get; }
+
+        /// <summary>当前服务商是否保存了可用于自动登录的会话</summary>
+        public bool HasSavedSession => !string.IsNullOrWhiteSpace(Global.Config.RefreshToken);
+
+        public string LoginButtonText => HasSavedSession && !string.IsNullOrWhiteSpace(Global.Config.Username)
+            ? L.T("login.continueAs", Global.Config.Username)
+            : L.T("login.signIn");
+
+        public string LoginHintText => HasSavedSession
+            ? L.T("login.savedSession", Global.CurrentProvider.DisplayName)
+            : L.T("login.oauthHint");
+
+        public string LoginStatusText => IsWaitingForBrowser ? L.T("login.waitingForBrowser") : L.T("login.signingIn");
+
+        public string VersionText => $"v{Global.Version} \"{Global.VersionName}\" · {Global.Branch.ToDisplayName()} {Global.Revision}";
+
+        public bool IsWaitingForBrowser
+        {
+            get => _isWaitingForBrowser;
+            private set
+            {
+                if (!Dispatcher.UIThread.CheckAccess())
+                {
+                    Dispatcher.UIThread.Post(() => IsWaitingForBrowser = value);
+                    return;
+                }
+                if (SetProperty(ref _isWaitingForBrowser, value))
+                    OnPropertyChanged(nameof(LoginStatusText));
+            }
+        }
 
         private static void RunOnUi(Action action)
         {
@@ -80,12 +116,14 @@ namespace Kairo.ViewModels
                 }
                 if (SetProperty(ref _isLoggingIn, value))
                 {
+                    if (!value) IsWaitingForBrowser = false;
                     OnPropertyChanged(nameof(IsLoginFormVisible));
                     OnPropertyChanged(nameof(IsLoginStatusVisible));
                     OnPropertyChanged(nameof(IsLoginEnabled));
                     OnPropertyChanged(nameof(LoginFormOpacity));
                     OnPropertyChanged(nameof(LoginStatusOpacity));
                     StartOAuthCommand.RaiseCanExecuteChanged();
+                    UseOtherAccountCommand.RaiseCanExecuteChanged();
                 }
             }
         }
@@ -148,7 +186,50 @@ namespace Kairo.ViewModels
         {
             _selectedProvider = Providers.FirstOrDefault(provider => provider.Id.Equals(Global.Config.ProviderId, StringComparison.OrdinalIgnoreCase))
                 ?? Providers.FirstOrDefault();
-            StartOAuthCommand = new RelayCommand(StartOAuthFlow, () => !IsLoggingIn && Global.CurrentProvider.SupportsOAuthLogin);
+            StartOAuthCommand = new RelayCommand(StartLogin, () => !IsLoggingIn && Global.CurrentProvider.SupportsOAuthLogin);
+            UseOtherAccountCommand = new RelayCommand(StartOAuthFlow, () => !IsLoggingIn && Global.CurrentProvider.SupportsOAuthLogin);
+            CancelLoginCommand = new RelayCommand(CancelLogin);
+        }
+
+        /// <summary>
+        /// 登录按钮：已保存会话时直接使用 Refresh Token 登录，否则走浏览器 OAuth
+        /// </summary>
+        public void StartLogin()
+        {
+            if (IsLoggingIn) return;
+            if (HasSavedSession)
+            {
+                _ = LoginWithRefreshTokenAsync(Global.Config.RefreshToken);
+                return;
+            }
+            StartOAuthFlow();
+        }
+
+        /// <summary>
+        /// 取消等待浏览器授权。保留 PKCE 校验码，用户稍后在浏览器完成授权时仍可登录
+        /// </summary>
+        private void CancelLogin()
+        {
+            if (!IsWaitingForBrowser) return;
+            CancelLoginTimeout();
+            IsLoggingIn = false;
+            ShowSnackbar(L.T("login.cancelled"), L.T("login.cancelledHint"), FAInfoBarSeverity.Informational);
+        }
+
+        public async Task SwitchProviderAsync(string providerId)
+        {
+            var option = Providers.FirstOrDefault(p => p.Id.Equals(providerId, StringComparison.OrdinalIgnoreCase));
+            if (option == null) return;
+            SelectedProvider = option;
+            if (HasSavedSession)
+                await LoginWithRefreshTokenAsync(Global.Config.RefreshToken, auto: true);
+        }
+
+        private void NotifySavedSessionChanged()
+        {
+            OnPropertyChanged(nameof(HasSavedSession));
+            OnPropertyChanged(nameof(LoginButtonText));
+            OnPropertyChanged(nameof(LoginHintText));
         }
 
         public async Task InitializeAsync()
@@ -159,6 +240,13 @@ namespace Kairo.ViewModels
             {
                 await LoginWithRefreshTokenAsync(Global.Config.RefreshToken, auto: true);
             }
+        }
+
+        protected override void OnLanguageChanged()
+        {
+            // 提示语跟随语言重新挑选
+            if (!string.IsNullOrEmpty(TipText)) TipText = PickTip();
+            base.OnLanguageChanged();
         }
 
         private static string PickTip()
@@ -172,7 +260,7 @@ namespace Kairo.ViewModels
             if (IsLoggingIn) return;
             if (!Global.CurrentProvider.SupportsOAuthLogin)
             {
-                ShowSnackbar("暂不支持登录", $"{Global.CurrentProvider.DisplayName} 未公开 OAuth 登录接口", FAInfoBarSeverity.Warning);
+                ShowSnackbar(L.T("login.unsupported"), L.T("login.unsupportedMessage", Global.CurrentProvider.DisplayName), FAInfoBarSeverity.Warning);
                 return;
             }
             var codeChallenge = string.Empty;
@@ -187,13 +275,14 @@ namespace Kairo.ViewModels
                 Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
                 BeginLoginTimeout();
                 IsLoggingIn = true;
+                IsWaitingForBrowser = true;
             }
             catch (Exception ex)
             {
                 CancelLoginTimeout();
                 _pkceCodeVerifier = string.Empty;
                 Logger.Output(LogType.Error, "[Login] 启动浏览器失败:", ex);
-                ShowSnackbar("启动浏览器失败", ex.Message, FAInfoBarSeverity.Error);
+                ShowSnackbar(L.T("login.browserFailed"), ex.Message, FAInfoBarSeverity.Error);
                 IsLoggingIn = false;
             }
         }
@@ -204,7 +293,7 @@ namespace Kairo.ViewModels
             if (string.IsNullOrWhiteSpace(refreshToken))
             {
                 Logger.Output(LogType.Warn, "[Login] OAuth 回调提供的刷新令牌为空");
-                ShowSnackbar("无效令牌", "提供的刷新令牌为空", FAInfoBarSeverity.Warning);
+                ShowSnackbar(L.T("login.invalidToken"), L.T("login.emptyRefreshToken"), FAInfoBarSeverity.Warning);
                 IsLoggingIn = false;
                 return;
             }
@@ -217,7 +306,7 @@ namespace Kairo.ViewModels
             if (string.IsNullOrWhiteSpace(code))
             {
                 Logger.Output(LogType.Warn, "[Login] OAuth 回调提供的授权码为空");
-                ShowSnackbar("无效授权码", "提供的授权码为空", FAInfoBarSeverity.Warning);
+                ShowSnackbar(L.T("login.invalidCode"), L.T("login.emptyCode"), FAInfoBarSeverity.Warning);
                 IsLoggingIn = false;
                 return;
             }
@@ -228,13 +317,14 @@ namespace Kairo.ViewModels
         {
             if (IsLoggedIn) return;
             IsLoggingIn = true;
+            IsWaitingForBrowser = false;
             try
             {
                 var token = await _api.ExchangeCodeForRefreshTokenAsync(code, _pkceCodeVerifier);
                 if (!token.Success || string.IsNullOrWhiteSpace(token.Data))
                 {
                     Logger.Output(LogType.Error, $"[Login] 换取令牌失败: API状态={token.Code}, 消息={token.Message}");
-                    ShowSnackbar("登录失败", $"API状态: {token.Code} {token.Message}", FAInfoBarSeverity.Error);
+                    ShowSnackbar(L.T("login.failed"), L.T("login.apiStatus", token.Code, token.Message), FAInfoBarSeverity.Error);
                     IsLoggingIn = false;
                     return;
                 }
@@ -244,7 +334,7 @@ namespace Kairo.ViewModels
             catch (Exception ex)
             {
                 Logger.Output(LogType.Error, "[Login] 登录异常:", ex);
-                ShowSnackbar("异常", ex.Message, FAInfoBarSeverity.Error);
+                ShowSnackbar(L.T("common.error"), ex.Message, FAInfoBarSeverity.Error);
                 RunOnUi(() => LoginFailed?.Invoke(this, ex.Message));
             }
             finally
@@ -258,6 +348,7 @@ namespace Kairo.ViewModels
         {
             if (IsLoggedIn) return;
             IsLoggingIn = true;
+            IsWaitingForBrowser = false;
             try
             {
                 if (string.IsNullOrWhiteSpace(refreshToken))
@@ -269,7 +360,7 @@ namespace Kairo.ViewModels
                 if (!login.Success || login.Data == null)
                 {
                     Logger.Output(LogType.Error, $"[Login] 登录失败: API状态={login.Code}, 消息={login.Message}");
-                    if (!auto) ShowSnackbar("登录失败", $"API状态: {login.Code} {login.Message}", FAInfoBarSeverity.Error);
+                    if (!auto) ShowSnackbar(L.T("login.failed"), L.T("login.apiStatus", login.Code, login.Message), FAInfoBarSeverity.Error);
                     ProviderAuth.ClearCurrent(save: false);
                     Global.Config.RefreshToken = string.Empty;
                     Global.Config.AccessToken = string.Empty;
@@ -277,6 +368,7 @@ namespace Kairo.ViewModels
                     Global.Config.ID = 0;
                     Global.Config.FrpToken = string.Empty;
                     ConfigManager.Save();
+                    NotifySavedSessionChanged();
                     IsLoggingIn = false;
                     return;
                 }
@@ -286,13 +378,13 @@ namespace Kairo.ViewModels
                 SessionState.IsLoggedIn = true;
                 ProviderAuth.SaveCurrent(save: false);
                 ConfigManager.Save();
-                ShowSnackbar("登录成功", $"欢迎 {_userInfo.Username}", FAInfoBarSeverity.Success);
+                ShowSnackbar(L.T("login.succeeded"), L.T("login.welcome", _userInfo.Username), FAInfoBarSeverity.Success);
                 RunOnUi(() => LoginSucceeded?.Invoke(this, _userInfo));
             }
             catch (Exception ex)
             {
                 Logger.Output(LogType.Error, "[Login] 登录异常:", ex);
-                ShowSnackbar("异常", ex.Message, FAInfoBarSeverity.Error);
+                ShowSnackbar(L.T("common.error"), ex.Message, FAInfoBarSeverity.Error);
                 RunOnUi(() => LoginFailed?.Invoke(this, ex.Message));
             }
             finally
@@ -373,7 +465,7 @@ namespace Kairo.ViewModels
                     await Task.Delay(LoginTimeout, _loginTimeoutCts.Token);
                     await Dispatcher.UIThread.InvokeAsync(() =>
                     {
-                        ShowSnackbar("登录超时", "OAuth 验证未完成，请重试", FAInfoBarSeverity.Warning);
+                        ShowSnackbar(L.T("login.timeout"), L.T("login.timeoutMessage"), FAInfoBarSeverity.Warning);
                         IsLoggingIn = false;
                     });
                 }
@@ -400,6 +492,7 @@ namespace Kairo.ViewModels
             IsSnackbarOpen = false;
             _pkceCodeVerifier = string.Empty;
             _userInfo = null;
+            NotifySavedSessionChanged();
         }
     }
 

@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="clr-namespace:Kairo.ViewModels"
+             xmlns:l="using:Kairo.Localization"
              x:Class="Kairo.Components.DashBoard.LanParty.JoinRoomPage"
              x:DataType="vm:JoinRoomPageViewModel">
     <UserControl.Styles>
@@ -23,22 +24,22 @@
     
     <Grid RowDefinitions="Auto,Auto,*,70">
         <!-- Instructions -->
-        <TextBlock Grid.Row="0" Text="输入房间代码加入好友的游戏，或者查看您已创建的房间。" 
+        <TextBlock Grid.Row="0" Text="{l:Loc lan.join.instructions}" 
                    TextWrapping="Wrap" Margin="0,0,0,12" />
         
         <!-- Join room input -->
         <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8" Margin="0,0,0,12">
             <TextBox Text="{Binding JoinRoomCode}" 
-                     PlaceholderText="输入房间代码"
+                     PlaceholderText="{l:Loc lan.join.codePlaceholder}"
                      MinWidth="200" />
-            <Button Content="加入房间" Command="{Binding JoinRoomCommand}" />
-            <Button Content="刷新我的房间" Command="{Binding RefreshMyRoomsCommand}" />
+            <Button Content="{l:Loc lan.join.join}" Command="{Binding JoinRoomCommand}" />
+            <Button Content="{l:Loc lan.join.refreshMine}" Command="{Binding RefreshMyRoomsCommand}" />
         </StackPanel>
         
         <!-- Content area -->
         <ScrollViewer Grid.Row="2">
             <StackPanel>
-                <TextBlock Text="我的房间:" FontWeight="SemiBold" Margin="0,0,0,8" />
+                <TextBlock Text="{l:Loc lan.join.myRooms}" FontWeight="SemiBold" Margin="0,0,0,8" />
                 <ItemsControl ItemsSource="{Binding MyRooms}">
                     <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate>
@@ -54,15 +55,15 @@
                                         <TextBlock Text="{Binding CodeDisplay}" FontSize="12" Opacity="0.7" />
                                     </StackPanel>
                                     <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                                        <Button Content="复制" Command="{Binding CopyCodeCommand}" ToolTip.Tip="复制房间代码" />
-                                        <Button Content="删除" Command="{Binding DeleteCommand}" />
+                                        <Button Content="{l:Loc common.copy}" Command="{Binding CopyCodeCommand}" ToolTip.Tip="{l:Loc lan.join.copyCodeTip}" />
+                                        <Button Content="{l:Loc common.delete}" Command="{Binding DeleteCommand}" />
                                     </StackPanel>
                                 </Grid>
                             </Border>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
-                <TextBlock Text="暂无房间" 
+                <TextBlock Text="{l:Loc lan.join.noRooms}" 
                            IsVisible="{Binding NoRooms}" 
                            Opacity="0.6" Margin="0,8,0,0" />
                 
@@ -71,9 +72,9 @@
                         Background="{DynamicResource LayerFillColorAltBrush}"
                         IsVisible="{Binding IsForwarderActive}">
                     <StackPanel Spacing="8">
-                        <TextBlock Text="当前正在转发:" FontWeight="SemiBold" />
+                        <TextBlock Text="{l:Loc lan.join.forwarding}" FontWeight="SemiBold" />
                         <TextBlock Text="{Binding ForwarderStatus}" TextWrapping="Wrap" />
-                        <Button Content="停止转发" Command="{Binding StopForwarderCommand}" HorizontalAlignment="Left" />
+                        <Button Content="{l:Loc lan.join.stopForwarding}" Command="{Binding StopForwarderCommand}" HorizontalAlignment="Left" />
                     </StackPanel>
                 </Border>
             </StackPanel>

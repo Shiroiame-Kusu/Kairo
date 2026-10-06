@@ -8,7 +8,8 @@
   <!-- Theme variant specific color adjustment will be applied in code (App.axaml.cs) -->
   <Application.Styles>
     <sty:FluentAvaloniaTheme />
-    <Style Selector="Window">
+    <!-- 所有顶层窗口都用灰度抗锯齿：下拉框、菜单、提示等弹出层是独立的 PopupRoot，不是 Window -->
+    <Style Selector=":is(TopLevel)">
       <Setter Property="local:App.UseGrayscaleTextRendering" Value="True" />
     </Style>
     <!-- Improve InfoBar (Snackbar) readability: add solid background, subtle border & rounding -->

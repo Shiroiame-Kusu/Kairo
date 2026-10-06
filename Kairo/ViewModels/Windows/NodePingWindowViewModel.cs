@@ -6,6 +6,7 @@ using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 using Avalonia.Threading;
+using Kairo.Core.Localization;
 using Kairo.Core.Models;
 using Kairo.Utils;
 
@@ -97,7 +98,7 @@ namespace Kairo.ViewModels
             var set = new SortedSet<string>(_presetNodes ?? Enumerable.Empty<string>());
             foreach (var n in set)
             {
-                _rows.Add(new NodePingRow { Node = n, Host = string.Format(pattern, n), Status = "等待中" });
+                _rows.Add(new NodePingRow { Node = n, Host = string.Format(pattern, n), Status = L.T("ping.status.waiting") });
             }
             UpdateStatus();
         }
@@ -115,14 +116,14 @@ namespace Kairo.ViewModels
                 var result = await _api.GetNodesAsync();
                 if (!result.Success)
                 {
-                    StatusText = $"获取节点失败: {result.Message}";
+                    StatusText = L.T("ping.nodesFailed", result.Message);
                     return;
                 }
 
                 var list = result.Data ?? Array.Empty<FrpNode>();
                 if (list.Count == 0)
                 {
-                    StatusText = "没有可用节点";
+                    StatusText = L.T("ping.noNodes");
                     return;
                 }
 
@@ -133,7 +134,7 @@ namespace Kairo.ViewModels
                     {
                         string target = !string.IsNullOrWhiteSpace(node.Ip) ? node.Ip : node.Host;
                         if (string.IsNullOrWhiteSpace(target)) continue;
-                        _rows.Add(new NodePingRow { Node = node.Name, Host = target, Status = "等待中" });
+                        _rows.Add(new NodePingRow { Node = node.Name, Host = target, Status = L.T("ping.status.waiting") });
                     }
                     UpdateStatus();
                 });
@@ -141,7 +142,7 @@ namespace Kairo.ViewModels
             catch (Exception ex)
             {
                 AppLogger.Exception("Unhandled exception in Kairo/ViewModels/Windows/NodePingWindowViewModel.cs:139", ex);
-                StatusText = $"获取失败: {ex.Message}";
+                StatusText = L.T("ping.failed", ex.Message);
             }
         }
 
@@ -172,7 +173,7 @@ namespace Kairo.ViewModels
                     Dispatcher.UIThread.Post(() =>
                     {
                         row.LatencyMs = reply.RoundtripTime;
-                        row.Status = "成功";
+                        row.Status = L.T("ping.status.ok");
                     });
                 }
                 else
@@ -180,7 +181,7 @@ namespace Kairo.ViewModels
                     Dispatcher.UIThread.Post(() =>
                     {
                         row.LatencyMs = null;
-                        row.Status = reply.Status == IPStatus.TimedOut ? "超时" : reply.Status.ToString();
+                        row.Status = reply.Status == IPStatus.TimedOut ? L.T("ping.status.timeout") : reply.Status.ToString();
                     });
                 }
             }
@@ -192,16 +193,16 @@ namespace Kairo.ViewModels
                     row.LatencyMs = null;
                     if (IsPermissionError(ex))
                     {
-                        row.Status = "权限不足";
+                        row.Status = L.T("ping.status.denied");
                         if (!_permissionWarned)
                         {
                             _permissionWarned = true;
-                            StatusText = "ICMP 权限不足，无法执行 ping（在 Linux 需 root 或给进程授予 CAP_NET_RAW）";
+                            StatusText = L.T("ping.icmpDenied");
                         }
                     }
                     else
                     {
-                        row.Status = ex is PingException ? "失败" : "错误";
+                        row.Status = L.T(ex is PingException ? "ping.status.failed" : "ping.status.error");
                     }
                 });
             }
@@ -210,7 +211,7 @@ namespace Kairo.ViewModels
         private void UpdateStatus()
         {
             var ok = _rows.Count(r => r.LatencyMs.HasValue);
-            StatusText = $"在线: {ok}/{_rows.Count}";
+            StatusText = L.T("ping.online", ok, _rows.Count);
             OnPropertyChanged(nameof(SortedRows));
         }
 

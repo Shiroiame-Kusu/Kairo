@@ -1,0 +1,54 @@
+{
+  "core": {
+    "api": {
+      "badResponse": "响应格式错误",
+      "unknownError": "未知错误",
+      "emptyRefreshToken": "API 返回的 Refresh Token 为空",
+      "accessTokenMissingFields": "Access Token 响应缺失必要字段",
+      "oauthMissingRefreshToken": "OAuth 响应缺失 Refresh Token",
+      "oauthMissingAccessToken": "OAuth 响应缺失 Access Token",
+      "oauthBadResponse": "OAuth 响应格式错误",
+      "emptyTunnelToken": "API 返回的 tunnel_token 为空",
+      "loliaNoFrpToken": "LoliaFRP 使用隧道 token 启动，文档未公开全局 FRP Token 接口",
+      "loliaNoRandomPort": "LoliaFRP 未提供随机端口接口，远端端口留空即可由服务端分配"
+    },
+    "download": {
+      "fetchingRelease": "正在获取版本信息...",
+      "mirrorFailed": "镜像失败，切换到 GitHub 源...",
+      "downloading": "正在下载...",
+      "downloadingRetry": "正在下载...(重试 {0}/{1})",
+      "verifying": "正在校验...",
+      "extracting": "正在解压...",
+      "completed": "完成",
+      "failed": "下载失败",
+      "noRelease": "无法获取版本信息",
+      "noDownloadUrl": "下载地址缺失",
+      "noAsset": "未找到可用的下载文件",
+      "unsupportedArchive": "不支持的压缩格式",
+      "frpcNotFound": "未找到 frpc 可执行文件",
+      "hashMismatch": "文件哈希不匹配"
+    },
+    "tunnel": {
+      "peerToPeer": "点对点"
+    },
+    "environment": {
+      "noHomeDirectory": "无法确定用户的主目录。HOME 环境变量和 UserProfile 都指向 /var/root。请检查应用程序权限或尝试使用 KAIRO_CONFIG_DIR 环境变量指定配置目录。"
+    },
+    "tips": [
+      "Tips:他们说下载的时候把电脑抱起来摇匀, 下载速度会更快哦",
+      "Tips:LocyanFrp永远不会跑路, 就像你家楼下清仓甩卖的店一样",
+      "Tips:有的时候其实都不算是bug, 其实是我们特意写的特性 (确信",
+      "Tips:你说的对,但是LocyanFrp是由Daiyangcheng女士主导的一款...",
+      "Tips:如果你遇到了连不上API的情况, 那这边建议先换台新电脑呢亲",
+      "Tips:你需要客服? 你是指LCF做开发的这几个暴躁老姐吗",
+      "Tips:你染上LCF了? 你给哥们说实话, 你真的染上LCF了?",
+      "Tips:我们要组一辈子LocyanFrp!",
+      "Tips:不是, 哥们, 你确定真的要启动吗",
+      "Tips:再急, 再急就给你Crash了",
+      "Tips:那我问你, 那我问你",
+      "Sayings:只要是我能做的，我什么都愿意做!",
+      "Sayings:你是抱着多大的觉悟说出这种话的?",
+      "Sayings:你这个人，满脑子都只想着自己呢。"
+    ]
+  }
+}

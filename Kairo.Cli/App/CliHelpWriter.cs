@@ -1,65 +1,92 @@
 using Kairo.Core;
+using Kairo.Core.Localization;
+using Kairo.Core.Providers;
+using Kairo.Cli.Utils;
 
 namespace Kairo.Cli;
 
 internal static class CliHelpWriter
 {
+    private static string ProviderIds => string.Join(" / ", FrpProviderRegistry.All.Select(p => p.Id));
+
     public static void ShowBanner()
     {
-        var versionLine = $"Ver {AppConstants.Version} \"{AppConstants.VersionName}\" {AppConstants.Branch.ToDisplayName()} {AppConstants.Revision}";
-        var padding = (61 - versionLine.Length) / 2;
-        var centeredVersion = versionLine.PadLeft(padding + versionLine.Length).PadRight(61);
         Console.WriteLine();
-        Console.WriteLine("╔═══════════════════════════════════════════════════════════════╗");
-        Console.WriteLine("║                       Kairo CLI Mode                          ║");
-        Console.WriteLine($"║ {centeredVersion} ║");
-        Console.WriteLine("╚═══════════════════════════════════════════════════════════════╝");
-        Console.WriteLine();
+        ConsoleUi.Write("  Kairo CLI ", ConsoleColor.Cyan);
+        ConsoleUi.Write($"{AppConstants.Version} \"{AppConstants.VersionName}\"", ConsoleColor.White);
+        ConsoleUi.WriteLine($"  {AppConstants.Branch.ToDisplayName()} {AppConstants.Revision}", ConsoleColor.DarkGray);
     }
 
     public static void ShowHelp()
     {
-        Console.WriteLine("用法: kairo-cli [选项]");
+        Section(L.T("cli.help.usage"));
+        Console.WriteLine("  " + L.T("cli.help.usageLine"));
+
+        Section(L.T("cli.help.commands"));
+        Item(L.T("cli.help.cmd.none"), L.T("cli.help.cmd.noneDescription"));
+        Item("start [ID...]", L.T("cli.help.cmd.start"));
+        Item("list, ls", L.T("cli.help.cmd.list"));
+        Item("login", L.T("cli.help.cmd.login"));
+        Item("logout", L.T("cli.help.cmd.logout"));
+        Item("status, whoami", L.T("cli.help.cmd.status"));
+        Item(L.T("cli.help.cmd.providerSyntax"), L.T("cli.help.cmd.provider", ProviderIds));
+        Item("help, version", L.T("cli.help.cmd.help"));
+
+        Section(L.T("cli.help.options"));
+        Item(L.T("cli.help.opt.providerSyntax"), L.T("cli.help.opt.provider"));
+        Item("-p, --proxy <ID,...>", L.T("cli.help.opt.proxy"));
+        Item("-l, --list", L.T("cli.help.opt.list"));
+        Item("--oauth", L.T("cli.help.opt.oauth"));
+        Item(L.T("cli.help.opt.codeSyntax"), L.T("cli.help.opt.code"));
+        Item(L.T("cli.help.opt.refreshTokenSyntax"), L.T("cli.help.opt.refreshToken"));
+        Item(L.T("cli.help.opt.frpTokenSyntax"), L.T("cli.help.opt.frpToken"));
+        Item(L.T("cli.help.opt.frpcPathSyntax"), L.T("cli.help.opt.frpcPath"));
+        Item("--github, --no-mirror", L.T("cli.help.opt.github"));
+        Item("--no-interactive", L.T("cli.help.opt.noInteractive"));
+        Item(L.T("cli.help.opt.langSyntax"), L.T("cli.help.opt.lang"));
+        Item("--no-color", L.T("cli.help.opt.noColor"));
+        Item("-d, --debug", L.T("cli.help.opt.debug"));
+        Item("--log-file", L.T("cli.help.opt.logFile"));
+        Item("-q, --quiet", L.T("cli.help.opt.quiet"));
+        Item("-v, --version", L.T("cli.help.opt.version"));
+        Item("-h, --help", L.T("cli.help.opt.help"));
+
+        Section(L.T("cli.help.examples"));
+        ConsoleUi.Command("kairo-cli", L.T("cli.help.example.firstRun"));
+        ConsoleUi.Command("kairo-cli provider lolia", L.T("cli.help.example.switchLolia"));
+        ConsoleUi.Command("kairo-cli --provider locyan list", L.T("cli.help.example.switchAndList"));
+        ConsoleUi.Command("kairo-cli start 1,2", L.T("cli.help.example.startIds"));
+        ConsoleUi.Command("kairo-cli start --no-interactive", L.T("cli.help.example.startAll"));
+        ConsoleUi.Command("kairo-cli --lang en-US status", L.T("cli.help.example.lang"));
+
+        Section(L.T("cli.help.environment"));
+        Item("KAIRO_CONFIG_DIR", L.T("cli.help.env.configDir"));
+        Item("KAIRO_LANG", L.T("cli.help.env.lang"));
+        Item("NO_COLOR", L.T("cli.help.env.noColor"));
         Console.WriteLine();
-        Console.WriteLine("选项:");
-        Console.WriteLine("  --oauth, --get-oauth-url  显示 OAuth 授权 URL");
-        Console.WriteLine("  --code <code>             使用 OAuth 授权码登录");
-        Console.WriteLine("  --refresh-token, -r <token>");
-        Console.WriteLine("                            使用 Refresh Token 登录（高级）");
-        Console.WriteLine("  --frp-token, -t <token>   指定 FRP Token");
-        Console.WriteLine("  --frpc-path, -f <path>    指定 frpc 可执行文件路径");
-        Console.WriteLine("  --proxy, -p <id1,id2,...> 指定要启动的隧道 ID");
-        Console.WriteLine("  --list, -l                列出所有可用隧道");
-        Console.WriteLine("  --no-interactive          禁用交互模式");
-        Console.WriteLine("  --debug, -d               启用调试日志模式");
-        Console.WriteLine("  --log-file                将日志写入文件");
-        Console.WriteLine("  --quiet, -q               安静模式（只显示警告和错误）");
-        Console.WriteLine("  --github, --no-mirror     强制使用 GitHub 下载源");
-        Console.WriteLine("  --version, -v             显示版本信息");
-        Console.WriteLine("  --help, -h                显示此帮助信息");
-        Console.WriteLine();
-        Console.WriteLine("使用说明:");
-        Console.WriteLine("  直接运行 'kairo-cli' 将进入交互式向导模式:");
-        Console.WriteLine("    - 未登录时会自动引导完成 OAuth 授权");
-        Console.WriteLine("    - 登录后会显示隧道列表并让您选择要启动的隧道");
-        Console.WriteLine();
-        Console.WriteLine("  也可以使用命令行参数完成各步骤:");
-        Console.WriteLine("    kairo-cli --oauth          # 仅显示授权 URL");
-        Console.WriteLine("    kairo-cli --code <code>    # 使用授权码登录");
-        Console.WriteLine("    kairo-cli --list           # 列出所有隧道");
-        Console.WriteLine("    kairo-cli --proxy 1,2,3    # 启动指定隧道");
-        Console.WriteLine();
-        Console.WriteLine("  调试模式:");
-        Console.WriteLine("    kairo-cli --debug          # 显示详细日志");
-        Console.WriteLine("    kairo-cli --debug --log-file  # 详细日志并写入文件");
     }
 
     public static void ShowVersion()
     {
+        var version = AppVersion.FromComponents(AppConstants.Version, AppConstants.Branch, AppConstants.Revision);
         Console.WriteLine($"Kairo CLI {AppConstants.Version} ({AppConstants.Branch.ToDisplayName()})");
         Console.WriteLine($"Version Name: {AppConstants.VersionName}");
         Console.WriteLine($"Revision: {AppConstants.Revision}");
+        Console.WriteLine($"Tag: {version.ToTagString()}");
         Console.WriteLine($"Developer: {AppConstants.Developer}");
         Console.WriteLine(AppConstants.Copyright);
+    }
+
+    private static void Section(string title)
+    {
+        Console.WriteLine();
+        ConsoleUi.WriteLine(title + ":", ConsoleColor.Yellow);
+    }
+
+    private static void Item(string name, string description)
+    {
+        Console.Write("  ");
+        ConsoleUi.Write(ConsoleUi.PadRight(name, 28), ConsoleColor.Green);
+        Console.WriteLine(" " + description);
     }
 }

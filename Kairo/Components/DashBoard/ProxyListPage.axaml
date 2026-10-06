@@ -3,21 +3,20 @@
              xmlns:fa="using:FluentAvalonia.UI.Controls"
              xmlns:vm="clr-namespace:Kairo.ViewModels"
              xmlns:local="clr-namespace:Kairo.Components.DashBoard"
+             xmlns:l="using:Kairo.Localization"
              x:Class="Kairo.Components.DashBoard.ProxyListPage"
              x:DataType="vm:ProxyListPageViewModel">
     <UserControl.Styles>
-        <!-- Base proxy card style -->
+        <!-- 隧道卡片 -->
         <Style Selector="Border.proxy-card">
-            <!-- Use a subtle stroke so edges (especially left) are always visible; was Transparent -->
-            <Setter Property="BorderBrush" Value="{DynamicResource ControlStrokeColorDefaultBrush}" />
-            <!-- Keep constant thickness to avoid layout shifts hiding left edge -->
-            <Setter Property="BorderThickness" Value="2" />
+            <Setter Property="BorderBrush" Value="{DynamicResource CardStrokeColorDefaultBrush}" />
+            <!-- 边框粗细保持不变，避免状态切换时布局跳动 -->
+            <Setter Property="BorderThickness" Value="1" />
             <Setter Property="CornerRadius" Value="8" />
-            <Setter Property="Padding" Value="10" />
-            <Setter Property="Margin" Value="6,0,6,10" />
-            <Setter Property="Background" Value="{DynamicResource LayerFillColorDefaultBrush}" />
-            <Setter Property="MinWidth" Value="220" />
+            <Setter Property="Padding" Value="12,10,8,10" />
+            <Setter Property="Background" Value="{DynamicResource CardBackgroundFillColorDefaultBrush}" />
             <Setter Property="UseLayoutRounding" Value="True" />
+            <Setter Property="Cursor" Value="Hand" />
             <Setter Property="Transitions">
                 <Transitions>
                     <BrushTransition Property="BorderBrush" Duration="0:0:0.18" />
@@ -25,63 +24,152 @@
                 </Transitions>
             </Setter>
         </Style>
-        <!-- Hover state -->
         <Style Selector="Border.proxy-card:pointerover">
-            <Setter Property="BorderBrush" Value="{DynamicResource AccentStrokeColorDefaultBrush}" />
-            <Setter Property="Background" Value="{DynamicResource LayerFillColorAltBrush}" />
+            <Setter Property="Background" Value="{DynamicResource CardBackgroundFillColorSecondaryBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource ControlStrokeColorDefaultBrush}" />
         </Style>
-        <!-- Selected state: accent outline (thickness unchanged to prevent clipping) -->
+        <Style Selector="Border.proxy-card.running">
+            <Setter Property="Background" Value="{DynamicResource SystemFillColorSuccessBackgroundBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SystemFillColorSuccessBrush}" />
+        </Style>
         <Style Selector="Border.proxy-card.selected">
             <Setter Property="BorderBrush" Value="{DynamicResource AccentFillColorDefaultBrush}" />
         </Style>
-        <!-- Running state (applied in code by adding class 'running') -->
-        <Style Selector="Border.proxy-card.running">
-            <!-- Subtle green tint overlay while preserving readable foreground -->
-            <Setter Property="Background" Value="#2040A060" />
-            <Setter Property="BorderBrush" Value="#4080C090" />
+
+        <!-- 状态指示 -->
+        <Style Selector="Border.proxy-card Ellipse.status-dot">
+            <Setter Property="Fill" Value="{DynamicResource TextFillColorTertiaryBrush}" />
         </Style>
-        <!-- Running + Selected (ensure selection outline shows) -->
-        <Style Selector="Border.proxy-card.running.selected">
-            <Setter Property="BorderBrush" Value="{DynamicResource AccentFillColorSecondaryBrush}" />
+        <Style Selector="Border.proxy-card.running Ellipse.status-dot">
+            <Setter Property="Fill" Value="{DynamicResource SystemFillColorSuccessBrush}" />
+        </Style>
+        <Style Selector="Border.proxy-card.busy Ellipse.status-dot">
+            <Setter Property="Fill" Value="{DynamicResource SystemFillColorCautionBrush}" />
+        </Style>
+        <Style Selector="Border.proxy-card TextBlock.status-text">
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorTertiaryBrush}" />
+        </Style>
+        <Style Selector="Border.proxy-card.running TextBlock.status-text">
+            <Setter Property="Foreground" Value="{DynamicResource SystemFillColorSuccessBrush}" />
+        </Style>
+        <Style Selector="Border.proxy-card.busy TextBlock.status-text">
+            <Setter Property="Foreground" Value="{DynamicResource SystemFillColorCautionBrush}" />
+        </Style>
+
+        <!-- 协议标签 -->
+        <Style Selector="Border.type-badge">
+            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="Padding" Value="6,1" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
+        </Style>
+        <Style Selector="Border.type-badge > TextBlock">
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
+        </Style>
+
+        <!-- 空状态 / 错误状态 -->
+        <Style Selector="StackPanel.state-panel">
+            <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Spacing" Value="8" />
+            <Setter Property="MaxWidth" Value="360" />
+        </Style>
+        <Style Selector="StackPanel.state-panel > TextBlock">
+            <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="TextAlignment" Value="Center" />
+            <Setter Property="TextWrapping" Value="Wrap" />
         </Style>
     </UserControl.Styles>
+
     <Grid RowDefinitions="Auto,*,Auto" RowSpacing="12" Margin="12">
         <Border Grid.Row="0" CornerRadius="8" Padding="14,10" Background="{DynamicResource LayerFillColorDefaultBrush}">
-            <StackPanel Spacing="4">
-                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                    <fa:FASymbolIcon Symbol="List" FontSize="22" />
-                    <TextBlock VerticalAlignment="Center" FontSize="24" Text="隧道列表" />
+            <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Spacing="4">
+                    <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                        <fa:FASymbolIcon Symbol="List" FontSize="22" />
+                        <TextBlock VerticalAlignment="Center" FontSize="24" Text="{l:Loc tunnels.title}" />
+                    </StackPanel>
+                    <TextBlock Text="{l:Loc tunnels.subtitle}" Opacity="0.8" />
                 </StackPanel>
-                <TextBlock Text="管理并快速操作你的隧道" Opacity="0.8" />
-            </StackPanel>
+                <TextBlock Grid.Column="1" VerticalAlignment="Bottom" Text="{Binding SummaryText}"
+                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+            </Grid>
         </Border>
 
         <Border Grid.Row="1" CornerRadius="8" Padding="12" Background="{DynamicResource LayerFillColorDefaultBrush}">
-            <ScrollViewer>
-                <ItemsControl ItemsSource="{Binding Proxies}">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <WrapPanel />
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate x:DataType="vm:ProxyCardViewModel">
-                            <local:ProxyCard />
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-            </ScrollViewer>
+            <Panel>
+                <ScrollViewer IsVisible="{Binding ShowList}" HorizontalScrollBarVisibility="Disabled">
+                    <fa:FAItemsRepeater x:Name="ProxyRepeater" ItemsSource="{Binding Proxies}" Margin="0,0,4,0">
+                        <fa:FAItemsRepeater.Layout>
+                            <fa:FAUniformGridLayout MinItemWidth="250" MinColumnSpacing="10" MinRowSpacing="10"
+                                                    ItemsStretch="Fill" />
+                        </fa:FAItemsRepeater.Layout>
+                        <fa:FAItemsRepeater.ItemTemplate>
+                            <DataTemplate x:DataType="vm:ProxyCardViewModel">
+                                <local:ProxyCard />
+                            </DataTemplate>
+                        </fa:FAItemsRepeater.ItemTemplate>
+                    </fa:FAItemsRepeater>
+                </ScrollViewer>
+
+                <StackPanel Classes="state-panel" IsVisible="{Binding ShowLoadingState}">
+                    <fa:FAProgressRing Width="32" Height="32" IsActive="{Binding ShowLoadingState}" />
+                    <TextBlock Text="{l:Loc tunnels.loading}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                </StackPanel>
+
+                <StackPanel Classes="state-panel" IsVisible="{Binding ShowEmptyState}">
+                    <fa:FASymbolIcon Symbol="Globe" FontSize="40" HorizontalAlignment="Center"
+                                     Foreground="{DynamicResource TextFillColorTertiaryBrush}" />
+                    <TextBlock Text="{l:Loc tunnels.emptyTitle}" FontSize="18" FontWeight="SemiBold" />
+                    <TextBlock Text="{l:Loc tunnels.emptyHint}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                    <Button Classes="accent" HorizontalAlignment="Center" Margin="0,6,0,0" Command="{Binding CreateCommand}">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <fa:FASymbolIcon Symbol="Add" FontSize="14" />
+                            <TextBlock Text="{l:Loc tunnels.create}" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+
+                <StackPanel Classes="state-panel" IsVisible="{Binding ShowErrorState}">
+                    <fa:FASymbolIcon Symbol="Important" FontSize="40" HorizontalAlignment="Center"
+                                     Foreground="{DynamicResource SystemFillColorCriticalBrush}" />
+                    <TextBlock Text="{l:Loc tunnels.loadFailed}" FontSize="18" FontWeight="SemiBold" />
+                    <TextBlock Text="{Binding LoadError}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                    <Button HorizontalAlignment="Center" Margin="0,6,0,0" Command="{Binding RefreshCommand}">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <fa:FASymbolIcon Symbol="Refresh" FontSize="14" />
+                            <TextBlock Text="{l:Loc common.retry}" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </Panel>
         </Border>
 
         <Border Grid.Row="2" CornerRadius="8" Padding="12" Background="{DynamicResource LayerFillColorDefaultBrush}">
-            <Grid ColumnDefinitions="Auto,Auto,Auto,*" ColumnSpacing="12">
-                <Button Grid.Column="0" Content="节点延迟" Command="{Binding NodePingCommand}" IsVisible="{Binding CanPingNodes}" />
-                <Button Grid.Column="1" Content="创建新隧道" Command="{Binding CreateCommand}" />
-                <Button Grid.Column="2" Content="刷新" Command="{Binding RefreshCommand}" />
-                <Border Grid.Column="3" VerticalAlignment="Center" Padding="8" CornerRadius="6"
-                        Background="{DynamicResource LayerFillColorAltBrush}">
-                    <TextBlock Text="PS:右键隧道可以打开菜单哦喵~" />
-                </Border>
+            <Grid ColumnDefinitions="Auto,Auto,Auto,*" ColumnSpacing="8">
+                <Button Grid.Column="0" Classes="accent" Command="{Binding CreateCommand}" ToolTip.Tip="{l:Loc tunnels.createTip}">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <fa:FASymbolIcon Symbol="Add" FontSize="14" />
+                        <TextBlock Text="{l:Loc tunnels.create}" />
+                    </StackPanel>
+                </Button>
+                <Button Grid.Column="1" Command="{Binding RefreshCommand}" ToolTip.Tip="{l:Loc tunnels.refreshTip}">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <fa:FASymbolIcon Symbol="Refresh" FontSize="14" />
+                        <TextBlock Text="{l:Loc common.refresh}" />
+                    </StackPanel>
+                </Button>
+                <Button Grid.Column="2" Command="{Binding NodePingCommand}" IsVisible="{Binding CanPingNodes}" ToolTip.Tip="{l:Loc tunnels.pingTip}">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <fa:FASymbolIcon Symbol="Clock" FontSize="14" />
+                        <TextBlock Text="{l:Loc tunnels.ping}" />
+                    </StackPanel>
+                </Button>
+                <TextBlock Grid.Column="3" VerticalAlignment="Center" HorizontalAlignment="Right" TextTrimming="CharacterEllipsis"
+                           Text="{l:Loc tunnels.footerHint}"
+                           Foreground="{DynamicResource TextFillColorTertiaryBrush}" />
             </Grid>
         </Border>
     </Grid>
